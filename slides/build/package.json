@@ -1,0 +1,19 @@
+{
+  "name": "mapaq-app-insights-dotnet-deck-build",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Build scripts for the MAPAQ App Insights .NET 10 bilingual deck (HTML + Mermaid PNG).",
+  "scripts": {
+    "render-mermaid": "node render-mermaid.mjs",
+    "build-html": "node build-html-deck.mjs",
+    "build": "npm run render-mermaid && npm run build-html"
+  },
+  "dependencies": {
+    "@mermaid-js/mermaid-cli": "^11.4.0",
+    "js-yaml": "^4.1.0"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

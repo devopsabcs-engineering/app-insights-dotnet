@@ -1,0 +1,26 @@
+{
+  "theme": "dark",
+  "themeVariables": {
+    "darkMode": true,
+    "primaryColor": "#3B82F6",
+    "primaryBorderColor": "#1F2A37",
+    "primaryTextColor": "#E5E7EB",
+    "secondaryColor": "#16A34A",
+    "tertiaryColor": "#F97316",
+    "lineColor": "#94A3B8",
+    "background": "#0B1220",
+    "fontFamily": "Segoe UI, Inter, -apple-system, sans-serif",
+    "fontSize": "14px"
+  },
+  "flowchart": {
+    "htmlLabels": true,
+    "curve": "basis",
+    "padding": 15,
+    "nodeSpacing": 50,
+    "rankSpacing": 50
+  },
+  "sequence": {
+    "useMaxWidth": true,
+    "showSequenceNumbers": true
+  }
+}

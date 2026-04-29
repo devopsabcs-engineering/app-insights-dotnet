@@ -1,0 +1,48 @@
+@page "{id:long}"
+@model Mapaq.Web.Pages.Etablissements.DetailModel
+@{
+    var fr = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "fr";
+    ViewData["Title"] = fr ? "Fiche d'établissement" : "Establishment details";
+}
+
+@if (Model.Establishment is null)
+{
+    <p>@(fr ? "Aucun résultat" : "No results")</p>
+}
+else
+{
+    <h1>@Model.Establishment.Name</h1>
+    <p>
+        @Model.Establishment.Address, @Model.Establishment.City (@Model.Establishment.Region)
+    </p>
+
+    <h2>@(fr ? "Condamnations" : "Convictions")</h2>
+    @if (Model.Establishment.Convictions.Count == 0)
+    {
+        <p>@(fr ? "Aucune condamnation enregistrée." : "No convictions on record.")</p>
+    }
+    else
+    {
+        <table>
+            <thead>
+                <tr>
+                    <th>@(fr ? "Date" : "Date")</th>
+                    <th>@(fr ? "Article" : "Article")</th>
+                    <th>@(fr ? "Description" : "Description")</th>
+                    <th>@(fr ? "Amende (CAD)" : "Fine (CAD)")</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var c in Model.Establishment.Convictions)
+                {
+                    <tr>
+                        <td>@c.ConvictionDate.ToString("yyyy-MM-dd")</td>
+                        <td>@c.ArticleCode</td>
+                        <td>@(fr ? c.ArticleTitleFr : c.ArticleTitleEn)</td>
+                        <td>@c.AmountCad.ToString("0.00")</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
+}

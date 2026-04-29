@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  MAPAQ App Insights .NET 10 Workshop — favicon
+  32x32 viewbox. Geometric mark: crossed wheat-stalk (leaf) + chart-line (graphite).
+  No Quebec emblem, no MAPAQ trademark, no fleur-de-lys.
+-->
+<svg xmlns="http://www.w3.org/2000/svg"
+     viewBox="0 0 32 32"
+     role="img"
+     aria-label="Workshop favicon">
+  <title>Workshop favicon</title>
+  <!-- Background tile (graphite) -->
+  <rect x="0" y="0" width="32" height="32" rx="6" ry="6" fill="#1F2A37"/>
+  <!-- Wheat stalk (leaf green): central stem + paired grains -->
+  <g stroke="#16A34A" stroke-width="1.6" stroke-linecap="round" fill="none">
+    <line x1="16" y1="6" x2="16" y2="26"/>
+    <line x1="16" y1="11" x2="12" y2="9"/>
+    <line x1="16" y1="11" x2="20" y2="9"/>
+    <line x1="16" y1="15" x2="11" y2="13"/>
+    <line x1="16" y1="15" x2="21" y2="13"/>
+    <line x1="16" y1="19" x2="11" y2="17"/>
+    <line x1="16" y1="19" x2="21" y2="17"/>
+  </g>
+  <!-- Chart line (sky blue) crossing the wheat stalk -->
+  <polyline points="4,24 11,20 16,22 21,16 28,12"
+            fill="none"
+            stroke="#3B82F6"
+            stroke-width="1.8"
+            stroke-linecap="round"
+            stroke-linejoin="round"/>
+  <!-- Data point accent (orange) -->
+  <circle cx="21" cy="16" r="1.6" fill="#F97316"/>
+</svg>

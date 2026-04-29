@@ -1,0 +1,82 @@
+# Continuous integration: builds and tests the .NET solution, then validates
+# Bicep templates with az deployment sub what-if. Runs on every PR and on push
+# to main. The bicep job uses OIDC federated login (no client secrets).
+name: ci
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+permissions:
+  id-token: write
+  contents: read
+  pull-requests: write
+
+jobs:
+  dotnet:
+    name: dotnet build + test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Setup .NET 10
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "10.0.x"
+
+      - name: Restore
+        run: dotnet restore
+
+      - name: Build (warnings as errors)
+        run: dotnet build --configuration Release --no-restore /warnaserror
+
+      - name: Test
+        run: >-
+          dotnet test --configuration Release --no-build
+          --logger "trx;LogFileName=test-results.trx"
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results
+          path: "**/test-results.trx"
+
+  bicep:
+    name: bicep build + what-if
+    runs-on: ubuntu-latest
+    needs: dotnet
+    environment: workshop-dev
+    env:
+      AZURE_LOCATION: canadacentral
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Azure login (OIDC)
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: bicep build
+        run: |
+          az bicep upgrade
+          az bicep build --file infra/main.bicep
+
+      - name: bicep what-if (subscription scope)
+        uses: azure/cli@v2
+        with:
+          azcliversion: latest
+          inlineScript: |
+            az deployment sub what-if \
+              --location "${AZURE_LOCATION}" \
+              --template-file infra/main.bicep \
+              --parameters infra/main.parameters.json \
+              --parameters environmentName="${AZURE_ENV_NAME:-ci-whatif}"
+        env:
+          AZURE_ENV_NAME: ${{ vars.AZURE_ENV_NAME }}

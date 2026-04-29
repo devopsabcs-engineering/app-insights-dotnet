@@ -1,0 +1,256 @@
+title: "Application Insights for .NET 10 — Bilingual Workshop"
+subtitle: "End-to-end browser → web → API → SQL correlation with Azure Application Insights and OpenTelemetry"
+author: "Microsoft Canada · MAPAQ Workshop"
+slides:
+
+  - key: cover
+    title: "Application Insights for .NET 10"
+    bullets:
+      - "Bilingual hands-on workshop (EN / FR)"
+      - "Browser → ASP.NET Core Web → Web API → Azure SQL"
+      - "One operation_Id, one waterfall, one truth"
+    notes: "Welcome the room in both languages. Confirm the bilingual ground rules before starting."
+
+  - key: agenda
+    title: "Agenda — six modules"
+    bullets:
+      - "Module 0 — Setup & prerequisites (15 min)"
+      - "Module 1 — Provision (azd up) (30 min)"
+      - "Module 2 — Web auto-instrumentation (30 min)"
+      - "Module 3 — API + SQL instrumentation (45 min)"
+      - "Module 4 — Browser correlation (30 min)"
+      - "Module 5 — Dashboards & KQL (30 min)"
+      - "Module 6 — Teardown (azd down --purge --force) (10 min)"
+    notes: "Total ~3h with breaks. Keep modules timeboxed; the centerpiece is Module 4 + Module 5."
+
+  - key: learning-objectives
+    title: "Learning objectives"
+    bullets:
+      - "Provision Application Insights with Bicep + azd in a single command"
+      - "Auto-instrument an ASP.NET Core 10 Web app with zero code"
+      - "Correlate browser pageView → server request → SQL dependency on one operation_Id"
+      - "Author a KQL query that joins requests, dependencies, and pageViews end-to-end"
+      - "Tear down all resources cleanly with azd down --purge --force"
+    notes: "Anchor expectations. Every objective is reinforced by a hands-on lab."
+
+  - key: prereqs
+    title: "Module 0 — Prerequisites"
+    bullets:
+      - ".NET SDK 10.0.100 (preview or RTM)"
+      - "Azure Developer CLI (azd) 1.10+"
+      - "Azure CLI (az) 2.65+"
+      - "VS Code with C# Dev Kit and Bicep extensions"
+      - "Active Azure subscription with Owner or Contributor + UAA on a resource group"
+      - "GitHub account (for the seeded backlog and CI workflows)"
+    notes: "If anyone is missing the SDK, point to the devcontainer fallback (lab-00)."
+
+  - key: architecture
+    title: "Target architecture"
+    mermaid: |
+      graph LR
+        Browser["🌐 Browser<br/>JS SDK pageView"] --> Web["🛠️ Mapaq.Web<br/>ASP.NET Core 10"]
+        Web --> Api["📡 Mapaq.Api<br/>Web API"]
+        Api --> Sql["🗄️ Azure SQL<br/>EF Core"]
+        Web -.-> AI["📊 Application Insights<br/>workspace-based"]
+        Api -.-> AI
+        Browser -.-> AI
+    notes: "Four nodes, one workspace-based AI resource, one Log Analytics workspace behind it."
+
+  - key: provision-azd-up
+    title: "Module 1 — Provision (azd up)"
+    bullets:
+      - "azd init -t . (use the workshop template)"
+      - "azd env new mapaq-dev"
+      - "azd up (Bicep deploys RG, AI, Log Analytics, App Service, SQL)"
+      - "Check outputs: APPLICATIONINSIGHTS_CONNECTION_STRING is wired to both apps"
+    notes: "Expect ~6 min for the first run. The connection string is set as an App Setting, not in code."
+
+  - key: bicep-modules
+    title: "Bicep modules in this workshop"
+    bullets:
+      - "infra/main.bicep — composes the modules"
+      - "infra/modules/log-analytics.bicep — workspace foundation"
+      - "infra/modules/app-insights.bicep — workspace-based component"
+      - "infra/modules/app-service.bicep — Web + Api with system-assigned managed identity"
+      - "infra/modules/sql.bicep — Azure SQL with Entra-only auth"
+      - "Pass connection string via App Setting, never hard-code"
+    notes: "Reinforce that AI is now workspace-based by default; classic AI is deprecated."
+
+  - key: web-instrumentation
+    title: "Module 2 — Web auto-instrumentation"
+    bullets:
+      - "dotnet add package Microsoft.ApplicationInsights.AspNetCore"
+      - "builder.Services.AddApplicationInsightsTelemetry();"
+      - "Reads APPLICATIONINSIGHTS_CONNECTION_STRING from configuration automatically"
+      - "Generates requests, dependencies, exceptions, and traces with zero extra code"
+    notes: "This is intentionally boring. The magic is the next module — propagation."
+
+  - key: web-snapshot
+    title: "What you should see in 60 seconds"
+    bullets:
+      - "Live Metrics shows incoming requests in real time"
+      - "Transaction Search lists every request with its operation_Id"
+      - "End-to-end transaction view groups dependencies under their parent request"
+      - "Failures blade lights up with any 5xx the API returns"
+    notes: "Keep Live Metrics open during the demo; nothing convinces a room faster than dots appearing."
+
+  - key: api-instrumentation
+    title: "Module 3 — API + SQL instrumentation"
+    bullets:
+      - "Same Microsoft.ApplicationInsights.AspNetCore package on the API"
+      - "EF Core 10 SQL calls are auto-tracked as SqlClient dependencies"
+      - "HttpClientFactory propagates traceparent to downstream calls automatically"
+      - "Custom dimensions: TelemetryClient.TrackEvent(\"OrderPlaced\", new { OrderId, CustomerId })"
+    notes: "EF Core ⇒ SqlClient instrumentation requires no extra package — it ships with the AI SDK."
+
+  - key: traceparent
+    title: "W3C Trace Context — traceparent"
+    bullets:
+      - "00-{trace-id}-{parent-id}-{trace-flags}"
+      - "Browser SDK starts the trace and emits the header on every fetch/XHR"
+      - "ASP.NET Core honours and forwards it without configuration"
+      - "Result: one operation_Id stitches all 4 spans together"
+    notes: "Show the actual header in the browser DevTools network tab during the demo."
+
+  - key: e2e-trace
+    title: "End-to-end trace — the centerpiece"
+    mermaid: |
+      sequenceDiagram
+        autonumber
+        participant Browser as "Browser"
+        participant Web as "Mapaq.Web"
+        participant Api as "Mapaq.Api"
+        participant Sql as "Azure SQL"
+        Browser->>Web: GET /orders<br/>traceparent: 00-abc-01-01
+        Web->>Api: GET /api/orders<br/>traceparent: 00-abc-02-01
+        Api->>Sql: SELECT * FROM Orders<br/>traceparent: 00-abc-03-01
+        Sql-->>Api: rows
+        Api-->>Web: 200 OK
+        Web-->>Browser: 200 OK
+        Note over Browser,Sql: One operation_Id = abc<br/>One waterfall in Application Insights
+    notes: "DR-10 — required deliverable. This single diagram is the visual anchor of the entire workshop."
+
+  - key: browser-snippet
+    title: "Module 4 — Browser correlation"
+    bullets:
+      - "Add the Application Insights JavaScript SDK snippet to _Layout.cshtml"
+      - "Pass the connection string via a server-side ViewData entry (never hard-code)"
+      - "Enable enableCorsCorrelation: true and enableRequestHeaderTracking: true"
+      - "Pass distributedTracingMode: AI_AND_W3C to emit traceparent"
+    notes: "The snippet must come before any other script that issues fetch/XHR."
+
+  - key: browser-config
+    title: "Browser SDK — minimal config"
+    bullets:
+      - "instrumentationKey is gone — use connectionString"
+      - "enableAutoRouteTracking: true (for SPA-style page changes)"
+      - "correlationHeaderExcludedDomains: ['*.googleapis.com', '*.bing.com']"
+      - "samplingPercentage: 100 in dev, lower in prod"
+    notes: "Sampling is per-app, set on the SDK options object — not in the portal."
+
+  - key: app-map
+    title: "Module 5 — Application Map"
+    mermaid: |
+      graph LR
+        B["🌐 Browser"] --> W["Mapaq.Web<br/>p95 110ms · 0.0% fail"]
+        W --> A["Mapaq.Api<br/>p95 80ms · 0.1% fail"]
+        A --> S["Azure SQL<br/>p95 45ms · 0.0% fail"]
+        style B fill:#3B82F6,stroke:#1F2A37,color:#fff
+        style W fill:#16A34A,stroke:#1F2A37,color:#fff
+        style A fill:#16A34A,stroke:#1F2A37,color:#fff
+        style S fill:#F97316,stroke:#1F2A37,color:#fff
+    notes: "Application Map auto-discovers the topology from telemetry — no manual configuration."
+
+  - key: kql-end-to-end
+    title: "KQL — one query, one operation_Id"
+    bullets:
+      - "Open Logs blade on the AI resource"
+      - "Run the union query below"
+      - "Sort by timestamp asc to see the waterfall in time order"
+    mermaid: |
+      flowchart LR
+        Q["union requests, dependencies, pageViews<br/>| where operation_Id == 'abc'<br/>| project timestamp, itemType, name, duration, success<br/>| order by timestamp asc"]
+        Q --> R["📊 Waterfall result<br/>4 rows · 1 operation_Id"]
+    notes: "Walk through each line. The union across 3 tables is the trick most newcomers miss."
+
+  - key: kql-query-text
+    title: "KQL query — copy / paste"
+    bullets:
+      - "union requests, dependencies, pageViews"
+      - "| where operation_Id == 'abc-trace-id-here'"
+      - "| project timestamp, itemType, name, duration, success, target"
+      - "| order by timestamp asc"
+    notes: "Replace 'abc-trace-id-here' with the operation_Id from the browser DevTools traceparent header."
+
+  - key: live-metrics
+    title: "Live Metrics — the room-pleaser"
+    bullets:
+      - "Sub-second latency from app to portal"
+      - "No data is persisted in the portal stream — sampling does not apply"
+      - "Filter by role name (cloud_RoleName) to isolate Mapaq.Api"
+      - "Great for the demo; not a substitute for proper alerts"
+    notes: "Open Live Metrics, then ask the room to load the page — pure dopamine."
+
+  - key: workbook
+    title: "Workbook — bilingual SLO snapshot"
+    bullets:
+      - "Pre-built workbook in workshop-content/workbooks/"
+      - "Shows 24h request volume, p95 latency, fail %, top-5 dependencies"
+      - "Parameterised by role name and time range"
+      - "Importable via JSON, no Power BI required"
+    notes: "Workbook JSON lives in the repo; import via the gallery in the AI resource."
+
+  - key: alerts
+    title: "Smart alerts — failure anomalies"
+    bullets:
+      - "Smart Detection runs continuously on the workspace"
+      - "Auto-detects failure-rate anomalies, slow page loads, and trace-degradation"
+      - "Configure email + Action Group for Teams webhook"
+      - "Rule of thumb: alert on symptoms (user impact), not causes"
+    notes: "Smart Detection is on by default — show how to subscribe additional emails."
+
+  - key: cost-controls
+    title: "Cost controls — no surprises"
+    bullets:
+      - "Daily cap on the AI resource (50 MB/day for the workshop)"
+      - "Sampling: 100% in dev, 10–25% in prod typical"
+      - "Workspace-based AI uses Log Analytics commitment tiers"
+      - "Tag everything with Workshop=Mapaq for billing slicing"
+    notes: "The daily cap protects the workshop subscription from runaway log volume."
+
+  - key: troubleshooting
+    title: "Troubleshooting checklist"
+    bullets:
+      - "No telemetry? Verify APPLICATIONINSIGHTS_CONNECTION_STRING in App Settings"
+      - "Browser pageViews missing? Confirm the snippet is before other scripts"
+      - "operation_Id mismatch? Check enableCorsCorrelation on the JS SDK"
+      - "SQL deps missing? EF Core needs the AI SDK — package alone is not enough"
+    notes: "Keep this slide visible during the lab; most questions map to one of these four lines."
+
+  - key: teardown
+    title: "Module 6 — Teardown"
+    bullets:
+      - "azd down --purge --force"
+      - "--purge removes soft-deleted Key Vaults and AI resources"
+      - "--force skips the interactive confirmation prompt"
+      - "Verify the resource group is gone in the Azure portal"
+    notes: "Always demo teardown live. A workshop without teardown is a billing time-bomb."
+
+  - key: references
+    title: "References"
+    bullets:
+      - "learn.microsoft.com/azure/azure-monitor/app/app-insights-overview"
+      - "learn.microsoft.com/azure/azure-monitor/app/asp-net-core"
+      - "learn.microsoft.com/azure/azure-monitor/app/javascript"
+      - "github.com/Azure/azure-dev (azd templates)"
+      - "github.com/microsoft/ApplicationInsights-dotnet"
+    notes: "All four MS Learn pages have the EN/FR locale switcher in the top-right."
+
+  - key: closing
+    title: "Merci · Thank you"
+    bullets:
+      - "Slides + labs: github.com/devopsabcs-engineering/app-insights-dotnet"
+      - "Bilingual published on GitHub Pages: /app-insights-dotnet/ and /app-insights-dotnet/fr/"
+      - "Issues + ADO board seeded — open one with feedback"
+      - "Bonne observabilité! · Happy observing!"
+    notes: "Close in both languages. Hand the room over to questions."

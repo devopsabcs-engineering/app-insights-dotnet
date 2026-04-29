@@ -1,0 +1,23 @@
+{
+  // Workshop-tuned markdownlint rules.
+  "default": true,
+
+  // MD013 line length – disabled because narrative paragraphs and KQL queries blow past 80 chars.
+  "MD013": false,
+
+  // MD033 inline HTML – allowed because the HTML decks and language-switcher snippets need it.
+  "MD033": false,
+
+  // MD041 first-line H1 – disabled because Jekyll pages start with YAML front matter.
+  "MD041": false,
+
+  // MD040 fenced code language – enforced so syntax highlighting works.
+  "MD040": true,
+
+  // MD024 duplicate headings – allow when nested under different parents (FR + EN side-by-side).
+  "MD024": { "siblings_only": true },
+
+  // MD026 trailing punctuation in headings – allow ":" and "?" because Quebec typography uses
+  // typographic colon (e.g., "Atelier 00 :").
+  "MD026": { "punctuation": ".,;!" }
+}

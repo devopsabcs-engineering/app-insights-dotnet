@@ -1,0 +1,4 @@
+# Pinned per Phase 5 details. Used by slides/build/build-pptx-deck.py and
+# .github/workflows/build-decks.yml.
+python-pptx==1.0.0
+pyyaml>=6.0

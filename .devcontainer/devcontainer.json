@@ -1,0 +1,41 @@
+{
+  "name": "App Insights .NET 10 — MAPAQ Workshop",
+  "image": "mcr.microsoft.com/devcontainers/base:ubuntu-22.04",
+  "features": {
+    "ghcr.io/devcontainers/features/dotnet:2": {
+      "version": "10.0",
+      "installUsingApt": false
+    },
+    "ghcr.io/devcontainers/features/node:1": {
+      "version": "20"
+    },
+    "ghcr.io/devcontainers/features/python:1": {
+      "version": "3.12"
+    },
+    "ghcr.io/devcontainers/features/azure-cli:1": {
+      "extensions": "bicep,azure-devops"
+    },
+    "ghcr.io/azure/azure-dev/azd:latest": {},
+    "ghcr.io/devcontainers/features/github-cli:1": {},
+    "ghcr.io/devcontainers/features/ruby:1": {
+      "version": "3.3"
+    },
+    "ghcr.io/devcontainers/features/powershell:1": {
+      "version": "7.4"
+    }
+  },
+  "postCreateCommand": "dotnet workload restore || true; (test -f Gemfile && bundle install) || true; (test -f slides/build/requirements.txt && pip install -r slides/build/requirements.txt) || true; (test -f slides/build/package.json && npm --prefix slides/build ci) || true; pwsh -Command 'Install-Module -Name powershell-yaml -Scope CurrentUser -Force -AcceptLicense' || true",
+  "remoteUser": "vscode",
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "ms-dotnettools.csdevkit",
+        "ms-azuretools.vscode-bicep",
+        "ms-azuretools.azure-dev",
+        "ms-python.python",
+        "DavidAnson.vscode-markdownlint",
+        "redhat.vscode-yaml"
+      ]
+    }
+  }
+}

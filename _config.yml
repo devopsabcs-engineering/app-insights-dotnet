@@ -1,0 +1,88 @@
+# =============================================================================
+# Jekyll site configuration — App Insights .NET 10 Workshop (MAPAQ)
+# =============================================================================
+# This site is published to GitHub Pages at
+#   https://devopsabcs-engineering.github.io/app-insights-dotnet/
+# French is the published default language; English is parallel.
+# See _includes/head_custom.html for the unconditional EN-root → /fr/ redirect.
+
+title: "App Insights .NET 10 — MAPAQ"
+description: "Bilingual hands-on workshop instrumenting a .NET 10 reference app with Azure Application Insights, using the Quebec MAPAQ open-data establishments inspection dataset."
+description_fr: "Atelier bilingue pratique pour instrumenter une application de référence .NET 10 avec Azure Application Insights, à partir des données ouvertes du MAPAQ sur les établissements alimentaires."
+description_en: "Bilingual hands-on workshop instrumenting a .NET 10 reference app with Azure Application Insights, using the Quebec MAPAQ open-data establishments inspection dataset."
+
+remote_theme: just-the-docs/just-the-docs
+baseurl: "/app-insights-dotnet"
+url: "https://devopsabcs-engineering.github.io"
+
+lang: en
+permalink: pretty
+
+# -----------------------------------------------------------------------------
+# Just-the-docs theme settings
+# -----------------------------------------------------------------------------
+search_enabled: true
+heading_anchors: true
+color_scheme: dark
+
+aux_links:
+  "GitHub repo":
+    - "https://github.com/devopsabcs-engineering/app-insights-dotnet"
+  "Sister workshop — Accessibility":
+    - "https://github.com/devopsabcs-engineering/accessibility-scan-workshop"
+
+aux_links_new_tab: true
+
+# -----------------------------------------------------------------------------
+# Plugins
+# -----------------------------------------------------------------------------
+plugins:
+  - jekyll-remote-theme
+  - jekyll-include-cache
+  - jekyll-seo-tag
+
+# -----------------------------------------------------------------------------
+# Exclusions — keep source code, infra, slides, raw data and tooling
+# directories out of the published site.
+# -----------------------------------------------------------------------------
+exclude:
+  - images/
+  - scripts/
+  - src/
+  - tests/
+  - infra/
+  - azure-pipelines/
+  - boards/
+  - data/
+  - slides/
+  - docs/decks/
+  - _includes/
+  - node_modules/
+  - vendor/
+  - bin/
+  - obj/
+  - Gemfile
+  - Gemfile.lock
+  - package.json
+  - package-lock.json
+  - .devcontainer/
+  - .github/
+  - .copilot-tracking/
+
+# -----------------------------------------------------------------------------
+# Defaults — applied to every page unless overridden in front matter.
+# Pages under fr/ inherit lang: fr so the sidebar override picks them up.
+# -----------------------------------------------------------------------------
+defaults:
+  - scope:
+      path: ""
+    values:
+      layout: "default"
+  - scope:
+      path: "fr"
+    values:
+      lang: fr
+  - scope:
+      path: "images"
+    values:
+      nav_exclude: true

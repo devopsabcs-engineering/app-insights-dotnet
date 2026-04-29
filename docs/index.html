@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>App Insights .NET 10 — MAPAQ Workshop · Decks</title>
+  <meta name="description" content="Bilingual deck index for the Application Insights for .NET 10 workshop.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --graphite: #1F2A37;
+      --sky: #3B82F6;
+      --leaf: #16A34A;
+      --orange: #F97316;
+      --bg: #0B1220;
+      --fg: #E5E7EB;
+      --muted: #94A3B8;
+      --card-bg: #161B22;
+      --card-border: #232A34;
+      --accent-gradient: linear-gradient(135deg, var(--sky), var(--leaf));
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+      background: var(--bg);
+      color: var(--fg);
+      line-height: 1.7;
+      min-height: 100vh;
+      padding: 80px 24px 48px;
+    }
+    .lang-switcher {
+      position: fixed;
+      top: 16px;
+      right: 20px;
+      z-index: 200;
+      display: flex;
+      gap: 0;
+      border-radius: 8px;
+      overflow: hidden;
+      border: 1px solid var(--card-border);
+      font-size: 0.8rem;
+      font-weight: 600;
+      background: var(--card-bg);
+    }
+    .lang-switcher a {
+      padding: 6px 14px;
+      color: var(--muted);
+      text-decoration: none;
+      background: var(--card-bg);
+      transition: all 0.2s;
+    }
+    .lang-switcher a:hover { color: var(--fg); background: rgba(59, 130, 246, 0.1); }
+    .lang-switcher a.active { color: var(--bg); background: var(--sky); pointer-events: none; }
+
+    .container { max-width: 900px; margin: 0 auto; }
+    .hero {
+      text-align: center;
+      padding: 24px 0 40px;
+      border-bottom: 1px solid var(--card-border);
+      margin-bottom: 40px;
+    }
+    .hero-badge {
+      display: inline-block;
+      padding: 4px 12px;
+      margin-bottom: 16px;
+      background: rgba(59, 130, 246, 0.15);
+      border: 1px solid var(--sky);
+      border-radius: 999px;
+      color: var(--sky);
+      font-size: 0.8rem;
+      font-weight: 600;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+    }
+    h1 {
+      font-size: 2.4rem;
+      font-weight: 800;
+      background: var(--accent-gradient);
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+      margin-bottom: 12px;
+    }
+    .subtitle { color: var(--muted); font-size: 1.05rem; }
+
+    .deck-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 20px;
+    }
+    .deck-card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 12px;
+      padding: 24px;
+      transition: border-color 0.2s, transform 0.2s;
+      text-decoration: none;
+      color: inherit;
+      display: block;
+    }
+    .deck-card:hover { border-color: var(--sky); transform: translateY(-2px); }
+    .deck-card .lang-tag {
+      display: inline-block;
+      font-family: 'JetBrains Mono', ui-monospace, monospace;
+      font-size: 0.75rem;
+      font-weight: 600;
+      padding: 2px 8px;
+      border-radius: 4px;
+      margin-bottom: 12px;
+    }
+    .deck-card .lang-tag.en { background: rgba(59, 130, 246, 0.15); color: var(--sky); border: 1px solid var(--sky); }
+    .deck-card .lang-tag.fr { background: rgba(22, 163, 74, 0.15); color: var(--leaf); border: 1px solid var(--leaf); }
+    .deck-card h2 { font-size: 1.2rem; font-weight: 700; margin-bottom: 8px; }
+    .deck-card p { color: var(--muted); font-size: 0.92rem; }
+    .deck-card .format {
+      display: inline-block;
+      margin-top: 12px;
+      padding: 3px 10px;
+      background: rgba(249, 115, 22, 0.12);
+      border: 1px solid var(--orange);
+      border-radius: 4px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: var(--orange);
+      font-family: 'JetBrains Mono', ui-monospace, monospace;
+    }
+
+    .section-heading {
+      font-size: 0.85rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--muted);
+      margin: 36px 0 16px;
+    }
+
+    .footer {
+      text-align: center;
+      margin-top: 48px;
+      padding-top: 24px;
+      border-top: 1px solid var(--card-border);
+      color: var(--muted);
+      font-size: 0.9rem;
+    }
+    .footer a { color: var(--sky); text-decoration: none; }
+    .footer a:hover { text-decoration: underline; }
+  </style>
+</head>
+<body>
+
+<div class="lang-switcher" role="navigation" aria-label="Language">
+  <a href="index.html" class="active" hreflang="en">EN</a>
+  <a href="index.html#fr" hreflang="fr">FR</a>
+</div>
+
+<div class="container">
+
+  <div class="hero">
+    <div class="hero-badge">Workshop Decks · Bilingual</div>
+    <h1>Application Insights for .NET 10</h1>
+    <p class="subtitle">Browser → Web → API → SQL · One operation_Id, one waterfall, one truth.</p>
+  </div>
+
+  <p class="section-heading">English · HTML & PPTX</p>
+  <div class="deck-grid">
+    <a class="deck-card" href="app-insights-dotnet.html">
+      <span class="lang-tag en">EN</span>
+      <h2>Browser deck (HTML)</h2>
+      <p>Self-contained scrolling deck with sticky TOC and live Mermaid diagrams.</p>
+      <span class="format">.html</span>
+    </a>
+    <a class="deck-card" href="decks/app-insights-dotnet.pptx" download>
+      <span class="lang-tag en">EN</span>
+      <h2>PowerPoint deck</h2>
+      <p>Editable PPTX with Segoe UI, embedded diagrams, and speaker notes.</p>
+      <span class="format">.pptx</span>
+    </a>
+  </div>
+
+  <p class="section-heading" id="fr">Français · HTML &amp; PPTX</p>
+  <div class="deck-grid">
+    <a class="deck-card" href="app-insights-dotnet-fr.html">
+      <span class="lang-tag fr">FR</span>
+      <h2>Présentation web (HTML)</h2>
+      <p>Diapositives autonomes, sommaire collant, diagrammes Mermaid en direct.</p>
+      <span class="format">.html</span>
+    </a>
+    <a class="deck-card" href="decks/app-insights-dotnet-fr.pptx" download>
+      <span class="lang-tag fr">FR</span>
+      <h2>Présentation PowerPoint</h2>
+      <p>PPTX modifiable, police Segoe UI, diagrammes intégrés et notes du présentateur.</p>
+      <span class="format">.pptx</span>
+    </a>
+  </div>
+
+  <div class="footer">
+    <p>
+      Source: <a href="https://github.com/devopsabcs-engineering/app-insights-dotnet">github.com/devopsabcs-engineering/app-insights-dotnet</a>
+    </p>
+    <p>Microsoft Canada · MAPAQ Workshop · 2026</p>
+  </div>
+
+</div>
+
+</body>
+</html>

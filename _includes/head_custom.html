@@ -1,0 +1,156 @@
+{%- comment -%}
+  =========================================================================
+  Custom <head> additions for App Insights .NET 10 Workshop (MAPAQ)
+  -------------------------------------------------------------------------
+  Responsibilities:
+    1. Bilingual SEO via hreflang alternates (FR canonical, EN parallel).
+    2. Sticky FR/EN switcher pinned top-right of every page.
+    3. UNCONDITIONAL EN-root → /fr/ redirect (DR-07): every visitor
+       landing on the EN root is sent to /fr/ unless they have already
+       opted into English via the toggle (mapaq-lang === 'en' in
+       sessionStorage). The redirect deliberately does NOT inspect
+       navigator.language — French is the published default for ALL
+       visitors, regardless of browser locale.
+    4. Application Insights JavaScript SDK loader (connection string
+       injected at deploy time; placeholder is rendered as a JS no-op
+       when the value is empty so local builds don't error).
+    5. Mermaid v11 from jsDelivr CDN with dark-theme initialization,
+       so lab and slide-deck Markdown can use ```mermaid fences.
+  =========================================================================
+{%- endcomment -%}
+
+{%- comment -%} 1. Bilingual SEO — hreflang alternates {%- endcomment -%}
+<link rel="alternate" hreflang="fr" href="{{ site.url }}{{ site.baseurl }}/fr/">
+<link rel="alternate" hreflang="en" href="{{ site.url }}{{ site.baseurl }}/">
+<link rel="alternate" hreflang="x-default" href="{{ site.url }}{{ site.baseurl }}/fr/">
+
+{%- comment -%} 2. Branding favicons (graceful 404 if branding/ missing) {%- endcomment -%}
+<link rel="icon" type="image/x-icon" href="{{ site.baseurl }}/assets/branding/favicon.ico">
+<link rel="icon" type="image/png" sizes="32x32" href="{{ site.baseurl }}/assets/branding/favicon-32x32.png">
+<link rel="apple-touch-icon" sizes="180x180" href="{{ site.baseurl }}/assets/branding/apple-touch-icon.png">
+
+{%- comment -%} 3. Top-right FR/EN language switcher {%- endcomment -%}
+<style>
+  .mapaq-lang-switcher {
+    position: fixed;
+    top: 0.65rem;
+    right: 0.85rem;
+    z-index: 9999;
+    font-size: 0.85rem;
+    line-height: 1;
+    background: rgba(20, 20, 20, 0.78);
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    border-radius: 999px;
+    padding: 0.25rem 0.55rem;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.35);
+  }
+  .mapaq-lang-switcher a {
+    color: #f1f1f1;
+    text-decoration: none;
+    padding: 0.15rem 0.4rem;
+    border-radius: 999px;
+  }
+  .mapaq-lang-switcher a[aria-current="true"] {
+    background: #0078d4;
+    color: #fff;
+    font-weight: 600;
+  }
+  .mapaq-lang-switcher a:hover {
+    background: rgba(255, 255, 255, 0.12);
+  }
+  .mapaq-lang-switcher .sep {
+    color: rgba(255, 255, 255, 0.35);
+    margin: 0 0.15rem;
+  }
+  /* Mermaid block centering */
+  .mermaid { text-align: center; }
+  /* Allow long bilingual site titles to wrap */
+  @media (min-width: 50rem) {
+    .site-header { height: auto; max-height: none; }
+  }
+</style>
+
+<nav class="mapaq-lang-switcher" aria-label="Language switcher / Sélecteur de langue">
+  <a href="{{ site.baseurl }}/fr/"
+     hreflang="fr"
+     onclick="sessionStorage.setItem('mapaq-lang','fr')"
+     {% if page.lang == 'fr' %}aria-current="true"{% endif %}>FR</a>
+  <span class="sep">|</span>
+  <a href="{{ site.baseurl }}/"
+     hreflang="en"
+     onclick="sessionStorage.setItem('mapaq-lang','en')"
+     {% if page.lang != 'fr' %}aria-current="true"{% endif %}>EN</a>
+</nav>
+
+{%- comment -%}
+  4. UNCONDITIONAL EN-root → /fr/ redirect (DR-07).
+
+  Fires only when:
+    * the current path is exactly the EN root '{{ site.baseurl }}/' (with or
+      without a trailing slash), AND
+    * sessionStorage['mapaq-lang'] is NOT 'en' (i.e. the visitor has not
+      explicitly opted into English via the EN toggle).
+
+  Deep links such as /labs/lab-00-setup are NEVER redirected, and the
+  redirect is browser-locale-agnostic per DR-07.
+{%- endcomment -%}
+<script>
+  (function () {
+    try {
+      var base = "{{ site.baseurl }}";
+      var p = window.location.pathname.replace(/\/+$/, "/");
+      var enRoot = (base + "/").replace(/\/+$/, "/");
+      // Normalize bare baseurl ("/") to "/" for the comparison.
+      if (base === "" && p === "") { p = "/"; }
+      var optedEn = sessionStorage.getItem("mapaq-lang") === "en";
+      if (p === enRoot && !optedEn) {
+        window.location.replace(base + "/fr/");
+      }
+    } catch (e) {
+      // sessionStorage unavailable (e.g. file:// or strict privacy mode):
+      // leave the visitor on the EN page rather than blocking navigation.
+    }
+  })();
+</script>
+
+{%- comment -%}
+  5. Application Insights JavaScript SDK loader.
+
+  The connection string is injected at deploy time. Until it is supplied,
+  the snapshot below renders a no-op so local `bundle exec jekyll build`
+  doesn't fail and so EN/FR pages don't throw at runtime.
+
+  Replace `__APPINSIGHTS_CONNECTION_STRING__` via the GitHub Pages deploy
+  workflow (envsubst step) before publishing.
+{%- endcomment -%}
+<script type="text/javascript">
+  !(function (cfg) {
+    if (!cfg.connectionString || cfg.connectionString.indexOf("__") === 0) { return; }
+    var sdkSrc = "https://js.monitor.azure.com/scripts/b/ai.3.gbl.min.js";
+    var s = document.createElement("script");
+    s.src = sdkSrc; s.crossOrigin = "anonymous"; s.async = true;
+    s.onload = function () {
+      try {
+        var snippet = new window.Microsoft.ApplicationInsights.ApplicationInsights({ config: cfg });
+        snippet.loadAppInsights();
+        snippet.trackPageView();
+      } catch (e) { /* swallow */ }
+    };
+    document.head.appendChild(s);
+  })({
+    connectionString: "__APPINSIGHTS_CONNECTION_STRING__",
+    enableAutoRouteTracking: true,
+    enableCorsCorrelation: true,
+    enableRequestHeaderTracking: true,
+    enableResponseHeaderTracking: true,
+    distributedTracingMode: 2 /* W3C */
+  });
+</script>
+
+{%- comment -%} 6. Mermaid v11 — dark theme, auto-init {%- endcomment -%}
+<script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
+<script>
+  if (window.mermaid) {
+    window.mermaid.initialize({ startOnLoad: true, theme: "dark" });
+  }
+</script>

@@ -482,3 +482,55 @@ $RECYCLE.BIN/
 
 # Vim temporary swap files
 *.swp
+
+# ============================================================
+# Workshop-specific additions (Node, Python, Ruby/Jekyll, Bicep, azd, OS, IDE)
+# ============================================================
+
+# Node / npm
+node_modules/
+dist/
+*.tsbuildinfo
+.npm/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+venv/
+.pytest_cache/
+.mypy_cache/
+*.egg-info/
+
+# Ruby / Jekyll
+_site/
+.jekyll-cache/
+.jekyll-metadata
+.bundle/
+vendor/
+
+# Bicep
+*.bicepparam.local
+
+# Azure Developer CLI
+.azure/
+azure.env
+
+# JetBrains Rider / IntelliJ
+.idea/
+
+# macOS
+.DS_Store
+
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# Devcontainer cache
+.devcontainer/.cache/
+
+# Note: docs/decks/assets/*.png are intentionally NOT ignored — the
+# build-decks workflow commits regenerated PNGs back to main via
+# stefanzweifel/git-auto-commit-action (which respects .gitignore).

@@ -1,0 +1,26 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/Azure/azure-dev/refs/heads/main/schemas/v1.0/azure.yaml.json
+name: app-insights-dotnet
+metadata:
+  template: app-insights-dotnet@1.0.0
+resourceGroup: rg-${AZURE_ENV_NAME}
+infra:
+  provider: bicep
+  path: infra
+  module: main
+services:
+  web:
+    project: ./src/Mapaq.Web
+    language: dotnet
+    host: appservice
+  api:
+    project: ./src/Mapaq.Api
+    language: dotnet
+    host: appservice
+hooks:
+  postprovision:
+    posix:
+      shell: sh
+      run: ./infra/scripts/grant-sql-access.sh
+    windows:
+      shell: pwsh
+      run: ./infra/scripts/grant-sql-access.ps1

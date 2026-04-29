@@ -1,0 +1,81 @@
+# azure-pipelines/deploy.yml
+# Deploy pipeline for the MAPAQ App Insights .NET 10 bilingual workshop.
+# Triggers on push to main AND can be run manually from the ADO UI.
+# Authenticates to Azure via Workload Identity Federation (WIF) using the
+# `sc-workshop-dev` service connection — no PAT, no client secret.
+# Uses an `environment:` (workshop-dev) so manual approval gates can be configured in ADO.
+
+trigger:
+  branches:
+    include:
+      - main
+  paths:
+    include:
+      - src/**
+      - infra/**
+      - azure.yaml
+      - azure-pipelines/**
+
+pr: none
+
+pool:
+  vmImage: ubuntu-latest
+
+parameters:
+  - name: azureEnvName
+    displayName: Azure Developer CLI environment name
+    type: string
+    default: 'workshop-dev'
+
+variables:
+  - name: AZURE_LOCATION
+    value: canadacentral
+
+stages:
+  - stage: Deploy
+    displayName: Deploy to workshop-dev
+    jobs:
+      - deployment: deploy_workshop_dev
+        displayName: azd up (workshop-dev)
+        environment: workshop-dev
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - checkout: self
+
+                - task: AzureCLI@2
+                  displayName: azd auth login + azd up (WIF)
+                  inputs:
+                    connectedServiceNameARM: 'sc-workshop-dev'
+                    azureSubscription: 'sc-workshop-dev'
+                    scriptType: bash
+                    scriptLocation: inlineScript
+                    addSpnToEnvironment: true
+                    inlineScript: |
+                      set -euo pipefail
+
+                      # Install Azure Developer CLI (azd) on the agent.
+                      curl -fsSL https://aka.ms/install-azd.sh | bash
+                      azd version
+
+                      # WIF identity exposed by addSpnToEnvironment: true
+                      export AZURE_CLIENT_ID="$servicePrincipalId"
+                      export AZURE_TENANT_ID="$tenantId"
+                      export AZURE_SUBSCRIPTION_ID="$(az account show --query id -o tsv)"
+
+                      # Reuse the WIF token from the AzureCLI service connection (no client secret).
+                      azd auth login \
+                        --client-id "$AZURE_CLIENT_ID" \
+                        --tenant-id "$AZURE_TENANT_ID" \
+                        --federated-credential-provider azure-pipelines
+
+                      # Create (or reuse) the azd environment for this build, then deploy.
+                      AZD_ENV_NAME="${{ parameters.azureEnvName }}-$(Build.BuildNumber)"
+                      azd env new "$AZD_ENV_NAME" \
+                        --no-prompt \
+                        --location "$(AZURE_LOCATION)" \
+                        --subscription "$AZURE_SUBSCRIPTION_ID" || true
+                      azd env select "$AZD_ENV_NAME"
+
+                      azd up --no-prompt

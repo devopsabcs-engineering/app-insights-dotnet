@@ -1,0 +1,70 @@
+# Builds the Jekyll site and publishes to GitHub Pages.
+# Triggered on pushes to main that touch site content (markdown, layouts, assets,
+# Gemfile) or on manual dispatch. Concurrency keeps only one Pages deploy in
+# flight at a time.
+name: pages
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "**/*.md"
+      - "fr/**"
+      - "assets/**"
+      - "images/**"
+      - "_includes/**"
+      - "_layouts/**"
+      - "_config.yml"
+      - "Gemfile"
+      - "Gemfile.lock"
+      - ".github/workflows/pages.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Build Jekyll site
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Setup Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: "3.3"
+          bundler-cache: true
+
+      - name: Configure Pages
+        id: pages
+        uses: actions/configure-pages@v5
+
+      - name: Build with Jekyll
+        run: bundle exec jekyll build --baseurl "/app-insights-dotnet"
+        env:
+          JEKYLL_ENV: production
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: ./_site
+
+  deploy:
+    name: Deploy to GitHub Pages
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy
+        id: deployment
+        uses: actions/deploy-pages@v4

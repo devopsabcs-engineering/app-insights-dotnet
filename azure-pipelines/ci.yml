@@ -1,0 +1,87 @@
+# azure-pipelines/ci.yml
+# CI pipeline for the MAPAQ App Insights .NET 10 bilingual workshop.
+# Mirrors .github/workflows/ci.yml: build + test on .NET 10, then bicep validation.
+# Authenticates to Azure exclusively via Workload Identity Federation (WIF) — no PAT, no client secret.
+
+trigger:
+  branches:
+    include:
+      - main
+
+pr:
+  branches:
+    include:
+      - main
+
+pool:
+  vmImage: ubuntu-latest
+
+variables:
+  - name: AZURE_LOCATION
+    value: canadacentral
+  - name: AZURE_ENV_NAME
+    value: workshop-dev
+  - name: DOTNET_VERSION
+    value: '10.0.x'
+
+stages:
+  - stage: Build
+    displayName: Build & Test (.NET 10)
+    jobs:
+      - job: build_test
+        displayName: dotnet build + test
+        steps:
+          - task: UseDotNet@2
+            displayName: Install .NET SDK $(DOTNET_VERSION)
+            inputs:
+              packageType: sdk
+              version: $(DOTNET_VERSION)
+
+          - script: dotnet restore
+            displayName: dotnet restore
+
+          - script: dotnet build --configuration Release --no-restore /warnaserror
+            displayName: dotnet build (warnaserror)
+
+          - script: dotnet test --configuration Release --no-build --logger trx --collect "XPlat Code Coverage"
+            displayName: dotnet test (with coverage)
+
+          - task: PublishTestResults@2
+            displayName: Publish test results
+            condition: succeededOrFailed()
+            inputs:
+              testResultsFormat: VSTest
+              testResultsFiles: '**/*.trx'
+              failTaskOnFailedTests: true
+
+          - task: PublishCodeCoverageResults@2
+            displayName: Publish code coverage
+            condition: succeededOrFailed()
+            inputs:
+              summaryFileLocation: '**/coverage.cobertura.xml'
+
+  - stage: Bicep
+    displayName: Bicep build + what-if
+    dependsOn: Build
+    condition: succeeded()
+    jobs:
+      - job: bicep_validate
+        displayName: bicep build + what-if
+        steps:
+          - task: AzureCLI@2
+            displayName: bicep build + az deployment sub what-if
+            inputs:
+              connectedServiceNameARM: 'sc-workshop-dev'
+              azureSubscription: 'sc-workshop-dev'
+              scriptType: bash
+              scriptLocation: inlineScript
+              addSpnToEnvironment: true
+              inlineScript: |
+                set -euo pipefail
+                az bicep upgrade
+                az bicep build --file infra/main.bicep
+                az deployment sub what-if \
+                  --location $(AZURE_LOCATION) \
+                  --template-file infra/main.bicep \
+                  --parameters infra/main.parameters.json \
+                  --parameters environmentName=$(AZURE_ENV_NAME)

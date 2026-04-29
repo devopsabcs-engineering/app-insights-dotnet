@@ -1,0 +1,11 @@
+EstablishmentId,Name,Address,City,Region,PostalCode,PermitType,ConvictionDate,AmountCad,ArticleCode,ArticleTitleFr,ArticleTitleEn
+1001,Restaurant Chez Marcel,123 rue Sainte-Catherine,Montreal,06-MONTREAL,H2X 1Z4,RESTAURANT,2025-02-14,1500.00,P-29-r.1-art.4,Hygiene et salubrite,Hygiene and sanitation
+1002,Casse-croute du Coin,45 avenue Royale,Quebec,03-CAPITALE-NATIONALE,G1R 2H7,CASSE-CROUTE,2025-04-22,800.00,P-29-r.1-art.7,Temperature de conservation,Storage temperature
+1003,Epicerie Sherbrooke,567 rue King Ouest,Sherbrooke,05-ESTRIE,J1H 1P3,EPICERIE,2024-11-08,2500.00,P-29-r.1-art.12,Etiquetage trompeur,Misleading labelling
+1004,Boulangerie Saint-Hyacinthe,89 rue des Cascades,Saint-Hyacinthe,16-MONTEREGIE,J2S 3J1,BOULANGERIE,2025-01-30,950.00,P-29-r.1-art.5,Proprete des lieux,Cleanliness of premises
+1005,Restaurant Le Manoir,12 chemin du Roy,Trois-Rivieres,04-MAURICIE,G9A 5H7,RESTAURANT,2025-03-11,1200.00,P-29-r.1-art.4,Hygiene et salubrite,Hygiene and sanitation
+1006,Poissonnerie du Vieux-Port,34 rue Saint-Pierre,Quebec,03-CAPITALE-NATIONALE,G1K 4A2,POISSONNERIE,2024-09-19,3200.00,P-29-r.1-art.9,Conservation produits frais,Fresh-product storage
+1007,Cafe Bistro Outaouais,78 promenade du Portage,Gatineau,07-OUTAOUAIS,J8X 2K3,RESTAURANT,2025-02-02,750.00,P-29-r.1-art.4,Hygiene et salubrite,Hygiene and sanitation
+1008,Marche Atwater,138 avenue Atwater,Montreal,06-MONTREAL,H4C 2H6,EPICERIE,2024-12-15,1850.00,P-29-r.1-art.12,Etiquetage trompeur,Misleading labelling
+1009,Restaurant Saguenay,200 rue Racine,Chicoutimi,02-SAGUENAY-LAC-SAINT-JEAN,G7H 1R2,RESTAURANT,2025-03-28,1100.00,P-29-r.1-art.7,Temperature de conservation,Storage temperature
+1010,Cantine Mont-Royal,500 avenue du Mont-Royal,Montreal,06-MONTREAL,H2J 1W7,CASSE-CROUTE,2025-04-04,650.00,P-29-r.1-art.5,Proprete des lieux,Cleanliness of premises

@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  MAPAQ App Insights .NET 10 Workshop — Open Graph social card (1200x630)
+  Bilingual EN+FR title using <text> elements (no <image>) so the card stays
+  language-agnostic and editable.
+  Palette tokens: graphite #1F2A37, leaf #16A34A, sky #3B82F6, orange #F97316.
+  No Quebec emblem, no MAPAQ trademark, no fleur-de-lys.
+-->
+<svg xmlns="http://www.w3.org/2000/svg"
+     viewBox="0 0 1200 630"
+     role="img"
+     aria-label="App Insights .NET 10 Workshop social card">
+  <title>App Insights .NET 10 Workshop — Atelier d'observabilite .NET 10</title>
+
+  <!-- Background (graphite) -->
+  <rect x="0" y="0" width="1200" height="630" fill="#1F2A37"/>
+
+  <!-- Decorative gradient band (sky -> leaf) -->
+  <defs>
+    <linearGradient id="bandGradient" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%"  stop-color="#3B82F6" stop-opacity="0.18"/>
+      <stop offset="100%" stop-color="#16A34A" stop-opacity="0.18"/>
+    </linearGradient>
+  </defs>
+  <rect x="0" y="0" width="1200" height="120" fill="url(#bandGradient)"/>
+  <rect x="0" y="510" width="1200" height="120" fill="url(#bandGradient)"/>
+
+  <!-- Left mark: scaled-down logo motif -->
+  <g transform="translate(80, 215)">
+    <rect x="0" y="0" width="200" height="200" rx="28" ry="28" fill="#0F172A"/>
+    <g stroke="#16A34A" stroke-width="5" stroke-linecap="round" fill="none">
+      <line x1="100" y1="30" x2="100" y2="170"/>
+      <line x1="100" y1="55" x2="78" y2="46"/>
+      <line x1="100" y1="55" x2="122" y2="46"/>
+      <line x1="100" y1="80" x2="72" y2="70"/>
+      <line x1="100" y1="80" x2="128" y2="70"/>
+      <line x1="100" y1="105" x2="72" y2="95"/>
+      <line x1="100" y1="105" x2="128" y2="95"/>
+      <line x1="100" y1="130" x2="78" y2="120"/>
+      <line x1="100" y1="130" x2="122" y2="120"/>
+    </g>
+    <polyline points="20,160 55,135 95,148 130,105 165,118 185,86"
+              fill="none" stroke="#3B82F6" stroke-width="6"
+              stroke-linecap="round" stroke-linejoin="round"/>
+    <circle cx="95"  cy="148" r="6" fill="#F97316"/>
+    <circle cx="130" cy="105" r="6" fill="#F97316"/>
+    <circle cx="165" cy="118" r="6" fill="#F97316"/>
+  </g>
+
+  <!-- Right column: bilingual title and subtitle -->
+  <g font-family="Segoe UI, -apple-system, Roboto, Open Sans, sans-serif"
+     fill="#F8FAFC">
+    <!-- EN title -->
+    <text x="320" y="240"
+          font-size="58" font-weight="700"
+          fill="#F8FAFC">App Insights .NET 10 Workshop</text>
+    <!-- Accent rule -->
+    <rect x="320" y="262" width="120" height="4" fill="#16A34A"/>
+    <!-- FR title -->
+    <text x="320" y="330"
+          font-size="46" font-weight="600"
+          fill="#CBD5E1">Atelier d'observabilite .NET 10</text>
+
+    <!-- Subtitle -->
+    <text x="320" y="400"
+          font-size="26" font-weight="400"
+          fill="#94A3B8">Hands-on observability with OpenTelemetry</text>
+    <text x="320" y="436"
+          font-size="26" font-weight="400"
+          fill="#94A3B8">Pratique avec OpenTelemetry et Application Insights</text>
+
+    <!-- Footer chip / hashtag-style label -->
+    <g transform="translate(320, 478)">
+      <rect x="0" y="0" width="220" height="38" rx="19" ry="19"
+            fill="none" stroke="#3B82F6" stroke-width="2"/>
+      <text x="110" y="25" text-anchor="middle"
+            font-size="18" font-weight="600" fill="#3B82F6">EN  •  FR</text>
+    </g>
+    <g transform="translate(560, 478)">
+      <rect x="0" y="0" width="260" height="38" rx="19" ry="19"
+            fill="none" stroke="#F97316" stroke-width="2"/>
+      <text x="130" y="25" text-anchor="middle"
+            font-size="18" font-weight="600" fill="#F97316">OpenTelemetry • .NET 10</text>
+    </g>
+  </g>
+</svg>

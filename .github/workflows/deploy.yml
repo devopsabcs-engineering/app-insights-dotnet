@@ -1,0 +1,63 @@
+# Provisions infra and deploys application code via azd. Manual dispatch or
+# automatic on push to main when src/, infra/, or azure.yaml change. Uses
+# OIDC federated credentials (no secrets) and gates on the workshop-dev
+# GitHub Environment for branch protection and reviewer approval.
+name: deploy
+
+on:
+  workflow_dispatch:
+    inputs:
+      azureEnvName:
+        description: "azd env name (defaults to vars.AZURE_ENV_NAME)"
+        required: false
+        type: string
+  push:
+    branches: [main]
+    paths:
+      - "src/**"
+      - "infra/**"
+      - "azure.yaml"
+      - ".github/workflows/deploy.yml"
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  deploy:
+    name: azd up
+    runs-on: ubuntu-latest
+    environment:
+      name: workshop-dev
+      url: ${{ steps.azd.outputs.endpoint }}
+    env:
+      AZURE_CLIENT_ID:       ${{ secrets.AZURE_CLIENT_ID }}
+      AZURE_TENANT_ID:       ${{ secrets.AZURE_TENANT_ID }}
+      AZURE_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+      AZURE_LOCATION:        ${{ vars.AZURE_LOCATION }}
+      AZURE_ENV_NAME:        ${{ inputs.azureEnvName || vars.AZURE_ENV_NAME }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Install azd
+        uses: Azure/setup-azd@v2
+
+      - name: azd auth login (OIDC)
+        run: |
+          azd auth login \
+            --client-id "$AZURE_CLIENT_ID" \
+            --tenant-id "$AZURE_TENANT_ID" \
+            --federated-credential-provider github
+
+      - name: azd provision + deploy
+        id: azd
+        run: |
+          azd env new "$AZURE_ENV_NAME" \
+            --no-prompt \
+            --location "$AZURE_LOCATION" \
+            --subscription "$AZURE_SUBSCRIPTION_ID" || true
+          azd env select "$AZURE_ENV_NAME"
+          azd up --no-prompt
+          endpoint=$(azd env get-values | grep -E '^WEB_URI=' | cut -d= -f2- | tr -d '"' || true)
+          echo "endpoint=$endpoint" >> "$GITHUB_OUTPUT"

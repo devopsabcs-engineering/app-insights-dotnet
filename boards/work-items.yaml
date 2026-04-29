@@ -1,0 +1,652 @@
+# boards/work-items.yaml
+#
+# Single source of truth for the MAPAQ App Insights .NET 10 bilingual workshop
+# Azure DevOps Boards backlog. The seed-ado-boards.ps1 script renders this
+# tree into Epics -> Features -> User Stories -> Tasks via `az boards`.
+#
+# Schema (schemaVersion: 1):
+#   epics:
+#     - key: <unique stable id, used for human cross-reference>
+#       title_en: <English title>
+#       title_fr: <French title>
+#       description: |
+#         <FR paragraph>
+#
+#         <EN paragraph>
+#       tags: [list, of, strings]
+#       features:
+#         - key/title_en/title_fr/description/tags
+#           stories:
+#             - key/title_en/title_fr/description/acceptance_criteria/tags
+#               tasks:
+#                 - key/title_en/title_fr/description/tags
+#
+# Conventions:
+#   * `key` values MUST be unique across the entire file (epic, feature,
+#     story, and task scopes share one namespace).
+#   * Every story carries `acceptance_criteria` written FR-first then EN.
+#   * The seeder renders System.Title as "<title_fr> -- <title_en>" so the
+#     French title appears first per the FR-default workshop rule.
+#   * Tags always include `workshop` and `app-insights` plus a module tag.
+
+schemaVersion: 1
+
+epics:
+
+  # ============================================================
+  # MODULE 0 -- SETUP (pre-flight tooling and access)
+  # ============================================================
+  - key: E-M0
+    title_en: "Module 0 -- Workshop setup and pre-flight"
+    title_fr: "Module 0 -- Mise en place et pre-vol de l'atelier"
+    description: |
+      FR : Vérifier les outils, l'accès Azure et la configuration azd avant
+      le début de l'atelier afin que chaque participant démarre du bon pied.
+
+      EN: Verify tooling, Azure access, and the azd environment bootstrap
+      before the workshop starts so every attendee begins on the right foot.
+    tags: [workshop, app-insights, module-0]
+    features:
+      - key: F-M0-1
+        title_en: "Local tooling installed"
+        title_fr: "Outils locaux installes"
+        description: |
+          FR : Chaque participant dispose des CLI requis localement.
+
+          EN: Every attendee has the required CLIs installed locally.
+        tags: [workshop, app-insights, module-0]
+        stories:
+          - key: S-M0-1
+            title_en: "Install .NET 10 SDK, azd, and Bicep CLI"
+            title_fr: "Installer le SDK .NET 10, azd et Bicep CLI"
+            description: |
+              FR : En tant que participant je veux tous les CLI installes
+              afin de pouvoir executer les laboratoires.
+
+              EN: As an attendee I want all CLIs installed so I can run the labs.
+            acceptance_criteria: |
+              FR :
+              - `dotnet --version` retourne 10.0 ou plus
+              - `azd version` retourne 1.10 ou plus
+              - `az bicep version` retourne 0.30 ou plus
+
+              EN:
+              - `dotnet --version` returns 10.0 or higher
+              - `azd version` returns 1.10 or higher
+              - `az bicep version` returns 0.30 or higher
+            tags: [workshop, app-insights, module-0]
+            tasks:
+              - key: T-M0-1
+                title_en: "Install .NET 10 SDK"
+                title_fr: "Installer le SDK .NET 10"
+                description: |
+                  FR : Installer le SDK .NET 10 GA depuis dot.net.
+
+                  EN: Install the .NET 10 GA SDK from dot.net.
+                tags: [workshop, app-insights, module-0]
+              - key: T-M0-2
+                title_en: "Install Azure Developer CLI (azd)"
+                title_fr: "Installer Azure Developer CLI (azd)"
+                description: |
+                  FR : Installer azd via winget, brew ou le script officiel.
+
+                  EN: Install azd via winget, brew, or the official script.
+                tags: [workshop, app-insights, module-0]
+              - key: T-M0-3
+                title_en: "Install Azure CLI plus Bicep extension"
+                title_fr: "Installer Azure CLI et l'extension Bicep"
+                description: |
+                  FR : Installer Azure CLI 2.60+ et `az bicep install`.
+
+                  EN: Install Azure CLI 2.60+ and run `az bicep install`.
+                tags: [workshop, app-insights, module-0]
+          - key: S-M0-2
+            title_en: "Verify Azure subscription access (Contributor role)"
+            title_fr: "Verifier l'acces a l'abonnement Azure (role Contributeur)"
+            description: |
+              FR : Le participant peut se connecter avec `az login` et voir
+              l'abonnement de l'atelier.
+
+              EN: The attendee can `az login` and see the workshop subscription.
+            acceptance_criteria: |
+              FR :
+              - `az account show` reussit
+              - L'utilisateur a le role Contributeur sur un groupe de ressources personnel
+
+              EN:
+              - `az account show` succeeds
+              - User holds Contributor on a personal resource group
+            tags: [workshop, app-insights, module-0]
+
+  # ============================================================
+  # MODULE 1 -- PROVISION baseline infra (Bicep + azd)
+  # ============================================================
+  - key: E-M1
+    title_en: "Module 1 -- Provision baseline infra (Bicep + azd)"
+    title_fr: "Module 1 -- Provisionner l'infrastructure de base (Bicep + azd)"
+    description: |
+      FR : Deployer App Service Linux (.NET 10), Azure SQL serverless,
+      Application Insights base sur espace de travail, et Key Vault via
+      `azd up`.
+
+      EN: Stand up App Service Linux (.NET 10), Azure SQL serverless,
+      workspace-based Application Insights, and Key Vault via `azd up`.
+    tags: [workshop, app-insights, module-1]
+    features:
+      - key: F-M1-1
+        title_en: "Bicep modules build and what-if cleanly"
+        title_fr: "Les modules Bicep compilent et what-if est propre"
+        description: |
+          FR : Tous les modules sous `infra/` compilent et passent un what-if
+          sans erreur.
+
+          EN: All modules under `infra/` build and pass `what-if` with no errors.
+        tags: [workshop, app-insights, module-1]
+        stories:
+          - key: S-M1-1
+            title_en: "Author Bicep for App Service Linux plus Plan"
+            title_fr: "Ecrire Bicep pour App Service Linux et Plan"
+            description: |
+              FR : Modules Bicep pour le plan B1 Linux et le site Web .NET 10.
+
+              EN: Bicep modules for the B1 Linux plan and the .NET 10 web site.
+            acceptance_criteria: |
+              FR :
+              - `az bicep build` reussit
+              - `az deployment sub what-if` n'affiche aucune erreur
+
+              EN:
+              - `az bicep build` succeeds
+              - `az deployment sub what-if` shows no errors
+            tags: [workshop, app-insights, module-1]
+          - key: S-M1-2
+            title_en: "Author Bicep for Azure SQL serverless plus database"
+            title_fr: "Ecrire Bicep pour Azure SQL serverless et base de donnees"
+            description: |
+              FR : Serveur SQL en authentification Microsoft Entra uniquement,
+              SKU GP_S_Gen5_1 avec mise en pause auto a 60 min.
+
+              EN: SQL server with Microsoft Entra-only auth, SKU GP_S_Gen5_1
+              with 60 minute auto-pause.
+            acceptance_criteria: |
+              FR :
+              - SQL utilise authentification Entra uniquement
+              - SKU = GP_S_Gen5_1 avec auto-pause 60 min
+
+              EN:
+              - SQL uses Microsoft Entra-only auth
+              - SKU = GP_S_Gen5_1 with 60-minute auto-pause
+            tags: [workshop, app-insights, module-1]
+          - key: S-M1-3
+            title_en: "Author Bicep for App Insights (workspace-based) and Log Analytics"
+            title_fr: "Ecrire Bicep pour App Insights (espace de travail) et Log Analytics"
+            description: |
+              FR : Composant App Insights base sur Log Analytics, pas classique.
+
+              EN: Workspace-based Application Insights component, not classic.
+            acceptance_criteria: |
+              FR :
+              - Composant base sur espace de travail (pas classique)
+              - Echantillonnage = 100 % pour l'atelier
+
+              EN:
+              - Component is workspace-based, not classic
+              - Sampling = 100% for the workshop
+            tags: [workshop, app-insights, module-1]
+          - key: S-M1-4
+            title_en: "Author Bicep for Key Vault with RBAC"
+            title_fr: "Ecrire Bicep pour Key Vault avec RBAC"
+            description: |
+              FR : Key Vault en mode RBAC, identite gere par le systeme du
+              site Web obtient `Key Vault Secrets User`.
+
+              EN: Key Vault in RBAC mode, web app system-assigned managed
+              identity granted `Key Vault Secrets User`.
+            acceptance_criteria: |
+              FR :
+              - Mode RBAC (pas de politiques d'acces)
+              - MI systeme du site Web a `Key Vault Secrets User`
+
+              EN:
+              - RBAC mode (no access policies)
+              - Web app system-assigned MI has `Key Vault Secrets User`
+            tags: [workshop, app-insights, module-1]
+      - key: F-M1-2
+        title_en: "azd up succeeds end-to-end"
+        title_fr: "azd up reussit de bout en bout"
+        description: |
+          FR : `azd up` provisionne et deploie sans intervention manuelle.
+
+          EN: `azd up` provisions and deploys without manual steps.
+        tags: [workshop, app-insights, module-1]
+        stories:
+          - key: S-M1-5
+            title_en: "azd up succeeds end-to-end in workshop-dev"
+            title_fr: "azd up reussit de bout en bout dans workshop-dev"
+            description: |
+              FR : Le pipeline `deploy.yml` est vert et l'URL Web repond 200.
+
+              EN: The `deploy.yml` pipeline is green and the web URL returns 200.
+            acceptance_criteria: |
+              FR :
+              - Action GitHub `deploy` verte
+              - URL du site repond HTTP 200
+
+              EN:
+              - `deploy` GitHub Action green
+              - Web URL responds HTTP 200
+            tags: [workshop, app-insights, module-1]
+
+  # ============================================================
+  # MODULE 2 -- INSTRUMENT WEB
+  # ============================================================
+  - key: E-M2
+    title_en: "Module 2 -- Instrument the web app with App Insights"
+    title_fr: "Module 2 -- Instrumenter l'app Web avec App Insights"
+    description: |
+      FR : Cabler la telemetrie cote serveur dans l'application Web Razor
+      avec Microsoft.ApplicationInsights.AspNetCore.
+
+      EN: Wire server-side telemetry into the Razor web app with
+      Microsoft.ApplicationInsights.AspNetCore.
+    tags: [workshop, app-insights, module-2]
+    features:
+      - key: F-M2-1
+        title_en: "Server-side telemetry wired"
+        title_fr: "Telemetrie cote serveur cablee"
+        description: |
+          FR : Requetes, exceptions et dependances visibles dans Live Metrics.
+
+          EN: Requests, exceptions, and dependencies visible in Live Metrics.
+        tags: [workshop, app-insights, module-2]
+        stories:
+          - key: S-M2-1
+            title_en: "Add AddApplicationInsightsTelemetry with Key Vault connection string"
+            title_fr: "Ajouter AddApplicationInsightsTelemetry avec chaine via Key Vault"
+            description: |
+              FR : Lire la chaine de connexion App Insights depuis Key Vault
+              via l'identite gere.
+
+              EN: Read the App Insights connection string from Key Vault via
+              managed identity.
+            acceptance_criteria: |
+              FR :
+              - Chaine de connexion lue depuis Key Vault via MI
+              - Live Metrics affiche les requetes en temps reel
+
+              EN:
+              - Connection string read from Key Vault via MI
+              - Live Metrics shows real-time requests
+            tags: [workshop, app-insights, module-2]
+          - key: S-M2-2
+            title_en: "Customize TelemetryInitializer for cloud_RoleName"
+            title_fr: "Personnaliser TelemetryInitializer pour cloud_RoleName"
+            description: |
+              FR : Definir `cloud_RoleName` pour distinguer Web et API dans
+              la carte d'application.
+
+              EN: Set `cloud_RoleName` so Web and API show as distinct nodes
+              in the Application Map.
+            acceptance_criteria: |
+              FR :
+              - Carte d'application montre des noeuds nommes "web" et "api"
+
+              EN:
+              - Application Map shows nodes named "web" and "api"
+            tags: [workshop, app-insights, module-2]
+
+  # ============================================================
+  # MODULE 3 -- INSTRUMENT API + SQL
+  # ============================================================
+  - key: E-M3
+    title_en: "Module 3 -- Instrument the API and SQL dependency"
+    title_fr: "Module 3 -- Instrumenter l'API et la dependance SQL"
+    description: |
+      FR : Ajouter le tracage distribue OpenTelemetry a l'API et capturer
+      la dependance SQL en toute securite.
+
+      EN: Add OpenTelemetry distributed tracing to the API and capture the
+      SQL dependency safely.
+    tags: [workshop, app-insights, module-3]
+    features:
+      - key: F-M3-1
+        title_en: "Distributed tracing across Web -> API -> SQL"
+        title_fr: "Tracage distribue Web -> API -> SQL"
+        description: |
+          FR : Operation_Id correle les trois niveaux dans App Insights.
+
+          EN: Operation_Id correlates all three tiers inside App Insights.
+        tags: [workshop, app-insights, module-3]
+        stories:
+          - key: S-M3-1
+            title_en: "Add OpenTelemetry exporter to App Insights for the API"
+            title_fr: "Ajouter l'exportateur OpenTelemetry vers App Insights pour l'API"
+            description: |
+              FR : Cabler `Azure.Monitor.OpenTelemetry.AspNetCore` dans le
+              projet API.
+
+              EN: Wire `Azure.Monitor.OpenTelemetry.AspNetCore` into the API.
+            acceptance_criteria: |
+              FR :
+              - Carte d'application affiche Web -> API -> SQL
+              - Operation_Id partage entre les trois
+
+              EN:
+              - Application Map shows Web -> API -> SQL
+              - Operation_Id shared across all three
+            tags: [workshop, app-insights, module-3]
+          - key: S-M3-2
+            title_en: "Capture SQL command text safely (sanitized)"
+            title_fr: "Capturer le texte SQL de maniere securisee (assaini)"
+            description: |
+              FR : Activer la capture du texte SQL avec assainissement des
+              parametres.
+
+              EN: Enable SQL command-text capture with parameter sanitization.
+            acceptance_criteria: |
+              FR :
+              - Texte SQL visible dans les details de dependance
+              - Aucun parametre brut n'apparait
+
+              EN:
+              - SQL command text visible in dependency details
+              - No raw parameter values surface
+            tags: [workshop, app-insights, module-3]
+
+  # ============================================================
+  # MODULE 4 -- BROWSER + END-TO-END CORRELATION
+  # ============================================================
+  - key: E-M4
+    title_en: "Module 4 -- Browser SDK and end-to-end correlation"
+    title_fr: "Module 4 -- SDK navigateur et correlation de bout en bout"
+    description: |
+      FR : Charger le SDK JavaScript App Insights et propager `traceparent`
+      du navigateur a l'API.
+
+      EN: Load the App Insights JavaScript SDK and propagate `traceparent`
+      from browser to API.
+    tags: [workshop, app-insights, module-4]
+    features:
+      - key: F-M4-1
+        title_en: "JS SDK loaded and correlation working"
+        title_fr: "SDK JS charge et correlation fonctionnelle"
+        description: |
+          FR : Snippet JS injecte dans `_Layout` et en-tetes de correlation
+          actifs.
+
+          EN: JS snippet injected into `_Layout` and correlation headers active.
+        tags: [workshop, app-insights, module-4]
+        stories:
+          - key: S-M4-1
+            title_en: "Inject Application Insights JS snippet from Razor _Layout"
+            title_fr: "Injecter le snippet JS App Insights depuis Razor _Layout"
+            description: |
+              FR : Ajouter le snippet officiel dans `_Layout.cshtml`.
+
+              EN: Add the official snippet to `_Layout.cshtml`.
+            acceptance_criteria: |
+              FR :
+              - Telemetrie pageView, ajax et exception visible
+
+              EN:
+              - pageView, ajax, and exception telemetry visible
+            tags: [workshop, app-insights, module-4]
+          - key: S-M4-2
+            title_en: "End-to-end transaction view: click -> request -> SQL"
+            title_fr: "Vue de transaction de bout en bout : clic -> requete -> SQL"
+            description: |
+              FR : Une seule transaction couvre clic navigateur, requete
+              API et appel SQL.
+
+              EN: A single transaction spans browser click, API request, and
+              SQL call.
+            acceptance_criteria: |
+              FR :
+              - Vue End-to-end transaction affiche les trois sauts
+              - `traceparent` propage correctement
+
+              EN:
+              - End-to-end transaction view shows all three hops
+              - `traceparent` propagates correctly
+            tags: [workshop, app-insights, module-4]
+
+  # ============================================================
+  # MODULE 5 -- DASHBOARDS, WORKBOOKS, ALERTS
+  # ============================================================
+  - key: E-M5
+    title_en: "Module 5 -- Dashboards, workbooks, and alerts"
+    title_fr: "Module 5 -- Tableaux de bord, classeurs et alertes"
+    description: |
+      FR : Construire un tableau de bord partage, un classeur KQL et des
+      alertes intelligentes pour la sante du service.
+
+      EN: Build a shared dashboard, a KQL workbook, and smart alerts for
+      service health.
+    tags: [workshop, app-insights, module-5]
+    features:
+      - key: F-M5-1
+        title_en: "Workbook and dashboard published"
+        title_fr: "Classeur et tableau de bord publies"
+        description: |
+          FR : Visualisations partagees pour les operations en echec.
+
+          EN: Shared visualizations for failed operations.
+        tags: [workshop, app-insights, module-5]
+        stories:
+          - key: S-M5-1
+            title_en: "Author Workbook (KQL) for top failed operations"
+            title_fr: "Creer un classeur (KQL) pour les operations en echec les plus frequentes"
+            description: |
+              FR : Classeur KQL filtrable par role et periode.
+
+              EN: KQL workbook filterable by role and time range.
+            acceptance_criteria: |
+              FR :
+              - Classeur enregistre dans le groupe de ressources de l'atelier
+
+              EN:
+              - Workbook saved into the workshop resource group
+            tags: [workshop, app-insights, module-5]
+      - key: F-M5-2
+        title_en: "Alerts firing on real signals"
+        title_fr: "Alertes declenchees sur des signaux reels"
+        description: |
+          FR : Detection intelligente plus alertes journal KQL.
+
+          EN: Smart-detection plus KQL log alerts.
+        tags: [workshop, app-insights, module-5]
+        stories:
+          - key: S-M5-2
+            title_en: "Smart-detect anomaly alert on failure rate"
+            title_fr: "Alerte de detection intelligente sur le taux d'echec"
+            description: |
+              FR : Activer la detection intelligente sur les requetes en
+              echec et router vers un groupe d'action courriel.
+
+              EN: Enable smart detection on failed requests and route to an
+              email action group.
+            acceptance_criteria: |
+              FR :
+              - Groupe d'action envoie un courriel
+              - Alerte visible dans Azure Monitor
+
+              EN:
+              - Action group sends an email
+              - Alert visible in Azure Monitor
+            tags: [workshop, app-insights, module-5]
+          - key: S-M5-3
+            title_en: "Log alert (KQL) for SQL timeout > 1s p95"
+            title_fr: "Alerte journal (KQL) pour timeout SQL > 1s p95"
+            description: |
+              FR : Alerte sur p95 latence SQL au-dela d'un seuil.
+
+              EN: Alert on p95 SQL latency above a threshold.
+            acceptance_criteria: |
+              FR :
+              - Requete KQL evaluee toutes les 5 minutes
+
+              EN:
+              - KQL query evaluated every 5 minutes
+            tags: [workshop, app-insights, module-5]
+
+  # ============================================================
+  # MODULE 6 -- TEARDOWN
+  # ============================================================
+  - key: E-M6
+    title_en: "Module 6 -- Teardown and cost hygiene"
+    title_fr: "Module 6 -- Demantelement et hygiene de couts"
+    description: |
+      FR : Tout demanteler proprement et purger Key Vault pour eviter les
+      collisions de noms et les couts residuels.
+
+      EN: Tear everything down cleanly and purge Key Vault to avoid name
+      collisions and residual cost.
+    tags: [workshop, app-insights, module-6]
+    features:
+      - key: F-M6-1
+        title_en: "Automated teardown"
+        title_fr: "Demantelement automatise"
+        description: |
+          FR : Le workflow `teardown.yml` execute `azd down --purge --force`.
+
+          EN: The `teardown.yml` workflow runs `azd down --purge --force`.
+        tags: [workshop, app-insights, module-6]
+        stories:
+          - key: S-M6-1
+            title_en: "Run teardown.yml to azd down --purge --force"
+            title_fr: "Executer teardown.yml pour azd down --purge --force"
+            description: |
+              FR : Demantelement complet du groupe de ressources et purge
+              du Key Vault soft-deleted.
+
+              EN: Full resource-group teardown and purge of soft-deleted Key
+              Vault.
+            acceptance_criteria: |
+              FR :
+              - Groupe de ressources entierement supprime
+              - Key Vault soft-deleted purge
+
+              EN:
+              - Resource group fully deleted
+              - Soft-deleted Key Vault purged
+            tags: [workshop, app-insights, module-6]
+
+  # ============================================================
+  # SPANNING EPIC -- META-WORKSHOP (workshop about the workshop)
+  # ============================================================
+  - key: E-META
+    title_en: "Meta -- Workshop-about-the-workshop"
+    title_fr: "Meta -- Atelier sur l'atelier"
+    description: |
+      FR : Suivre le travail transverse pour livrer l'atelier lui-meme :
+      logistique, planification, retroaction et amelioration continue.
+
+      EN: Track the cross-cutting work to deliver the workshop itself:
+      logistics, planning, feedback, and continuous improvement.
+    tags: [workshop, app-insights, meta]
+    features:
+      - key: F-META-1
+        title_en: "Workshop logistics and feedback"
+        title_fr: "Logistique et retroaction de l'atelier"
+        description: |
+          FR : Inscriptions, agenda, sondages et retroaction post-atelier.
+
+          EN: Sign-ups, agenda, surveys, and post-workshop feedback.
+        tags: [workshop, app-insights, meta]
+        stories:
+          - key: S-META-1
+            title_en: "Publish workshop agenda and pre-reads in EN and FR"
+            title_fr: "Publier l'agenda et les lectures prealables en FR et EN"
+            description: |
+              FR : Page Jekyll bilingue avec horaire, prerequis et liens
+              vers la documentation.
+
+              EN: Bilingual Jekyll page with schedule, prerequisites, and
+              documentation links.
+            acceptance_criteria: |
+              FR :
+              - Page FR et EN deployee via GitHub Pages
+              - Lien partage avec les participants 7 jours avant
+
+              EN:
+              - FR and EN page deployed through GitHub Pages
+              - Link shared with attendees 7 days before
+            tags: [workshop, app-insights, meta]
+          - key: S-META-2
+            title_en: "Collect post-workshop survey and triage feedback"
+            title_fr: "Recueillir le sondage post-atelier et trier la retroaction"
+            description: |
+              FR : Sondage envoye sous 24 h, resultats agreges et issues
+              creees pour les ameliorations prioritaires.
+
+              EN: Survey sent within 24 h, results aggregated, and issues
+              opened for priority improvements.
+            acceptance_criteria: |
+              FR :
+              - Taux de reponse >= 50 %
+              - Issues GitHub creees pour chaque action
+
+              EN:
+              - Response rate >= 50%
+              - GitHub issues opened for each action item
+            tags: [workshop, app-insights, meta]
+
+  # ============================================================
+  # SPANNING EPIC -- CONTENT AUTHORING (bilingual labs, Jekyll)
+  # ============================================================
+  - key: E-CONTENT
+    title_en: "Content -- Bilingual content authoring and quality"
+    title_fr: "Contenu -- Redaction bilingue et qualite du contenu"
+    description: |
+      FR : Garantir que tout le contenu (laboratoires, captures, exemples
+      de code) est bilingue, lint-propre et sans liens morts.
+
+      EN: Ensure all content (labs, screenshots, code samples) is bilingual,
+      lint-clean, and free of dead links.
+    tags: [workshop, app-insights, content]
+    features:
+      - key: F-CONTENT-1
+        title_en: "Bilingual lab parity"
+        title_fr: "Parite des laboratoires bilingues"
+        description: |
+          FR : Chaque laboratoire `docs/` a son miroir `fr/` synchronise.
+
+          EN: Every `docs/` lab has a synchronized mirror under `fr/`.
+        tags: [workshop, app-insights, content]
+        stories:
+          - key: S-CONTENT-1
+            title_en: "Enforce bilingual parity in CI (front-matter validator)"
+            title_fr: "Imposer la parite bilingue dans CI (validateur front-matter)"
+            description: |
+              FR : Le lint Jekyll echoue si une page existe en EN sans son
+              equivalent FR ou inversement.
+
+              EN: Jekyll lint fails if a page exists in EN without its FR
+              counterpart or vice versa.
+            acceptance_criteria: |
+              FR :
+              - CI rouge si parite cassee
+              - Message d'erreur indique la page manquante
+
+              EN:
+              - CI red when parity is broken
+              - Error message names the missing page
+            tags: [workshop, app-insights, content]
+          - key: S-CONTENT-2
+            title_en: "Markdown lint and link check pass on all labs"
+            title_fr: "Lint Markdown et verification de liens passent sur tous les labs"
+            description: |
+              FR : `markdownlint-cli2` et `lychee` (ou equivalent) executes
+              en CI sur `docs/`, `fr/` et la racine.
+
+              EN: `markdownlint-cli2` and `lychee` (or equivalent) run in CI
+              over `docs/`, `fr/`, and the repo root.
+            acceptance_criteria: |
+              FR :
+              - Aucun lien mort dans la sortie CI
+              - Aucun avertissement markdownlint non resolu
+
+              EN:
+              - No dead links in CI output
+              - No unresolved markdownlint warnings
+            tags: [workshop, app-insights, content]

@@ -1,0 +1,61 @@
+@page
+@model Mapaq.Web.Pages.Inspections.RollupModel
+@{
+    var fr = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "fr";
+    ViewData["Title"] = fr ? "Tableau de bord régional" : "Regional dashboard";
+}
+
+<h1>@(fr ? "Tableau de bord régional" : "Regional inspection dashboard")</h1>
+
+<form method="get">
+    <label for="region">@(fr ? "Région" : "Region")</label>
+    <select id="region" name="region">
+        @foreach (var region in Model.AvailableRegions)
+        {
+            <option value="@region" selected="@(region == Model.Region)">@region</option>
+        }
+    </select>
+
+    <label for="year">@(fr ? "Année" : "Year")</label>
+    <select id="year" name="year">
+        @foreach (var y in Model.AvailableYears)
+        {
+            <option value="@y" selected="@(y == Model.Year)">@y</option>
+        }
+    </select>
+
+    <button type="submit">@(fr ? "Afficher" : "Show")</button>
+</form>
+
+@if (Model.Rows.Count == 0)
+{
+    <p>@(fr ? "Aucune donnée pour cette sélection." : "No data for this selection.")</p>
+}
+else
+{
+    var max = Model.Rows.Max(r => r.Value);
+    <table>
+        <thead>
+            <tr>
+                <th>@(fr ? "Mois" : "Month")</th>
+                <th>@(fr ? "Indicateur" : "Indicator")</th>
+                <th>@(fr ? "Valeur" : "Value")</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var row in Model.Rows)
+            {
+                var pct = max == 0 ? 0 : (int)(row.Value * 100 / max);
+                <tr>
+                    <td>@row.Month</td>
+                    <td>@row.IndicatorCode</td>
+                    <td>@row.Value.ToString("0.##")</td>
+                    <td>
+                        <div style="background:#0078d4;height:14px;width:@(pct)%"></div>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}

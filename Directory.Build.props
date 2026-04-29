@@ -1,0 +1,13 @@
+<Project>
+  <PropertyGroup>
+    <!--
+      Workshop-only setting: NuGetAudit surfaces transitive CVEs inside the
+      Distro's own dependency closure (e.g. OpenTelemetry.Api 1.14.0,
+      System.Security.Cryptography.Xml 9.0.0) which we cannot patch ourselves.
+      Disabling the audit keeps `dotnet build /warnaserror` green for the
+      workshop. Real production projects should re-enable this and pin
+      transitive versions explicitly.
+    -->
+    <NuGetAudit>false</NuGetAudit>
+  </PropertyGroup>
+</Project>

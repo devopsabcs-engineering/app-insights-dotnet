@@ -1,0 +1,57 @@
+# Tears down a workshop azd environment with azd down --purge --force.
+# Manual dispatch only — each attendee passes their own env name. Gated on the
+# workshop-teardown GitHub Environment (configure required reviewers in repo
+# settings, see boards/README.md and labs/lab-00-setup.md).
+name: teardown
+
+on:
+  workflow_dispatch:
+    inputs:
+      azureEnvName:
+        description: "azd env name to destroy (each attendee passes their own)"
+        required: true
+        type: string
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  teardown:
+    name: azd down
+    runs-on: ubuntu-latest
+    environment:
+      name: workshop-teardown
+    env:
+      AZURE_CLIENT_ID:       ${{ secrets.AZURE_CLIENT_ID }}
+      AZURE_TENANT_ID:       ${{ secrets.AZURE_TENANT_ID }}
+      AZURE_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+      AZURE_ENV_NAME:        ${{ inputs.azureEnvName }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Install azd
+        uses: Azure/setup-azd@v2
+
+      - name: azd auth login (OIDC)
+        run: |
+          azd auth login \
+            --client-id "$AZURE_CLIENT_ID" \
+            --tenant-id "$AZURE_TENANT_ID" \
+            --federated-credential-provider github
+
+      - name: azd env select
+        run: |
+          azd env select "$AZURE_ENV_NAME" || \
+            azd env new "$AZURE_ENV_NAME" \
+              --no-prompt \
+              --subscription "$AZURE_SUBSCRIPTION_ID"
+
+      - name: azd down --purge --force
+        run: azd down --environment "$AZURE_ENV_NAME" --purge --force --no-prompt
+
+      # Belt-and-braces fallback if azd state was missing or partial.
+      - name: Force RG delete (no-op if already gone)
+        if: always()
+        run: az group delete --name "rg-$AZURE_ENV_NAME" --yes --no-wait || true

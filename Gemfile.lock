@@ -1,0 +1,6 @@
+# This file is intentionally left as a placeholder.
+# It will be populated automatically by `bundle install` either locally or in CI
+# (see .github/workflows/deploy-pages.yml). Committing an empty Gemfile.lock
+# avoids spurious "untracked Gemfile.lock" warnings on first checkout while
+# letting the CI runner resolve the actual dependency graph against the
+# Gemfile pinned in this repo.

@@ -1,0 +1,49 @@
+@page
+@model Mapaq.Web.Pages.Etablissements.IndexModel
+@{
+    var fr = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "fr";
+    ViewData["Title"] = fr ? "Rechercher un établissement" : "Search establishments";
+}
+
+<h1>@(fr ? "Rechercher un établissement" : "Search establishments")</h1>
+
+<form method="get">
+    <label for="city">@(fr ? "Municipalité" : "City")</label>
+    <input id="city" name="city" value="@Model.City" />
+
+    <label for="region">@(fr ? "Région administrative" : "Administrative region")</label>
+    <input id="region" name="region" value="@Model.Region" />
+
+    <button type="submit">@(fr ? "Rechercher" : "Search")</button>
+</form>
+
+@if (Model.Results.Count == 0)
+{
+    <p>@(fr ? "Aucun résultat" : "No results")</p>
+}
+else
+{
+    <table>
+        <thead>
+            <tr>
+                <th>@(fr ? "Nom" : "Name")</th>
+                <th>@(fr ? "Adresse" : "Address")</th>
+                <th>@(fr ? "Municipalité" : "City")</th>
+                <th>@(fr ? "Région" : "Region")</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var e in Model.Results)
+            {
+                <tr>
+                    <td>@e.Name</td>
+                    <td>@e.Address</td>
+                    <td>@e.City</td>
+                    <td>@e.Region</td>
+                    <td><a asp-page="/Etablissements/Detail" asp-route-id="@e.EstablishmentId">@(fr ? "Voir la fiche" : "View details")</a></td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}

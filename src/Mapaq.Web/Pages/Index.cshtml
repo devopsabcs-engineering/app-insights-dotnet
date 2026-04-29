@@ -1,0 +1,33 @@
+@page
+@model Mapaq.Web.Pages.IndexModel
+@{
+    var fr = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "fr";
+    ViewData["Title"] = fr ? "Accueil" : "Home";
+}
+
+<h1>@(fr ? "Inspecteur·rice MAPAQ" : "MAPAQ Inspector")</h1>
+
+@if (fr)
+{
+    <p>
+        Application de démonstration inspirée des données ouvertes du Ministère
+        de l'Agriculture, des Pêcheries et de l'Alimentation du Québec.
+        Recherchez un établissement, consultez les condamnations et les
+        suspensions de permis, et visualisez le tableau de bord régional
+        d'inspection.
+    </p>
+}
+else
+{
+    <p>
+        Demo application inspired by the open data published by the Quebec
+        Ministry of Agriculture, Fisheries and Food. Search establishments,
+        review convictions and permit suspensions, and explore the regional
+        inspection dashboard.
+    </p>
+}
+
+<ul>
+    <li><a asp-page="/Etablissements/Index">@(fr ? "Rechercher un établissement alimentaire" : "Search for a food establishment")</a></li>
+    <li><a asp-page="/Inspections/Rollup">@(fr ? "Tableau de bord régional" : "Regional dashboard")</a></li>
+</ul>

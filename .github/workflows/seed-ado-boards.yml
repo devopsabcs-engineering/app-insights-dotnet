@@ -1,0 +1,48 @@
+# Seeds an Azure DevOps project with the workshop work item hierarchy by
+# invoking boards/seed-ado-boards.ps1. Manual dispatch only — facilitator runs
+# this once per cohort against an empty ADO project. Auth via OIDC federated
+# credential to a service principal granted ADO access (or via AZDO_PAT env if
+# the team prefers PAT-based auth — see boards/README.md).
+name: seed-ado-boards
+
+on:
+  workflow_dispatch:
+    inputs:
+      org:
+        description: "Azure DevOps organization name (e.g. contoso)"
+        required: true
+        type: string
+      project:
+        description: "Azure DevOps project name"
+        required: true
+        type: string
+      iteration:
+        description: 'Iteration path (e.g. "MyProj\\Sprint 1")'
+        required: false
+        type: string
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  seed:
+    name: Seed work items
+    runs-on: ubuntu-latest
+    environment: workshop-boards
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Install Azure DevOps CLI extension
+        run: az extension add --name azure-devops --upgrade --only-show-errors
+
+      - name: Run seed script
+        shell: pwsh
+        env:
+          AZURE_DEVOPS_EXT_PAT: ${{ secrets.AZDO_PAT }}
+        run: |
+          ./boards/seed-ado-boards.ps1 `
+            -Organization '${{ inputs.org }}' `
+            -Project '${{ inputs.project }}' `
+            -Iteration '${{ inputs.iteration }}'

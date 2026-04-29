@@ -1,0 +1,76 @@
+# Rebuilds the EN + FR decks (HTML via Reveal.js, PPTX via python-pptx, PNG
+# diagrams via mermaid-cli) when any source under slides/ changes. Commits the
+# regenerated artefacts under docs/ back to main so GitHub Pages republishes.
+name: build-decks
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - "slides/**"
+      - ".github/workflows/build-decks.yml"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: build-decks
+  cancel-in-progress: false
+
+jobs:
+  build:
+    name: Render decks (EN + FR)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: "20"
+
+      - name: Install Node dependencies
+        working-directory: slides/build
+        run: npm ci
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install Python dependencies
+        run: pip install -r slides/build/requirements.txt
+
+      - name: Render Mermaid diagrams to PNG
+        run: node slides/build/render-mermaid.mjs
+
+      - name: Build HTML + PPTX decks per language
+        run: |
+          for lang in en fr; do
+            echo "::group::Building deck for $lang"
+            DECK_LANG="$lang" node slides/build/build-html-deck.mjs
+            DECK_LANG="$lang" python slides/build/build-pptx-deck.py
+            echo "::endgroup::"
+          done
+
+      - name: Commit regenerated decks back to main
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: "chore(decks): regenerate HTML + PPTX [skip ci]"
+          commit_user_name: github-actions[bot]
+          commit_user_email: 41898282+github-actions[bot]@users.noreply.github.com
+          file_pattern: |
+            docs/app-insights-dotnet*.html
+            docs/decks/*.pptx
+            docs/decks/assets/*.png
+
+      - name: Upload decks as workflow artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: decks
+          path: |
+            docs/app-insights-dotnet*.html
+            docs/decks/*.pptx
+            docs/decks/assets/*.png
