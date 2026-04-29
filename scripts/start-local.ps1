@@ -45,7 +45,8 @@ param(
     [string]$ConnectionString,
     [string]$SqlConnectionString,
     [switch]$NoBuild,
-    [switch]$NoBrowser
+    [switch]$NoBrowser,
+    [switch]$SkipDevCertTrust
 )
 
 $ErrorActionPreference = 'Stop'
@@ -61,6 +62,36 @@ $WebUrl     = 'https://localhost:7010'
 
 if (-not (Test-Path $ApiProject)) { throw "Cannot find $ApiProject" }
 if (-not (Test-Path $WebProject)) { throw "Cannot find $WebProject" }
+
+# Ensure ASP.NET Core dev cert is present and trusted, otherwise the typed
+# HttpClient in Mapaq.Web fails with UntrustedRoot when calling Mapaq.Api on
+# https://localhost:7020. `--check --trust` exits non-zero when action is
+# needed; `--trust` then installs and trusts the cert (may prompt UAC).
+if (-not $SkipDevCertTrust) {
+    Write-Host "Checking ASP.NET Core dev certificate..." -ForegroundColor Cyan
+    & dotnet dev-certs https --check --trust *> $null
+    if ($LASTEXITCODE -ne 0) {
+        Write-Host "Trusting ASP.NET Core dev certificate (may prompt UAC)..." -ForegroundColor Yellow
+        & dotnet dev-certs https --trust
+        if ($LASTEXITCODE -ne 0) {
+            Write-Warning "dotnet dev-certs https --trust returned $LASTEXITCODE. Web -> API HTTPS calls may fail with UntrustedRoot."
+        }
+    } else {
+        Write-Host "Dev certificate already trusted." -ForegroundColor Green
+    }
+}
+
+# Create empty wwwroot folders so the StaticFileMiddleware does not warn at
+# startup. They are intentionally empty for the workshop demo (no bundled
+# static assets); add CSS / JS here as the labs progress.
+foreach ($wwwroot in @(
+    (Join-Path $RepoRoot 'src/Mapaq.Web/wwwroot'),
+    (Join-Path $RepoRoot 'src/Mapaq.Api/wwwroot'))) {
+    if (-not (Test-Path $wwwroot)) {
+        New-Item -ItemType Directory -Path $wwwroot -Force | Out-Null
+        New-Item -ItemType File -Path (Join-Path $wwwroot '.gitkeep') -Force | Out-Null
+    }
+}
 
 if (-not $NoBuild) {
     Write-Host "Building solution..." -ForegroundColor Cyan
