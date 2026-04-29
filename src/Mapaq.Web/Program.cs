@@ -97,6 +97,30 @@ app.UseStaticFiles();
 app.UseRequestLocalization(app.Services.GetRequiredService<IOptions<RequestLocalizationOptions>>().Value);
 app.UseRouting();
 app.UseAuthorization();
+
+// Language switcher endpoint: writes the AspNetCore.Culture cookie so
+// CookieRequestCultureProvider picks it up on subsequent requests.
+app.MapGet("/setlang", (string culture, string? returnUrl, HttpContext ctx) =>
+{
+    var supported = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "fr-CA", "en-CA" };
+    if (!supported.Contains(culture))
+    {
+        culture = "fr-CA";
+    }
+    ctx.Response.Cookies.Append(
+        Microsoft.AspNetCore.Localization.CookieRequestCultureProvider.DefaultCookieName,
+        Microsoft.AspNetCore.Localization.CookieRequestCultureProvider.MakeCookieValue(
+            new Microsoft.AspNetCore.Localization.RequestCulture(culture)),
+        new CookieOptions
+        {
+            Expires = DateTimeOffset.UtcNow.AddYears(1),
+            IsEssential = true,
+            HttpOnly = false,
+            SameSite = SameSiteMode.Lax
+        });
+    return Results.LocalRedirect(string.IsNullOrWhiteSpace(returnUrl) ? "~/" : returnUrl);
+});
+
 app.MapRazorPages();
 
 app.Run();

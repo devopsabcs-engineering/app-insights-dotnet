@@ -1,59 +1,78 @@
 @page
+@using System.Globalization
+@using Microsoft.AspNetCore.Mvc.Localization
 @model Mapaq.Web.Pages.Inspections.RollupModel
+@inject IHtmlLocalizer<Mapaq.Web.Resources.SharedResource> L
 @{
-    var fr = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "fr";
-    ViewData["Title"] = fr ? "Tableau de bord régional" : "Regional dashboard";
+    ViewData["Title"] = L["Rollup.Title"].Value;
+    var hasRows = Model.Rows.Count > 0;
+    var maxValue = hasRows ? Model.Rows.Max(r => r.Value) : 0m;
+    var total = hasRows ? Model.Rows.Sum(r => r.Value) : 0m;
 }
 
-<h1>@(fr ? "Tableau de bord régional" : "Regional inspection dashboard")</h1>
+<h1>@L["Rollup.Heading"]</h1>
+<p class="lede">@L["Rollup.Lede"]</p>
 
-<form method="get">
-    <label for="region">@(fr ? "Région" : "Region")</label>
-    <select id="region" name="region">
-        @foreach (var region in Model.AvailableRegions)
-        {
-            <option value="@region" selected="@(region == Model.Region)">@region</option>
-        }
-    </select>
-
-    <label for="year">@(fr ? "Année" : "Year")</label>
-    <select id="year" name="year">
-        @foreach (var y in Model.AvailableYears)
-        {
-            <option value="@y" selected="@(y == Model.Year)">@y</option>
-        }
-    </select>
-
-    <button type="submit">@(fr ? "Afficher" : "Show")</button>
+<form method="get" class="search-form">
+    <div class="field">
+        <label for="region">@L["Rollup.Field.Region"]</label>
+        <select id="region" name="region">
+            @foreach (var region in Model.AvailableRegions)
+            {
+                <option value="@region" selected="@(region == Model.Region)">@region</option>
+            }
+        </select>
+    </div>
+    <div class="field" style="flex:0 0 110px;">
+        <label for="year">@L["Rollup.Field.Year"]</label>
+        <select id="year" name="year">
+            @foreach (var y in Model.AvailableYears)
+            {
+                <option value="@y" selected="@(y == Model.Year)">@y</option>
+            }
+        </select>
+    </div>
+    <div class="field">
+        <label for="indicator">@L["Rollup.Field.Indicator"]</label>
+        <select id="indicator" name="indicator">
+            <option value="">@L["Rollup.Indicator.All"]</option>
+            @foreach (var ind in Model.AvailableIndicators)
+            {
+                <option value="@ind" selected="@(ind == Model.Indicator)">@L["Indicator." + ind]</option>
+            }
+        </select>
+    </div>
+    <div class="field" style="flex:0 0 auto;">
+        <label>&nbsp;</label>
+        <button type="submit" class="btn">@L["Rollup.Show"]</button>
+    </div>
 </form>
 
-@if (Model.Rows.Count == 0)
+@if (!hasRows)
 {
-    <p>@(fr ? "Aucune donnée pour cette sélection." : "No data for this selection.")</p>
+    <div class="empty-state">@L["Rollup.Empty"]</div>
 }
 else
 {
-    var max = Model.Rows.Max(r => r.Value);
-    <table>
+    <p class="muted mb-2">@string.Format(L["Rollup.Total"].Value, total)</p>
+    <table class="data-table">
         <thead>
             <tr>
-                <th>@(fr ? "Mois" : "Month")</th>
-                <th>@(fr ? "Indicateur" : "Indicator")</th>
-                <th>@(fr ? "Valeur" : "Value")</th>
-                <th></th>
+                <th>@L["Rollup.Col.Month"]</th>
+                <th>@L["Rollup.Col.Indicator"]</th>
+                <th class="num">@L["Rollup.Col.Value"]</th>
+                <th class="bar-cell"></th>
             </tr>
         </thead>
         <tbody>
-            @foreach (var row in Model.Rows)
+            @foreach (var row in Model.Rows.OrderBy(r => r.Month).ThenBy(r => r.IndicatorCode))
             {
-                var pct = max == 0 ? 0 : (int)(row.Value * 100 / max);
+                var pct = maxValue == 0 ? 0 : (int)Math.Round(row.Value * 100m / maxValue);
                 <tr>
-                    <td>@row.Month</td>
-                    <td>@row.IndicatorCode</td>
-                    <td>@row.Value.ToString("0.##")</td>
-                    <td>
-                        <div style="background:#0078d4;height:14px;width:@(pct)%"></div>
-                    </td>
+                    <td>@L["Month." + row.Month.ToString(CultureInfo.InvariantCulture)] @row.Month.ToString("00", CultureInfo.InvariantCulture)</td>
+                    <td>@L["Indicator." + row.IndicatorCode]</td>
+                    <td class="num">@row.Value.ToString("N0", CultureInfo.CurrentUICulture)</td>
+                    <td class="bar-cell"><div class="bar" style="width:@(pct)%"></div></td>
                 </tr>
             }
         </tbody>

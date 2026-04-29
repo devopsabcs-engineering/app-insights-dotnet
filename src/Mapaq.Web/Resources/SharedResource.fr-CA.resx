@@ -1,33 +1,98 @@
 <?xml version="1.0" encoding="utf-8"?>
 <root>
-  <resheader name="resmimetype">
-    <value>text/microsoft-resx</value>
-  </resheader>
-  <resheader name="version">
-    <value>2.0</value>
-  </resheader>
-  <resheader name="reader">
-    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
-  </resheader>
-  <resheader name="writer">
-    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
-  </resheader>
-  <data name="Home.Title" xml:space="preserve">
-    <value>Inspecteur·rice MAPAQ</value>
-  </data>
-  <data name="Search.Title" xml:space="preserve">
-    <value>Rechercher un établissement</value>
-  </data>
-  <data name="Detail.Title" xml:space="preserve">
-    <value>Fiche d'établissement</value>
-  </data>
-  <data name="Rollup.Title" xml:space="preserve">
-    <value>Tableau de bord régional</value>
-  </data>
-  <data name="Search.Button" xml:space="preserve">
-    <value>Rechercher</value>
-  </data>
-  <data name="NoResults" xml:space="preserve">
-    <value>Aucun résultat</value>
-  </data>
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+  <resheader name="reader"><value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value></resheader>
+  <resheader name="writer"><value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value></resheader>
+
+  <!-- Marque / chrome -->
+  <data name="Brand.Name" xml:space="preserve"><value>Inspecteur·rice MAPAQ</value></data>
+  <data name="Brand.Tagline" xml:space="preserve"><value>Atelier App Insights .NET 10</value></data>
+  <data name="Footer.Disclaimer" xml:space="preserve"><value>Application de démonstration. Non affiliée au gouvernement du Québec ni au MAPAQ. Données ouvertes utilisées sous licence Attribution (CC-BY 4.0).</value></data>
+
+  <!-- Navigation -->
+  <data name="Nav.Home" xml:space="preserve"><value>Accueil</value></data>
+  <data name="Nav.Establishments" xml:space="preserve"><value>Établissements</value></data>
+  <data name="Nav.Rollup" xml:space="preserve"><value>Tableau de bord régional</value></data>
+  <data name="Lang.French" xml:space="preserve"><value>FR</value></data>
+  <data name="Lang.English" xml:space="preserve"><value>EN</value></data>
+
+  <!-- Accueil -->
+  <data name="Home.Title" xml:space="preserve"><value>Tableau de bord</value></data>
+  <data name="Home.Heading" xml:space="preserve"><value>Inspections des établissements alimentaires du Québec</value></data>
+  <data name="Home.Lede" xml:space="preserve"><value>Application de démonstration inspirée des données ouvertes du MAPAQ. Recherchez parmi plus de 200 établissements, consultez les condamnations et explorez le tableau de bord régional. Chaque clic produit une seule trace distribuée dans Application Insights couvrant le navigateur, Mapaq.Web, Mapaq.Api et SQL.</value></data>
+  <data name="Home.Tile.Search.Title" xml:space="preserve"><value>Rechercher un établissement</value></data>
+  <data name="Home.Tile.Search.Body" xml:space="preserve"><value>Filtrez par municipalité ou par région administrative. Déclenche un saut Mapaq.Web → Mapaq.Api → SQL.</value></data>
+  <data name="Home.Tile.Rollup.Title" xml:space="preserve"><value>Tableau de bord régional</value></data>
+  <data name="Home.Tile.Rollup.Body" xml:space="preserve"><value>Indicateurs mensuels pré-agrégés par région administrative : inspections, avis de non-conformité, amendes, suspensions.</value></data>
+  <data name="Home.Tile.Trace.Title" xml:space="preserve"><value>Trace de bout en bout</value></data>
+  <data name="Home.Tile.Trace.Body" xml:space="preserve"><value>Ouvrez la carte d'application dans votre ressource App Insights pour voir Browser, Mapaq.Web, Mapaq.Api et Azure SQL partager un même operation_Id.</value></data>
+
+  <!-- Recherche / Établissements -->
+  <data name="Search.Title" xml:space="preserve"><value>Rechercher un établissement</value></data>
+  <data name="Search.Heading" xml:space="preserve"><value>Rechercher un établissement</value></data>
+  <data name="Search.Field.City" xml:space="preserve"><value>Municipalité</value></data>
+  <data name="Search.Field.City.Placeholder" xml:space="preserve"><value>p. ex. Montréal</value></data>
+  <data name="Search.Field.Region" xml:space="preserve"><value>Région administrative</value></data>
+  <data name="Search.Field.Region.AnyRegion" xml:space="preserve"><value>— Toutes les régions —</value></data>
+  <data name="Search.Button" xml:space="preserve"><value>Rechercher</value></data>
+  <data name="Search.NoResults" xml:space="preserve"><value>Aucun établissement ne correspond à vos filtres. Essayez de retirer le filtre de municipalité ou de choisir une autre région.</value></data>
+  <data name="Search.PromptInitial" xml:space="preserve"><value>Choisissez une région (ou saisissez une municipalité), puis cliquez sur Rechercher pour appeler le point d'extrémité de Mapaq.Api.</value></data>
+  <data name="Search.Col.Name" xml:space="preserve"><value>Nom</value></data>
+  <data name="Search.Col.Address" xml:space="preserve"><value>Adresse</value></data>
+  <data name="Search.Col.City" xml:space="preserve"><value>Municipalité</value></data>
+  <data name="Search.Col.Region" xml:space="preserve"><value>Région</value></data>
+  <data name="Search.Col.Action" xml:space="preserve"><value>Détails</value></data>
+  <data name="Search.View" xml:space="preserve"><value>Voir</value></data>
+  <data name="Search.ResultsLabel" xml:space="preserve"><value>{0} établissements affichés (50 premiers)</value></data>
+
+  <!-- Détail -->
+  <data name="Detail.Title" xml:space="preserve"><value>Fiche d'établissement</value></data>
+  <data name="Detail.NotFound" xml:space="preserve"><value>Cet établissement est introuvable.</value></data>
+  <data name="Detail.Convictions" xml:space="preserve"><value>Condamnations</value></data>
+  <data name="Detail.NoConvictions" xml:space="preserve"><value>Aucune condamnation enregistrée.</value></data>
+  <data name="Detail.Col.Date" xml:space="preserve"><value>Date</value></data>
+  <data name="Detail.Col.Article" xml:space="preserve"><value>Article</value></data>
+  <data name="Detail.Col.Description" xml:space="preserve"><value>Description</value></data>
+  <data name="Detail.Col.Fine" xml:space="preserve"><value>Amende (CAD)</value></data>
+  <data name="Detail.PermitType" xml:space="preserve"><value>Type de permis</value></data>
+  <data name="Detail.BackToSearch" xml:space="preserve"><value>← Retour à la recherche</value></data>
+
+  <!-- Tableau de bord -->
+  <data name="Rollup.Title" xml:space="preserve"><value>Tableau de bord régional</value></data>
+  <data name="Rollup.Heading" xml:space="preserve"><value>Tableau de bord régional des inspections</value></data>
+  <data name="Rollup.Lede" xml:space="preserve"><value>Indicateurs mensuels pré-agrégés par région administrative. Choisissez une région et une année pour interroger le point d'extrémité du tableau de bord.</value></data>
+  <data name="Rollup.Field.Region" xml:space="preserve"><value>Région</value></data>
+  <data name="Rollup.Field.Year" xml:space="preserve"><value>Année</value></data>
+  <data name="Rollup.Field.Indicator" xml:space="preserve"><value>Indicateur</value></data>
+  <data name="Rollup.Indicator.All" xml:space="preserve"><value>Tous les indicateurs</value></data>
+  <data name="Rollup.Show" xml:space="preserve"><value>Afficher</value></data>
+  <data name="Rollup.Empty" xml:space="preserve"><value>Aucune donnée pour cette sélection.</value></data>
+  <data name="Rollup.Col.Month" xml:space="preserve"><value>Mois</value></data>
+  <data name="Rollup.Col.Indicator" xml:space="preserve"><value>Indicateur</value></data>
+  <data name="Rollup.Col.Value" xml:space="preserve"><value>Valeur</value></data>
+  <data name="Rollup.Total" xml:space="preserve"><value>Total annuel : {0:N0}</value></data>
+
+  <!-- Indicateurs -->
+  <data name="Indicator.01-Inspections" xml:space="preserve"><value>Inspections</value></data>
+  <data name="Indicator.02-AvisNonConformite" xml:space="preserve"><value>Avis de non-conformité</value></data>
+  <data name="Indicator.03-AmendesEmises" xml:space="preserve"><value>Amendes émises</value></data>
+  <data name="Indicator.04-PermisSuspendus" xml:space="preserve"><value>Permis suspendus</value></data>
+
+  <!-- Mois (court) -->
+  <data name="Month.1" xml:space="preserve"><value>janv.</value></data>
+  <data name="Month.2" xml:space="preserve"><value>févr.</value></data>
+  <data name="Month.3" xml:space="preserve"><value>mars</value></data>
+  <data name="Month.4" xml:space="preserve"><value>avr.</value></data>
+  <data name="Month.5" xml:space="preserve"><value>mai</value></data>
+  <data name="Month.6" xml:space="preserve"><value>juin</value></data>
+  <data name="Month.7" xml:space="preserve"><value>juil.</value></data>
+  <data name="Month.8" xml:space="preserve"><value>août</value></data>
+  <data name="Month.9" xml:space="preserve"><value>sept.</value></data>
+  <data name="Month.10" xml:space="preserve"><value>oct.</value></data>
+  <data name="Month.11" xml:space="preserve"><value>nov.</value></data>
+  <data name="Month.12" xml:space="preserve"><value>déc.</value></data>
+
+  <!-- Divers -->
+  <data name="NoResults" xml:space="preserve"><value>Aucun résultat</value></data>
 </root>

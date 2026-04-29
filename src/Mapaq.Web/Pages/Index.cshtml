@@ -1,33 +1,34 @@
 @page
+@using Microsoft.AspNetCore.Mvc.Localization
 @model Mapaq.Web.Pages.IndexModel
+@inject IHtmlLocalizer<Mapaq.Web.Resources.SharedResource> L
 @{
-    var fr = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "fr";
-    ViewData["Title"] = fr ? "Accueil" : "Home";
+    ViewData["Title"] = L["Home.Title"].Value;
 }
 
-<h1>@(fr ? "Inspecteur·rice MAPAQ" : "MAPAQ Inspector")</h1>
+<section class="hero">
+    <h1>@L["Home.Heading"]</h1>
+    <p>@L["Home.Lede"]</p>
+    <div class="flex">
+        <a class="btn" asp-page="/Etablissements/Index">@L["Home.Tile.Search.Title"]</a>
+        <a class="btn btn--ghost" asp-page="/Inspections/Rollup">@L["Home.Tile.Rollup.Title"]</a>
+    </div>
+</section>
 
-@if (fr)
-{
-    <p>
-        Application de démonstration inspirée des données ouvertes du Ministère
-        de l'Agriculture, des Pêcheries et de l'Alimentation du Québec.
-        Recherchez un établissement, consultez les condamnations et les
-        suspensions de permis, et visualisez le tableau de bord régional
-        d'inspection.
-    </p>
-}
-else
-{
-    <p>
-        Demo application inspired by the open data published by the Quebec
-        Ministry of Agriculture, Fisheries and Food. Search establishments,
-        review convictions and permit suspensions, and explore the regional
-        inspection dashboard.
-    </p>
-}
-
-<ul>
-    <li><a asp-page="/Etablissements/Index">@(fr ? "Rechercher un établissement alimentaire" : "Search for a food establishment")</a></li>
-    <li><a asp-page="/Inspections/Rollup">@(fr ? "Tableau de bord régional" : "Regional dashboard")</a></li>
-</ul>
+<div class="tile-grid">
+    <a class="tile tile--sky" asp-page="/Etablissements/Index">
+        <span class="tile__icon">🔎</span>
+        <h3>@L["Home.Tile.Search.Title"]</h3>
+        <p>@L["Home.Tile.Search.Body"]</p>
+    </a>
+    <a class="tile tile--leaf" asp-page="/Inspections/Rollup">
+        <span class="tile__icon">📊</span>
+        <h3>@L["Home.Tile.Rollup.Title"]</h3>
+        <p>@L["Home.Tile.Rollup.Body"]</p>
+    </a>
+    <div class="tile tile--orange">
+        <span class="tile__icon">🛰</span>
+        <h3>@L["Home.Tile.Trace.Title"]</h3>
+        <p>@L["Home.Tile.Trace.Body"]</p>
+    </div>
+</div>

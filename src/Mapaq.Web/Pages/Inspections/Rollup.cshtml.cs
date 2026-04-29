@@ -13,10 +13,13 @@ public sealed class RollupModel : PageModel
     }
 
     [BindProperty(SupportsGet = true)]
-    public string Region { get; set; } = "03-CAPITALE-NATIONALE";
+    public string Region { get; set; } = "06-MONTREAL";
 
     [BindProperty(SupportsGet = true)]
-    public int Year { get; set; } = DateTime.UtcNow.Year - 1;
+    public int Year { get; set; } = DateTime.UtcNow.Year;
+
+    [BindProperty(SupportsGet = true)]
+    public string? Indicator { get; set; }
 
     public IReadOnlyList<string> AvailableRegions { get; } = new[]
     {
@@ -39,9 +42,19 @@ public sealed class RollupModel : PageModel
         "17-CENTRE-DU-QUEBEC"
     };
 
-    public IReadOnlyList<int> AvailableYears { get; } = Enumerable
-        .Range(DateTime.UtcNow.Year - 5, 6)
-        .ToArray();
+    public IReadOnlyList<int> AvailableYears { get; } = new[]
+    {
+        DateTime.UtcNow.Year - 1,
+        DateTime.UtcNow.Year
+    };
+
+    public IReadOnlyList<string> AvailableIndicators { get; } = new[]
+    {
+        "01-Inspections",
+        "02-AvisNonConformite",
+        "03-AmendesEmises",
+        "04-PermisSuspendus"
+    };
 
     public IReadOnlyList<RollupRow> Rows { get; private set; } = Array.Empty<RollupRow>();
 
@@ -52,7 +65,10 @@ public sealed class RollupModel : PageModel
         try
         {
             var rows = await client.GetFromJsonAsync<List<RollupRow>>(url, ct);
-            Rows = rows ?? new List<RollupRow>();
+            var all = rows ?? new List<RollupRow>();
+            Rows = string.IsNullOrWhiteSpace(Indicator)
+                ? all
+                : all.Where(r => r.IndicatorCode == Indicator).ToList();
         }
         catch (HttpRequestException)
         {

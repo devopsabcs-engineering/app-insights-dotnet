@@ -1,45 +1,51 @@
 @page "{id:long}"
+@using Microsoft.AspNetCore.Mvc.Localization
+@using System.Globalization
 @model Mapaq.Web.Pages.Etablissements.DetailModel
+@inject IHtmlLocalizer<Mapaq.Web.Resources.SharedResource> L
 @{
-    var fr = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "fr";
-    ViewData["Title"] = fr ? "Fiche d'établissement" : "Establishment details";
+    var isFr = CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "fr";
+    ViewData["Title"] = L["Detail.Title"].Value;
 }
+
+<p><a asp-page="/Etablissements/Index">@L["Detail.BackToSearch"]</a></p>
 
 @if (Model.Establishment is null)
 {
-    <p>@(fr ? "Aucun résultat" : "No results")</p>
+    <div class="empty-state">@L["Detail.NotFound"]</div>
 }
 else
 {
-    <h1>@Model.Establishment.Name</h1>
-    <p>
-        @Model.Establishment.Address, @Model.Establishment.City (@Model.Establishment.Region)
-    </p>
+    var e = Model.Establishment;
+    <section class="hero">
+        <h1>@e.Name</h1>
+        <p>@e.Address · @e.City <span class="badge badge--sky">@e.Region</span></p>
+    </section>
 
-    <h2>@(fr ? "Condamnations" : "Convictions")</h2>
-    @if (Model.Establishment.Convictions.Count == 0)
+    <h2>@L["Detail.Convictions"]</h2>
+    @if (e.Convictions.Count == 0)
     {
-        <p>@(fr ? "Aucune condamnation enregistrée." : "No convictions on record.")</p>
+        <div class="empty-state">@L["Detail.NoConvictions"]</div>
     }
     else
     {
-        <table>
+        <table class="data-table">
             <thead>
                 <tr>
-                    <th>@(fr ? "Date" : "Date")</th>
-                    <th>@(fr ? "Article" : "Article")</th>
-                    <th>@(fr ? "Description" : "Description")</th>
-                    <th>@(fr ? "Amende (CAD)" : "Fine (CAD)")</th>
+                    <th>@L["Detail.Col.Date"]</th>
+                    <th>@L["Detail.Col.Article"]</th>
+                    <th>@L["Detail.Col.Description"]</th>
+                    <th class="num">@L["Detail.Col.Fine"]</th>
                 </tr>
             </thead>
             <tbody>
-                @foreach (var c in Model.Establishment.Convictions)
+                @foreach (var c in e.Convictions)
                 {
                     <tr>
                         <td>@c.ConvictionDate.ToString("yyyy-MM-dd")</td>
-                        <td>@c.ArticleCode</td>
-                        <td>@(fr ? c.ArticleTitleFr : c.ArticleTitleEn)</td>
-                        <td>@c.AmountCad.ToString("0.00")</td>
+                        <td><span class="badge">@c.ArticleCode</span></td>
+                        <td>@(isFr ? c.ArticleTitleFr : c.ArticleTitleEn)</td>
+                        <td class="num">@c.AmountCad.ToString("N2", CultureInfo.CurrentUICulture)</td>
                     </tr>
                 }
             </tbody>

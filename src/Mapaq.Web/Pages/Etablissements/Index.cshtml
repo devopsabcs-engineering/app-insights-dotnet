@@ -1,47 +1,67 @@
 @page
+@using Microsoft.AspNetCore.Mvc.Localization
 @model Mapaq.Web.Pages.Etablissements.IndexModel
+@inject IHtmlLocalizer<Mapaq.Web.Resources.SharedResource> L
 @{
-    var fr = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "fr";
-    ViewData["Title"] = fr ? "Rechercher un établissement" : "Search establishments";
+    ViewData["Title"] = L["Search.Title"].Value;
+    var attempted = !string.IsNullOrWhiteSpace(Model.City) || !string.IsNullOrWhiteSpace(Model.Region);
 }
 
-<h1>@(fr ? "Rechercher un établissement" : "Search establishments")</h1>
+<h1>@L["Search.Heading"]</h1>
 
-<form method="get">
-    <label for="city">@(fr ? "Municipalité" : "City")</label>
-    <input id="city" name="city" value="@Model.City" />
-
-    <label for="region">@(fr ? "Région administrative" : "Administrative region")</label>
-    <input id="region" name="region" value="@Model.Region" />
-
-    <button type="submit">@(fr ? "Rechercher" : "Search")</button>
+<form method="get" class="search-form">
+    <div class="field">
+        <label for="city">@L["Search.Field.City"]</label>
+        <input id="city" name="city" value="@Model.City" placeholder="@L["Search.Field.City.Placeholder"]" />
+    </div>
+    <div class="field">
+        <label for="region">@L["Search.Field.Region"]</label>
+        <select id="region" name="region">
+            <option value="">@L["Search.Field.Region.AnyRegion"]</option>
+            @foreach (var r in Model.AvailableRegions)
+            {
+                <option value="@r" selected="@(r == Model.Region)">@r</option>
+            }
+        </select>
+    </div>
+    <div class="field" style="flex: 0 0 auto;">
+        <label>&nbsp;</label>
+        <button type="submit" class="btn">@L["Search.Button"]</button>
+    </div>
 </form>
 
-@if (Model.Results.Count == 0)
+@if (!attempted)
 {
-    <p>@(fr ? "Aucun résultat" : "No results")</p>
+    <div class="empty-state">@L["Search.PromptInitial"]</div>
+}
+else if (Model.Results.Count == 0)
+{
+    <div class="empty-state">@L["Search.NoResults"]</div>
 }
 else
 {
-    <table>
+    <p class="muted mb-2">@string.Format(L["Search.ResultsLabel"].Value, Model.Results.Count)</p>
+    <table class="data-table">
         <thead>
             <tr>
-                <th>@(fr ? "Nom" : "Name")</th>
-                <th>@(fr ? "Adresse" : "Address")</th>
-                <th>@(fr ? "Municipalité" : "City")</th>
-                <th>@(fr ? "Région" : "Region")</th>
-                <th></th>
+                <th>@L["Search.Col.Name"]</th>
+                <th>@L["Search.Col.Address"]</th>
+                <th>@L["Search.Col.City"]</th>
+                <th>@L["Search.Col.Region"]</th>
+                <th class="text-right">@L["Search.Col.Action"]</th>
             </tr>
         </thead>
         <tbody>
             @foreach (var e in Model.Results)
             {
                 <tr>
-                    <td>@e.Name</td>
+                    <td><strong>@e.Name</strong></td>
                     <td>@e.Address</td>
                     <td>@e.City</td>
-                    <td>@e.Region</td>
-                    <td><a asp-page="/Etablissements/Detail" asp-route-id="@e.EstablishmentId">@(fr ? "Voir la fiche" : "View details")</a></td>
+                    <td><span class="badge badge--sky">@e.Region</span></td>
+                    <td class="text-right">
+                        <a class="btn btn--ghost" asp-page="/Etablissements/Detail" asp-route-id="@e.EstablishmentId">@L["Search.View"]</a>
+                    </td>
                 </tr>
             }
         </tbody>

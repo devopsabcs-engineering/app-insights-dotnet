@@ -70,6 +70,19 @@ builder.Services.AddHttpClient<CkanSyncService>(client =>
 
 var app = builder.Build();
 
+// Seed the in-memory demo dataset on startup so attendees can hit a populated
+// UI before any SQL provisioning. Skipped for SQL Server because EF Core
+// migrations + HasData handle initial rows on the production path.
+using (var scope = app.Services.CreateScope())
+{
+    var db = scope.ServiceProvider.GetRequiredService<MapaqDbContext>();
+    if (db.Database.IsInMemory())
+    {
+        db.Database.EnsureCreated();
+        MapaqDemoSeeder.SeedIfEmpty(db);
+    }
+}
+
 app.UseCors("default");
 app.MapOpenApi();
 

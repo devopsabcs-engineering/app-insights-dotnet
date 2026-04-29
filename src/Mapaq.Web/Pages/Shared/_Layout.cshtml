@@ -1,18 +1,23 @@
+@using System.Globalization
+@using Microsoft.AspNetCore.Mvc.Localization
 @inject Microsoft.ApplicationInsights.AspNetCore.JavaScriptSnippet JavaScriptSnippet
-@inject Microsoft.Extensions.Configuration.IConfiguration Cfg
+@inject IHtmlLocalizer<Mapaq.Web.Resources.SharedResource> L
+@{
+    var culture = CultureInfo.CurrentUICulture;
+    var isFr = culture.TwoLetterISOLanguageName == "fr";
+    var returnUrl = (Context.Request.Path + Context.Request.QueryString).ToString();
+    string SetLang(string c) => $"/setlang?culture={c}&returnUrl={Uri.EscapeDataString(returnUrl)}";
+}
 <!DOCTYPE html>
-<html lang="@System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName">
+<html lang="@culture.TwoLetterISOLanguageName">
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>@ViewData["Title"] - MAPAQ</title>
+    <title>@ViewData["Title"] · @L["Brand.Name"]</title>
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
 
-    @* JS SDK Loader Script — picks up the connection string from server config so
-       the raw value is never hard-coded in source. The loader (sv:8) downloads
-       @microsoft/applicationinsights-web v3.x from the Microsoft CDN. *@
+    @* JS SDK Loader Script *@
     @Html.Raw(JavaScriptSnippet.FullScript)
-
-    @* Distributed-tracing configuration overlay + Click Analytics plug-in *@
     <script type="text/javascript" src="https://js.monitor.azure.com/scripts/b/ext/ai.clck.3.gbl.min.js"></script>
     <script type="text/javascript">
       (function () {
@@ -21,7 +26,6 @@
           window.appInsights.config.enableCorsCorrelation        = true;
           window.appInsights.config.enableRequestHeaderTracking  = true;
           window.appInsights.config.enableResponseHeaderTracking = true;
-          // 2 = AI_AND_W3C (default in 3.x); set 1 for W3C-only.
           window.appInsights.config.distributedTracingMode = 2;
           window.appInsights.config.correlationHeaderExcludedDomains = [
             "*.queue.core.windows.net",
@@ -29,15 +33,11 @@
             "login.microsoftonline.com",
             "graph.microsoft.com"
           ];
-
-          // Cloud role: makes "Mapaq.Browser" appear as its own node on the map.
           window.appInsights.addTelemetryInitializer(function (envelope) {
             envelope.tags = envelope.tags || {};
             envelope.tags["ai.cloud.role"]         = "Mapaq.Browser";
             envelope.tags["ai.cloud.roleInstance"] = "browser";
           });
-
-          // Click Analytics
           if (typeof Microsoft !== "undefined" && Microsoft.ApplicationInsights) {
             var clickPlugin = new Microsoft.ApplicationInsights.ClickAnalyticsPlugin();
             window.appInsights.addPlugin(clickPlugin, false, function () {
@@ -49,18 +49,30 @@
     </script>
 </head>
 <body>
-    <header>
-        <nav>
-            <a asp-page="/Index">@(System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "fr" ? "Accueil" : "Home")</a> |
-            <a asp-page="/Etablissements/Index">@(System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "fr" ? "Établissements" : "Establishments")</a> |
-            <a asp-page="/Inspections/Rollup">@(System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "fr" ? "Tableau de bord régional" : "Regional dashboard")</a>
-        </nav>
+    <header class="site-header">
+        <div class="site-header__inner">
+            <a class="brand" asp-page="/Index">
+                <span class="brand__mark" aria-hidden="true">M</span>
+                <span>@L["Brand.Name"]</span>
+            </a>
+            <nav class="site-nav" aria-label="@L["Nav.Home"]">
+                <a asp-page="/Index">@L["Nav.Home"]</a>
+                <a asp-page="/Etablissements/Index">@L["Nav.Establishments"]</a>
+                <a asp-page="/Inspections/Rollup">@L["Nav.Rollup"]</a>
+            </nav>
+            <div class="lang-switcher" role="group" aria-label="Language">
+                <a href="@SetLang("fr-CA")" class="@(isFr ? "is-active" : "")">@L["Lang.French"]</a>
+                <a href="@SetLang("en-CA")" class="@(isFr ? "" : "is-active")">@L["Lang.English"]</a>
+            </div>
+        </div>
     </header>
+
     <main>
         @RenderBody()
     </main>
-    <footer>
-        <small>Application de démonstration. Non affiliée au gouvernement du Québec ni au MAPAQ. Données ouvertes utilisées sous licence Attribution (CC-BY 4.0).</small>
+
+    <footer class="site-footer">
+        <small>@L["Footer.Disclaimer"]</small>
     </footer>
 </body>
 </html>

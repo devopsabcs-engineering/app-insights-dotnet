@@ -20,6 +20,27 @@ public sealed class IndexModel : PageModel
 
     public IReadOnlyList<EstablishmentRow> Results { get; private set; } = Array.Empty<EstablishmentRow>();
 
+    public IReadOnlyList<string> AvailableRegions { get; } = new[]
+    {
+        "01-BAS-SAINT-LAURENT",
+        "02-SAGUENAY-LAC-SAINT-JEAN",
+        "03-CAPITALE-NATIONALE",
+        "04-MAURICIE",
+        "05-ESTRIE",
+        "06-MONTREAL",
+        "07-OUTAOUAIS",
+        "08-ABITIBI-TEMISCAMINGUE",
+        "09-COTE-NORD",
+        "10-NORD-DU-QUEBEC",
+        "11-GASPESIE-ILES-DE-LA-MADELEINE",
+        "12-CHAUDIERE-APPALACHES",
+        "13-LAVAL",
+        "14-LANAUDIERE",
+        "15-LAURENTIDES",
+        "16-MONTEREGIE",
+        "17-CENTRE-DU-QUEBEC"
+    };
+
     public async Task OnGetAsync(CancellationToken ct)
     {
         if (string.IsNullOrWhiteSpace(City) && string.IsNullOrWhiteSpace(Region))
