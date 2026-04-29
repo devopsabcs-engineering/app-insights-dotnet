@@ -6,29 +6,69 @@
     ViewData["Title"] = L["Home.Title"].Value;
 }
 
-<section class="hero">
-    <h1>@L["Home.Heading"]</h1>
-    <p>@L["Home.Lede"]</p>
-    <div class="flex">
-        <a class="btn" asp-page="/Etablissements/Index">@L["Home.Tile.Search.Title"]</a>
-        <a class="btn btn--ghost" asp-page="/Inspections/Rollup">@L["Home.Tile.Rollup.Title"]</a>
-    </div>
-</section>
+<h1>@L["Home.Heading"]</h1>
+<p class="lede">@L["Home.Lede"]</p>
 
-<div class="tile-grid">
-    <a class="tile tile--sky" asp-page="/Etablissements/Index">
-        <span class="tile__icon">🔎</span>
-        <h3>@L["Home.Tile.Search.Title"]</h3>
-        <p>@L["Home.Tile.Search.Body"]</p>
-    </a>
-    <a class="tile tile--leaf" asp-page="/Inspections/Rollup">
-        <span class="tile__icon">📊</span>
-        <h3>@L["Home.Tile.Rollup.Title"]</h3>
-        <p>@L["Home.Tile.Rollup.Body"]</p>
-    </a>
-    <div class="tile tile--orange">
-        <span class="tile__icon">🛰</span>
-        <h3>@L["Home.Tile.Trace.Title"]</h3>
-        <p>@L["Home.Tile.Trace.Body"]</p>
-    </div>
+<div class="tag-pills">
+    <a class="tag-pill" asp-page="/Etablissements/Index" asp-route-region="06-MONTREAL">@L["Tag.Montreal"]</a>
+    <a class="tag-pill" asp-page="/Etablissements/Index" asp-route-region="03-CAPITALE-NATIONALE">@L["Tag.CapitaleNationale"]</a>
+    <a class="tag-pill" asp-page="/Etablissements/Index" asp-route-region="16-MONTEREGIE">@L["Tag.Monteregie"]</a>
+    <a class="tag-pill" asp-page="/Inspections/Rollup">@L["Tag.Rollup"]</a>
+    <a class="tag-pill" asp-page="/Inspections/Rollup" asp-route-region="06-MONTREAL" asp-route-indicator="04-PermisSuspendus">@L["Tag.SuspendedPermits"]</a>
+    <a class="tag-pill" asp-page="/Etablissements/Index" asp-route-region="07-OUTAOUAIS">@L["Tag.Outaouais"]</a>
+</div>
+
+<div class="topic-grid">
+    <section class="topic">
+        <header class="topic__head">
+            <span class="topic__icon" aria-hidden="true">🥬</span>
+            <h3 class="topic__title">@L["Topic.Inspections.Title"]</h3>
+        </header>
+        <ul class="topic__links">
+            <li><a asp-page="/Etablissements/Index">@L["Topic.Inspections.Link.Search"]</a></li>
+            <li><a asp-page="/Etablissements/Index" asp-route-region="06-MONTREAL">@L["Topic.Inspections.Link.Montreal"]</a></li>
+            <li><a asp-page="/Etablissements/Index" asp-route-region="03-CAPITALE-NATIONALE">@L["Topic.Inspections.Link.Quebec"]</a></li>
+            <li><a asp-page="/Inspections/Rollup">@L["Topic.Inspections.Link.Indicators"]</a></li>
+        </ul>
+        <a class="topic__more" asp-page="/Etablissements/Index">@L["Topic.More"]</a>
+    </section>
+
+    <section class="topic">
+        <header class="topic__head">
+            <span class="topic__icon" aria-hidden="true">⚖️</span>
+            <h3 class="topic__title">@L["Topic.Convictions.Title"]</h3>
+        </header>
+        <ul class="topic__links">
+            <li><a asp-page="/Etablissements/Index" asp-route-region="06-MONTREAL">@L["Topic.Convictions.Link.RecentMontreal"]</a></li>
+            <li><a asp-page="/Etablissements/Index" asp-route-region="16-MONTEREGIE">@L["Topic.Convictions.Link.Monteregie"]</a></li>
+            <li><a asp-page="/Inspections/Rollup" asp-route-indicator="03-AmendesEmises">@L["Topic.Convictions.Link.Fines"]</a></li>
+            <li><a asp-page="/Inspections/Rollup" asp-route-indicator="02-AvisNonConformite">@L["Topic.Convictions.Link.Notices"]</a></li>
+        </ul>
+        <a class="topic__more" asp-page="/Etablissements/Index">@L["Topic.More"]</a>
+    </section>
+
+    <section class="topic">
+        <header class="topic__head">
+            <span class="topic__icon" aria-hidden="true">📊</span>
+            <h3 class="topic__title">@L["Topic.Dashboard.Title"]</h3>
+        </header>
+        <ul class="topic__links">
+            <li><a asp-page="/Inspections/Rollup">@L["Topic.Dashboard.Link.Region"]</a></li>
+            <li><a asp-page="/Inspections/Rollup" asp-route-indicator="01-Inspections">@L["Topic.Dashboard.Link.Inspections"]</a></li>
+            <li><a asp-page="/Inspections/Rollup" asp-route-indicator="04-PermisSuspendus">@L["Topic.Dashboard.Link.Suspended"]</a></li>
+            <li><a asp-page="/Inspections/Rollup" asp-route-indicator="03-AmendesEmises">@L["Topic.Dashboard.Link.Fines"]</a></li>
+        </ul>
+        <a class="topic__more" asp-page="/Inspections/Rollup">@L["Topic.More"]</a>
+    </section>
+
+    <section class="topic">
+        <header class="topic__head">
+            <span class="topic__icon" aria-hidden="true">🛰</span>
+            <h3 class="topic__title">@L["Topic.Trace.Title"]</h3>
+        </header>
+        <ul class="topic__links">
+            <li>@L["Topic.Trace.Body"]</li>
+        </ul>
+        <a class="topic__more" href="https://learn.microsoft.com/azure/azure-monitor/app/app-map" target="_blank" rel="noopener">@L["Topic.Trace.LearnMore"]</a>
+    </section>
 </div>

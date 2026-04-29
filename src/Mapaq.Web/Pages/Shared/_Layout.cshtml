@@ -7,6 +7,9 @@
     var isFr = culture.TwoLetterISOLanguageName == "fr";
     var returnUrl = (Context.Request.Path + Context.Request.QueryString).ToString();
     string SetLang(string c) => $"/setlang?culture={c}&returnUrl={Uri.EscapeDataString(returnUrl)}";
+
+    var path = Context.Request.Path.Value ?? "/";
+    bool IsActive(string prefix) => path.StartsWith(prefix, StringComparison.OrdinalIgnoreCase);
 }
 <!DOCTYPE html>
 <html lang="@culture.TwoLetterISOLanguageName">
@@ -16,7 +19,8 @@
     <title>@ViewData["Title"] · @L["Brand.Name"]</title>
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
 
-    @* JS SDK Loader Script *@
+    @* JS SDK Loader Script — picks up the connection string from server config so
+       the raw value is never hard-coded in source. *@
     @Html.Raw(JavaScriptSnippet.FullScript)
     <script type="text/javascript" src="https://js.monitor.azure.com/scripts/b/ext/ai.clck.3.gbl.min.js"></script>
     <script type="text/javascript">
@@ -52,20 +56,28 @@
     <header class="site-header">
         <div class="site-header__inner">
             <a class="brand" asp-page="/Index">
-                <span class="brand__mark" aria-hidden="true">M</span>
-                <span>@L["Brand.Name"]</span>
+                <span class="brand__mark" aria-hidden="true">
+                    <span></span><span></span><span></span><span></span>
+                </span>
+                <span class="brand__text">
+                    <span>@L["Brand.Name"]</span>
+                    <small>@L["Brand.Tagline"]</small>
+                </span>
             </a>
-            <nav class="site-nav" aria-label="@L["Nav.Home"]">
-                <a asp-page="/Index">@L["Nav.Home"]</a>
-                <a asp-page="/Etablissements/Index">@L["Nav.Establishments"]</a>
-                <a asp-page="/Inspections/Rollup">@L["Nav.Rollup"]</a>
-            </nav>
-            <div class="lang-switcher" role="group" aria-label="Language">
+            <div class="header-meta" role="group" aria-label="Language">
                 <a href="@SetLang("fr-CA")" class="@(isFr ? "is-active" : "")">@L["Lang.French"]</a>
                 <a href="@SetLang("en-CA")" class="@(isFr ? "" : "is-active")">@L["Lang.English"]</a>
             </div>
         </div>
     </header>
+
+    <nav class="site-subnav" aria-label="@L["Nav.Home"]">
+        <div class="site-subnav__inner">
+            <a asp-page="/Index" class="@(path == "/" ? "is-active" : "")">@L["Nav.Home"]</a>
+            <a asp-page="/Etablissements/Index" class="@(IsActive("/Etablissements") ? "is-active" : "")">@L["Nav.Establishments"]</a>
+            <a asp-page="/Inspections/Rollup" class="@(IsActive("/Inspections") ? "is-active" : "")">@L["Nav.Rollup"]</a>
+        </div>
+    </nav>
 
     <main>
         @RenderBody()

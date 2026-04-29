@@ -63,6 +63,16 @@ $WebUrl     = 'https://localhost:7010'
 if (-not (Test-Path $ApiProject)) { throw "Cannot find $ApiProject" }
 if (-not (Test-Path $WebProject)) { throw "Cannot find $WebProject" }
 
+# Always stop any prior Mapaq.Api / Mapaq.Web instances before restart so the
+# .dll lock from the previous run does not block the build.
+$stopScript = Join-Path $PSScriptRoot 'stop-local.ps1'
+if (Test-Path $stopScript) {
+    Write-Host "Stopping any existing Mapaq processes..." -ForegroundColor Cyan
+    & $stopScript
+    # Give the OS a moment to release file handles on bin/Debug/*.dll.
+    Start-Sleep -Milliseconds 500
+}
+
 # Ensure ASP.NET Core dev cert is present and trusted, otherwise the typed
 # HttpClient in Mapaq.Web fails with UntrustedRoot when calling Mapaq.Api on
 # https://localhost:7020. `--check --trust` exits non-zero when action is

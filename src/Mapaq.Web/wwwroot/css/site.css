@@ -1,25 +1,31 @@
 /* =========================================================================
-   MAPAQ App Insights .NET 10 Workshop — site stylesheet
-   Palette aligned with the slide deck theme (slides/theme/deck.css).
+   MAPAQ App Insights .NET 10 Workshop — Quebec.ca-inspired stylesheet
+   Visual grammar (deep-blue header bar, light-tag pills, accent underline,
+   3-column link-list cards) is modelled after quebec.ca, but the demo
+   does NOT use the Québec armorial, fleurdelisé, or MAPAQ wordmark
+   (see assets/branding/README.md).
    ========================================================================= */
 
 :root {
-    --graphite: #1F2A37;
-    --sky:      #3B82F6;
-    --sky-700:  #1D4ED8;
-    --leaf:     #16A34A;
-    --orange:   #F97316;
+    /* Quebec-ish palette */
+    --qc-blue:       #095797;
+    --qc-blue-dark:  #053962;
+    --qc-blue-light: #1A6FB5;
+    --qc-accent:     #D14A2C;   /* underline / call-out accent */
+    --qc-tag-bg:     #E1ECF7;
+    --qc-tag-border: #C7DBED;
+    --qc-link:       #1A5A96;
+    --qc-link-hover: #053962;
 
-    --bg:       #F8FAFC;
-    --surface:  #FFFFFF;
-    --surface-2:#F1F5F9;
-    --border:   #E2E8F0;
-    --text:     #0F172A;
-    --muted:    #475569;
-    --warn-bg:  #FEF3C7;
-    --warn-fg:  #92400E;
-    --shadow:   0 1px 2px rgba(15, 23, 42, .04), 0 1px 4px rgba(15, 23, 42, .06);
-    --radius:   8px;
+    --bg:        #FFFFFF;
+    --surface:   #FFFFFF;
+    --surface-2: #F5F5F5;
+    --border:    #E5E7EB;
+    --text:      #1F2937;
+    --muted:     #4B5563;
+
+    --shadow:   0 1px 2px rgba(15, 23, 42, .04);
+    --radius:   2px;
 }
 
 * { box-sizing: border-box; }
@@ -29,211 +35,263 @@ html, body {
     padding: 0;
     background: var(--bg);
     color: var(--text);
-    font-family: "Segoe UI", -apple-system, BlinkMacSystemFont, "Inter", "Helvetica Neue", Arial, sans-serif;
+    font-family: "Open Sans", "Segoe UI", -apple-system, BlinkMacSystemFont, "Helvetica Neue", Arial, sans-serif;
     font-size: 16px;
-    line-height: 1.5;
+    line-height: 1.55;
     -webkit-font-smoothing: antialiased;
 }
 
 a {
-    color: var(--sky-700);
-    text-decoration: none;
+    color: var(--qc-link);
+    text-decoration: underline;
+    text-decoration-thickness: 1px;
+    text-underline-offset: 2px;
 }
-a:hover { text-decoration: underline; }
+a:hover { color: var(--qc-link-hover); }
 
-/* ---- Header ---- */
+/* =========================================================================
+   Site header — Quebec.ca-style deep-blue band
+   ========================================================================= */
 .site-header {
-    position: sticky;
-    top: 0;
-    z-index: 50;
-    background: var(--graphite);
-    color: #F8FAFC;
-    box-shadow: var(--shadow);
+    background: var(--qc-blue);
+    color: #FFFFFF;
+    border-bottom: 4px solid var(--qc-blue-dark);
 }
 
 .site-header__inner {
-    max-width: 1180px;
+    max-width: 1200px;
     margin: 0 auto;
-    padding: .9rem 1.25rem;
+    padding: 1rem 1.5rem;
     display: flex;
     align-items: center;
-    gap: 1.5rem;
+    justify-content: space-between;
+    gap: 1.25rem;
     flex-wrap: wrap;
 }
 
 .brand {
     display: flex;
     align-items: center;
-    gap: .65rem;
-    font-weight: 600;
-    color: #F8FAFC;
-    font-size: 1.05rem;
+    gap: .75rem;
+    color: #FFFFFF;
+    text-decoration: none;
+    font-size: 1.45rem;
+    font-weight: 700;
+    letter-spacing: -.01em;
 }
+.brand:hover { color: #FFFFFF; text-decoration: none; }
 
 .brand__mark {
-    width: 32px;
-    height: 32px;
-    background: linear-gradient(135deg, var(--leaf), var(--sky));
-    border-radius: 6px;
+    display: grid;
+    grid-template-columns: 8px 8px;
+    grid-template-rows: 8px 8px;
+    gap: 2px;
+    width: 26px;
+    height: 26px;
+}
+.brand__mark span {
+    background: #FFFFFF;
+    display: block;
+}
+
+.brand__text {
+    display: flex;
+    flex-direction: column;
+    line-height: 1.05;
+}
+.brand__text small {
+    font-size: .72rem;
+    font-weight: 400;
+    opacity: .82;
+    margin-top: 2px;
+    letter-spacing: .02em;
+}
+
+.header-meta {
     display: flex;
     align-items: center;
-    justify-content: center;
-    color: white;
-    font-weight: 700;
+    gap: 1.25rem;
+    font-size: .92rem;
 }
 
-.brand a { color: inherit; text-decoration: none; }
+.header-meta a {
+    color: #FFFFFF;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+}
+.header-meta a.is-active { font-weight: 700; }
 
-.site-nav {
+/* Secondary nav (white bar under the blue header) */
+.site-subnav {
+    background: #FFFFFF;
+    border-bottom: 1px solid var(--border);
+}
+.site-subnav__inner {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 1.5rem;
     display: flex;
-    gap: 1.1rem;
-    margin-left: auto;
+    gap: 0;
     flex-wrap: wrap;
 }
-
-.site-nav a {
-    color: #CBD5E1;
-    padding: .35rem .6rem;
-    border-radius: 6px;
-    font-weight: 500;
-    transition: background .15s, color .15s;
+.site-subnav a {
+    color: var(--qc-link);
     text-decoration: none;
-}
-
-.site-nav a:hover,
-.site-nav a.is-active {
-    background: rgba(59, 130, 246, .18);
-    color: #FFFFFF;
-}
-
-.lang-switcher {
-    display: inline-flex;
-    border: 1px solid rgba(248, 250, 252, .25);
-    border-radius: 999px;
-    overflow: hidden;
-    margin-left: .25rem;
-}
-
-.lang-switcher a {
-    padding: .25rem .8rem;
-    color: #CBD5E1;
-    font-size: .85rem;
+    padding: .9rem 1.1rem;
     font-weight: 600;
-    text-decoration: none;
+    font-size: .98rem;
+    border-bottom: 3px solid transparent;
+    transition: border-color .15s, color .15s, background .15s;
+}
+.site-subnav a:hover {
+    color: var(--qc-link-hover);
+    background: var(--surface-2);
+}
+.site-subnav a.is-active {
+    border-bottom-color: var(--qc-accent);
+    color: var(--qc-blue-dark);
 }
 
-.lang-switcher a.is-active {
-    background: var(--sky);
-    color: white;
-}
-
-/* ---- Main content ---- */
+/* =========================================================================
+   Main content
+   ========================================================================= */
 main {
-    max-width: 1180px;
-    margin: 2rem auto;
-    padding: 0 1.25rem;
+    max-width: 1200px;
+    margin: 2.25rem auto 3rem;
+    padding: 0 1.5rem;
+}
+
+h1, h2, h3 {
+    color: var(--qc-blue-dark);
+    font-weight: 700;
+    letter-spacing: -.005em;
 }
 
 h1 {
-    font-size: 2rem;
-    margin: 0 0 .35rem;
-    letter-spacing: -.01em;
+    font-size: 2.4rem;
+    margin: 0 0 .5rem;
+    position: relative;
+    padding-bottom: .5rem;
+}
+h1::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    bottom: 0;
+    width: 56px;
+    height: 4px;
+    background: var(--qc-accent);
 }
 
 h2 {
-    margin: 1.75rem 0 .75rem;
-    font-size: 1.35rem;
-    color: var(--graphite);
+    margin: 2.25rem 0 .9rem;
+    font-size: 1.55rem;
 }
+
+h3 { font-size: 1.18rem; margin: 0 0 .35rem; }
 
 .lede {
-    font-size: 1.08rem;
-    color: var(--muted);
-    max-width: 60ch;
-    margin: 0 0 2rem;
+    font-size: 1.05rem;
+    color: var(--text);
+    max-width: 65ch;
+    margin: 1.25rem 0 1.5rem;
 }
 
-/* ---- Cards / hero / tile grid ---- */
-.tile-grid {
+/* =========================================================================
+   Tag pills (Quebec.ca "Les plus consultés" pattern)
+   ========================================================================= */
+.tag-pills {
+    display: flex;
+    flex-wrap: wrap;
+    gap: .5rem .65rem;
+    margin: 1rem 0 2rem;
+}
+.tag-pill {
+    background: var(--qc-tag-bg);
+    border: 1px solid var(--qc-tag-border);
+    color: var(--qc-link);
+    padding: .45rem .85rem;
+    border-radius: 2px;
+    font-size: .92rem;
+    font-weight: 500;
+    text-decoration: none;
+    line-height: 1.3;
+    transition: background .12s, border-color .12s;
+}
+.tag-pill:hover {
+    background: #D2E3F2;
+    border-color: var(--qc-blue-light);
+    color: var(--qc-link-hover);
+    text-decoration: none;
+}
+
+/* =========================================================================
+   Topic cards (Quebec.ca link-list grid)
+   ========================================================================= */
+.topic-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-    gap: 1.1rem;
-    margin: 1.5rem 0;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 2rem 2.5rem;
+    border-top: 1px solid var(--border);
+    padding-top: 2rem;
+    margin-top: 1rem;
 }
 
-.tile {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    padding: 1.25rem 1.25rem 1.1rem;
-    box-shadow: var(--shadow);
-    transition: transform .15s, box-shadow .15s;
-    text-decoration: none;
-    color: inherit;
-    display: block;
+.topic {
+    display: flex;
+    flex-direction: column;
 }
-.tile:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 6px 12px rgba(15, 23, 42, .08);
-    text-decoration: none;
+.topic__head {
+    display: flex;
+    align-items: center;
+    gap: .65rem;
+    margin-bottom: .85rem;
 }
-.tile h3 {
-    margin: 0 0 .35rem;
-    color: var(--graphite);
-    font-size: 1.1rem;
-}
-.tile p {
-    margin: 0;
-    color: var(--muted);
-    font-size: .95rem;
-}
-.tile__icon {
-    width: 36px;
-    height: 36px;
-    border-radius: 8px;
+.topic__icon {
+    width: 28px;
+    height: 28px;
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    color: white;
-    margin-bottom: .65rem;
+    color: var(--qc-blue);
+    font-size: 1.3rem;
+}
+.topic__title {
     font-size: 1.1rem;
     font-weight: 700;
+    color: var(--qc-blue-dark);
+    margin: 0;
 }
-.tile--sky    .tile__icon { background: var(--sky); }
-.tile--leaf   .tile__icon { background: var(--leaf); }
-.tile--orange .tile__icon { background: var(--orange); }
-
-.card {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    padding: 1.5rem;
-    box-shadow: var(--shadow);
-    margin-bottom: 1.5rem;
+.topic__links {
+    list-style: none;
+    margin: 0 0 .9rem;
+    padding: 0;
 }
+.topic__links li { margin-bottom: .4rem; }
+.topic__links a { font-size: .96rem; }
 
-.hero {
-    background: linear-gradient(135deg, #FFFFFF, #EFF6FF);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    padding: 2rem;
-    margin-bottom: 1.5rem;
+.topic__more {
+    margin-top: auto;
+    font-weight: 600;
+    color: var(--qc-link);
+    text-decoration: none;
 }
-.hero h1 { margin-bottom: .5rem; }
-.hero p { color: var(--muted); margin: 0 0 1rem; max-width: 65ch; }
+.topic__more:hover { text-decoration: underline; }
+.topic__more::after { content: " →"; }
 
-/* ---- Forms ---- */
+/* =========================================================================
+   Forms
+   ========================================================================= */
 .search-form {
     display: flex;
     flex-wrap: wrap;
-    gap: .75rem;
+    gap: 1rem;
     align-items: flex-end;
-    background: var(--surface);
+    background: var(--surface-2);
     border: 1px solid var(--border);
-    border-radius: var(--radius);
-    padding: 1rem 1.25rem;
-    margin-bottom: 1.25rem;
-    box-shadow: var(--shadow);
+    padding: 1.25rem 1.5rem;
+    margin-bottom: 1.5rem;
+    border-radius: 2px;
 }
 
 .search-form .field {
@@ -243,134 +301,135 @@ h2 {
 }
 
 .search-form label {
-    font-size: .82rem;
-    color: var(--muted);
-    margin-bottom: .25rem;
+    font-size: .87rem;
+    color: var(--qc-blue-dark);
+    margin-bottom: .35rem;
     font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: .03em;
 }
 
 .search-form input,
 .search-form select {
-    padding: .5rem .65rem;
-    border: 1px solid var(--border);
-    border-radius: 6px;
+    padding: .55rem .7rem;
+    border: 1px solid #9CA3AF;
+    border-radius: 2px;
     font-size: 1rem;
     background: var(--surface);
     color: var(--text);
 }
-
 .search-form input:focus,
 .search-form select:focus {
-    outline: 2px solid var(--sky);
-    outline-offset: -1px;
-    border-color: var(--sky);
+    outline: 2px solid var(--qc-accent);
+    outline-offset: 0;
+    border-color: var(--qc-blue);
 }
 
 .btn {
-    background: var(--sky);
-    color: white;
+    background: var(--qc-blue);
+    color: #FFFFFF;
     border: 0;
-    padding: .55rem 1.15rem;
+    padding: .65rem 1.4rem;
     font-size: 1rem;
     font-weight: 600;
-    border-radius: 6px;
+    border-radius: 2px;
     cursor: pointer;
     transition: background .15s;
+    text-decoration: none;
+    display: inline-block;
 }
-.btn:hover { background: var(--sky-700); }
+.btn:hover { background: var(--qc-blue-dark); color: #FFFFFF; text-decoration: none; }
 
 .btn--ghost {
     background: transparent;
-    color: var(--sky-700);
-    border: 1px solid var(--sky);
+    color: var(--qc-link);
+    border: 1px solid var(--qc-blue);
 }
-.btn--ghost:hover { background: rgba(59, 130, 246, .08); }
+.btn--ghost:hover { background: var(--qc-tag-bg); color: var(--qc-link-hover); }
 
-/* ---- Tables ---- */
+/* =========================================================================
+   Tables
+   ========================================================================= */
 .data-table {
     width: 100%;
     border-collapse: collapse;
     background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    overflow: hidden;
-    box-shadow: var(--shadow);
+    border-top: 2px solid var(--qc-blue);
 }
 
 .data-table th,
 .data-table td {
     text-align: left;
-    padding: .72rem .9rem;
+    padding: .8rem 1rem;
     border-bottom: 1px solid var(--border);
-    font-size: .94rem;
+    font-size: .96rem;
     vertical-align: middle;
 }
 
 .data-table th {
     background: var(--surface-2);
-    color: var(--muted);
-    font-weight: 600;
-    font-size: .82rem;
-    text-transform: uppercase;
-    letter-spacing: .03em;
+    color: var(--qc-blue-dark);
+    font-weight: 700;
+    font-size: .9rem;
+    border-bottom: 2px solid var(--qc-blue);
 }
 
 .data-table tr:last-child td { border-bottom: 0; }
 .data-table tbody tr { transition: background .12s; }
-.data-table tbody tr:hover { background: #F8FAFC; }
+.data-table tbody tr:hover { background: #FAFBFD; }
 
 .data-table .num {
     text-align: right;
     font-variant-numeric: tabular-nums;
 }
 
+/* =========================================================================
+   Badges, bars, empty state
+   ========================================================================= */
 .badge {
     display: inline-block;
-    padding: .15rem .55rem;
-    border-radius: 999px;
-    font-size: .78rem;
+    padding: .12rem .55rem;
+    border-radius: 2px;
+    font-size: .82rem;
     font-weight: 600;
-    background: var(--surface-2);
-    color: var(--muted);
+    background: var(--qc-tag-bg);
+    color: var(--qc-link);
+    border: 1px solid var(--qc-tag-border);
 }
-.badge--sky    { background: #DBEAFE; color: #1D4ED8; }
-.badge--leaf   { background: #DCFCE7; color: #166534; }
-.badge--orange { background: #FED7AA; color: #9A3412; }
-.badge--warn   { background: var(--warn-bg); color: var(--warn-fg); }
+.badge--accent { background: #FCE7DC; color: #9A2A0F; border-color: #F4B59A; }
+.badge--warn   { background: #FEF3C7; color: #92400E; border-color: #FDE68A; }
 
-/* ---- Bar chart row (regional dashboard) ---- */
 .bar-cell { width: 35%; min-width: 160px; }
 .bar {
-    height: 14px;
-    border-radius: 7px;
-    background: linear-gradient(90deg, var(--sky), var(--leaf));
+    height: 12px;
+    border-radius: 1px;
+    background: var(--qc-blue);
     transition: width .25s;
 }
 
 .empty-state {
-    background: var(--surface);
-    border: 1px dashed var(--border);
-    border-radius: var(--radius);
-    padding: 2.5rem;
-    text-align: center;
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-left: 4px solid var(--qc-blue);
+    padding: 1.25rem 1.5rem;
     color: var(--muted);
 }
 
-/* ---- Footer ---- */
+/* =========================================================================
+   Footer (Quebec.ca-style dark band)
+   ========================================================================= */
 .site-footer {
-    border-top: 1px solid var(--border);
-    background: var(--surface);
-    padding: 1.5rem 1.25rem;
+    background: var(--qc-blue-dark);
+    color: #DCE7F1;
+    padding: 2rem 1.5rem;
     text-align: center;
-    color: var(--muted);
-    font-size: .85rem;
-    margin-top: 3rem;
+    font-size: .88rem;
+    margin-top: 4rem;
+    border-top: 4px solid var(--qc-accent);
 }
-.site-footer a { color: var(--sky-700); }
+.site-footer a { color: #FFFFFF; }
 
-/* ---- Utilities ---- */
+/* =========================================================================
+   Utilities
+   ========================================================================= */
 .muted { color: var(--muted); }
 .text-right { text-align: right; }
 .mt-1 { margin-top: .5rem; }
@@ -378,12 +437,13 @@ h2 {
 .mb-2 { margin-bottom: 1rem; }
 .flex { display: flex; gap: 1rem; align-items: center; flex-wrap: wrap; }
 
-@media (max-width: 640px) {
-    .site-header__inner { padding: .7rem 1rem; }
-    main { margin: 1.25rem auto; }
-    h1 { font-size: 1.6rem; }
-    .hero { padding: 1.5rem; }
-    .data-table { font-size: .85rem; }
-    .data-table th, .data-table td { padding: .55rem .6rem; }
+@media (max-width: 720px) {
+    .site-header__inner { padding: .85rem 1rem; }
+    .site-subnav__inner { padding: 0 1rem; }
+    main { margin: 1.5rem auto 2.5rem; padding: 0 1rem; }
+    h1 { font-size: 1.85rem; }
+    .topic-grid { gap: 1.5rem; }
+    .data-table { font-size: .88rem; }
+    .data-table th, .data-table td { padding: .6rem .65rem; }
     .bar-cell { display: none; }
 }

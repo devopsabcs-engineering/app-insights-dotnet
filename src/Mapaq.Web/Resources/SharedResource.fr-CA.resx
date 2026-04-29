@@ -28,6 +28,35 @@
   <data name="Home.Tile.Trace.Title" xml:space="preserve"><value>Trace de bout en bout</value></data>
   <data name="Home.Tile.Trace.Body" xml:space="preserve"><value>Ouvrez la carte d'application dans votre ressource App Insights pour voir Browser, Mapaq.Web, Mapaq.Api et Azure SQL partager un même operation_Id.</value></data>
 
+  <!-- « Les plus consultés » (style Québec.ca) -->
+  <data name="Tag.Montreal" xml:space="preserve"><value>Établissements à Montréal</value></data>
+  <data name="Tag.CapitaleNationale" xml:space="preserve"><value>Capitale-Nationale</value></data>
+  <data name="Tag.Monteregie" xml:space="preserve"><value>Montérégie</value></data>
+  <data name="Tag.Outaouais" xml:space="preserve"><value>Outaouais</value></data>
+  <data name="Tag.Rollup" xml:space="preserve"><value>Tableau de bord régional</value></data>
+  <data name="Tag.SuspendedPermits" xml:space="preserve"><value>Permis suspendus à Montréal</value></data>
+
+  <!-- Cartes thématiques (style Québec.ca, 3 colonnes) -->
+  <data name="Topic.More" xml:space="preserve"><value>Voir plus</value></data>
+  <data name="Topic.Inspections.Title" xml:space="preserve"><value>Inspections</value></data>
+  <data name="Topic.Inspections.Link.Search" xml:space="preserve"><value>Rechercher un établissement alimentaire</value></data>
+  <data name="Topic.Inspections.Link.Montreal" xml:space="preserve"><value>Inspections à Montréal</value></data>
+  <data name="Topic.Inspections.Link.Quebec" xml:space="preserve"><value>Inspections à Québec</value></data>
+  <data name="Topic.Inspections.Link.Indicators" xml:space="preserve"><value>Indicateurs mensuels</value></data>
+  <data name="Topic.Convictions.Title" xml:space="preserve"><value>Condamnations et avis</value></data>
+  <data name="Topic.Convictions.Link.RecentMontreal" xml:space="preserve"><value>Condamnations récentes à Montréal</value></data>
+  <data name="Topic.Convictions.Link.Monteregie" xml:space="preserve"><value>Condamnations en Montérégie</value></data>
+  <data name="Topic.Convictions.Link.Fines" xml:space="preserve"><value>Amendes émises</value></data>
+  <data name="Topic.Convictions.Link.Notices" xml:space="preserve"><value>Avis de non-conformité</value></data>
+  <data name="Topic.Dashboard.Title" xml:space="preserve"><value>Tableau de bord régional</value></data>
+  <data name="Topic.Dashboard.Link.Region" xml:space="preserve"><value>Tableau de bord par région</value></data>
+  <data name="Topic.Dashboard.Link.Inspections" xml:space="preserve"><value>Inspections par mois</value></data>
+  <data name="Topic.Dashboard.Link.Suspended" xml:space="preserve"><value>Permis suspendus</value></data>
+  <data name="Topic.Dashboard.Link.Fines" xml:space="preserve"><value>Amendes émises</value></data>
+  <data name="Topic.Trace.Title" xml:space="preserve"><value>Trace de bout en bout</value></data>
+  <data name="Topic.Trace.Body" xml:space="preserve"><value>Ouvrez Application Insights pour voir Browser → Mapaq.Web → Mapaq.Api → Azure SQL partager un même operation_Id.</value></data>
+  <data name="Topic.Trace.LearnMore" xml:space="preserve"><value>En savoir plus sur la carte d'application</value></data>
+
   <!-- Recherche / Établissements -->
   <data name="Search.Title" xml:space="preserve"><value>Rechercher un établissement</value></data>
   <data name="Search.Heading" xml:space="preserve"><value>Rechercher un établissement</value></data>
