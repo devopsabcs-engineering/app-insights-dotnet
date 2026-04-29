@@ -173,8 +173,10 @@ do {
 
 if ($ready) {
     Write-Host "READY:" -ForegroundColor Green
-    Write-Host "  Mapaq.Web  -> $WebUrl"
-    Write-Host "  Mapaq.Api  -> $ApiUrl  (OpenAPI: $ApiUrl/openapi/v1.json)"
+    Write-Host "  Mapaq.Web    -> $WebUrl"
+    Write-Host "  Mapaq.Api    -> $ApiUrl"
+    Write-Host "  Swagger UI   -> $ApiUrl/swagger"
+    Write-Host "  OpenAPI JSON -> $ApiUrl/openapi/v1.json"
     if (-not $NoBrowser) {
         Start-Process $WebUrl | Out-Null
     }
