@@ -35,6 +35,7 @@
   <data name="Tag.Outaouais" xml:space="preserve"><value>Outaouais</value></data>
   <data name="Tag.Rollup" xml:space="preserve"><value>Tableau de bord régional</value></data>
   <data name="Tag.SuspendedPermits" xml:space="preserve"><value>Permis suspendus à Montréal</value></data>
+  <data name="Tag.SwaggerUi" xml:space="preserve"><value>API · Swagger UI</value></data>
 
   <!-- Cartes thématiques (style Québec.ca, 3 colonnes) -->
   <data name="Topic.More" xml:space="preserve"><value>Voir plus</value></data>
@@ -56,6 +57,14 @@
   <data name="Topic.Trace.Title" xml:space="preserve"><value>Trace de bout en bout</value></data>
   <data name="Topic.Trace.Body" xml:space="preserve"><value>Ouvrez Application Insights pour voir Browser → Mapaq.Web → Mapaq.Api → Azure SQL partager un même operation_Id.</value></data>
   <data name="Topic.Trace.LearnMore" xml:space="preserve"><value>En savoir plus sur la carte d'application</value></data>
+
+  <!-- Carte API -->
+  <data name="Topic.Api.Title" xml:space="preserve"><value>API et OpenAPI</value></data>
+  <data name="Topic.Api.Link.Swagger" xml:space="preserve"><value>Interface Swagger (interactive)</value></data>
+  <data name="Topic.Api.Link.OpenApi" xml:space="preserve"><value>Document OpenAPI (JSON)</value></data>
+  <data name="Topic.Api.Link.SearchSample" xml:space="preserve"><value>Exemple · GET /api/establishments?region=06-MONTREAL</value></data>
+  <data name="Topic.Api.Link.RollupSample" xml:space="preserve"><value>Exemple · GET /api/inspections/rollup?region=06-MONTREAL</value></data>
+  <data name="Topic.Api.OpenSwagger" xml:space="preserve"><value>Ouvrir Swagger UI</value></data>
 
   <!-- Recherche / Établissements -->
   <data name="Search.Title" xml:space="preserve"><value>Rechercher un établissement</value></data>

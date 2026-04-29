@@ -2,8 +2,12 @@
 @using Microsoft.AspNetCore.Mvc.Localization
 @model Mapaq.Web.Pages.IndexModel
 @inject IHtmlLocalizer<Mapaq.Web.SharedResource> L
+@inject Microsoft.Extensions.Configuration.IConfiguration Cfg
 @{
     ViewData["Title"] = L["Home.Title"].Value;
+    var apiBase = (Cfg["MapaqApi:BaseAddress"] ?? "https://localhost:7020/").TrimEnd('/');
+    var swaggerUrl = $"{apiBase}/swagger";
+    var openApiUrl = $"{apiBase}/openapi/v1.json";
 }
 
 <h1>@L["Home.Heading"]</h1>
@@ -16,6 +20,7 @@
     <a class="tag-pill" asp-page="/Inspections/Rollup">@L["Tag.Rollup"]</a>
     <a class="tag-pill" asp-page="/Inspections/Rollup" asp-route-region="06-MONTREAL" asp-route-indicator="04-PermisSuspendus">@L["Tag.SuspendedPermits"]</a>
     <a class="tag-pill" asp-page="/Etablissements/Index" asp-route-region="07-OUTAOUAIS">@L["Tag.Outaouais"]</a>
+    <a class="tag-pill" href="@swaggerUrl" target="_blank" rel="noopener">@L["Tag.SwaggerUi"]</a>
 </div>
 
 <div class="topic-grid">
@@ -59,6 +64,20 @@
             <li><a asp-page="/Inspections/Rollup" asp-route-indicator="03-AmendesEmises">@L["Topic.Dashboard.Link.Fines"]</a></li>
         </ul>
         <a class="topic__more" asp-page="/Inspections/Rollup">@L["Topic.More"]</a>
+    </section>
+
+    <section class="topic">
+        <header class="topic__head">
+            <span class="topic__icon" aria-hidden="true">🛠</span>
+            <h3 class="topic__title">@L["Topic.Api.Title"]</h3>
+        </header>
+        <ul class="topic__links">
+            <li><a href="@swaggerUrl" target="_blank" rel="noopener">@L["Topic.Api.Link.Swagger"]</a></li>
+            <li><a href="@openApiUrl" target="_blank" rel="noopener">@L["Topic.Api.Link.OpenApi"]</a></li>
+            <li><a href="@apiBase/api/establishments?region=06-MONTREAL" target="_blank" rel="noopener">@L["Topic.Api.Link.SearchSample"]</a></li>
+            <li><a href="@apiBase/api/inspections/rollup?region=06-MONTREAL&year=@DateTime.UtcNow.Year" target="_blank" rel="noopener">@L["Topic.Api.Link.RollupSample"]</a></li>
+        </ul>
+        <a class="topic__more" href="@swaggerUrl" target="_blank" rel="noopener">@L["Topic.Api.OpenSwagger"]</a>
     </section>
 
     <section class="topic">

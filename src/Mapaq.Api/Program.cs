@@ -86,6 +86,16 @@ using (var scope = app.Services.CreateScope())
 app.UseCors("default");
 app.MapOpenApi();
 
+// Swagger UI served at /swagger, consuming the .NET 10 OpenApi document at
+// /openapi/v1.json that MapOpenApi() produces above. Browsable demo of all
+// 4 endpoints + a "Try it out" button suitable for the workshop.
+app.UseSwaggerUI(o =>
+{
+    o.SwaggerEndpoint("/openapi/v1.json", "Mapaq.Api v1");
+    o.RoutePrefix = "swagger";
+    o.DocumentTitle = "Mapaq.Api — Swagger UI";
+});
+
 var apiSource = new ActivitySource("Mapaq.Api");
 var apiMeter  = new Meter("Mapaq.Api");
 var queryCounter = apiMeter.CreateCounter<long>("mapaq.api.queries");
