@@ -1,7 +1,7 @@
 @using System.Globalization
 @using Microsoft.AspNetCore.Mvc.Localization
 @inject Microsoft.ApplicationInsights.AspNetCore.JavaScriptSnippet JavaScriptSnippet
-@inject IHtmlLocalizer<Mapaq.Web.Resources.SharedResource> L
+@inject IHtmlLocalizer<Mapaq.Web.SharedResource> L
 @{
     var culture = CultureInfo.CurrentUICulture;
     var isFr = culture.TwoLetterISOLanguageName == "fr";

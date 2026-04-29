@@ -2,7 +2,7 @@
 @using Microsoft.AspNetCore.Mvc.Localization
 @using System.Globalization
 @model Mapaq.Web.Pages.Etablissements.DetailModel
-@inject IHtmlLocalizer<Mapaq.Web.Resources.SharedResource> L
+@inject IHtmlLocalizer<Mapaq.Web.SharedResource> L
 @{
     var isFr = CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "fr";
     ViewData["Title"] = L["Detail.Title"].Value;

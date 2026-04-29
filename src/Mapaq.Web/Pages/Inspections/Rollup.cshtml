@@ -2,7 +2,7 @@
 @using System.Globalization
 @using Microsoft.AspNetCore.Mvc.Localization
 @model Mapaq.Web.Pages.Inspections.RollupModel
-@inject IHtmlLocalizer<Mapaq.Web.Resources.SharedResource> L
+@inject IHtmlLocalizer<Mapaq.Web.SharedResource> L
 @{
     ViewData["Title"] = L["Rollup.Title"].Value;
     var hasRows = Model.Rows.Count > 0;

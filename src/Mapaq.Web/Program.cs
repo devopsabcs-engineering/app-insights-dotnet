@@ -38,7 +38,12 @@ builder.Services.ConfigureOpenTelemetryTracerProvider((sp, b) => b.AddSource("Ma
 builder.Services.ConfigureOpenTelemetryMeterProvider((sp, b) => b.AddMeter("Mapaq.Web"));
 
 // ---- Razor Pages + localization (FR primary, EN secondary) ----
-builder.Services.AddLocalization(o => o.ResourcesPath = "Resources");
+// NOTE: ResourcesPath is intentionally NOT set. The SDK embeds
+// `Resources/SharedResource.resx` as the manifest resource
+// `Mapaq.Web.SharedResource.resources` (the SDK collapses the folder),
+// so combined with marker type `Mapaq.Web.SharedResource` the
+// ResourceManager finds the resources without an extra "Resources." prefix.
+builder.Services.AddLocalization();
 builder.Services.AddRazorPages()
     .AddViewLocalization()
     .AddDataAnnotationsLocalization();

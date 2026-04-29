@@ -1,7 +1,7 @@
 @page
 @using Microsoft.AspNetCore.Mvc.Localization
 @model Mapaq.Web.Pages.Etablissements.IndexModel
-@inject IHtmlLocalizer<Mapaq.Web.Resources.SharedResource> L
+@inject IHtmlLocalizer<Mapaq.Web.SharedResource> L
 @{
     ViewData["Title"] = L["Search.Title"].Value;
     var attempted = !string.IsNullOrWhiteSpace(Model.City) || !string.IsNullOrWhiteSpace(Model.Region);
