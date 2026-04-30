@@ -79,14 +79,48 @@ a:hover { text-decoration: underline; }
 .hero .hero-meta span { margin: 0 6px; }
 
 nav.toc {
-  position: sticky;
-  top: 60px;
+  /* Collapsible, in-flow TOC. The previous `position: sticky; top: 60px`
+     kept the full 25-entry TOC pinned to the viewport on every scroll,
+     which obscured slide content on the rendered HTML decks. The TOC now
+     ships as a closed <details> in the document flow. */
   z-index: 100;
   background: rgba(11, 18, 32, 0.95);
   backdrop-filter: blur(8px);
   border-top: 1px solid var(--card-border);
   border-bottom: 1px solid var(--card-border);
   margin-bottom: 32px;
+}
+
+nav.toc .toc-details {
+  max-width: 1100px;
+  margin: 0 auto;
+}
+
+nav.toc .toc-details > summary {
+  cursor: pointer;
+  list-style: none;
+  padding: 10px 32px;
+  font-weight: 600;
+  font-size: 0.9rem;
+  color: var(--muted);
+  user-select: none;
+}
+
+nav.toc .toc-details > summary::-webkit-details-marker { display: none; }
+
+nav.toc .toc-details > summary::before {
+  content: "▸ ";
+  display: inline-block;
+  margin-right: 6px;
+  transition: transform 0.15s ease;
+}
+
+nav.toc .toc-details[open] > summary::before {
+  transform: rotate(90deg);
+}
+
+nav.toc .toc-details > summary:hover {
+  color: var(--sky);
 }
 
 nav.toc .toc-inner {
@@ -297,7 +331,9 @@ pre code { background: transparent; border: none; padding: 0; color: inherit; }
     <p class="hero-meta">📅 2026<span> · </span>👤 Microsoft Canada<span> · </span>🏢 Atelier MAPAQ</p>
   </div>
 <nav class="toc" aria-label="Sommaire">
-    <div class="toc-inner">
+    <details class="toc-details">
+      <summary>Sommaire</summary>
+      <div class="toc-inner">
       <a href="#sec1">Application Insights pour .NET 10</a>
       <a href="#sec2">Ordre du jour — six modules</a>
       <a href="#sec3">Objectifs d&#39;apprentissage</a>
@@ -323,7 +359,8 @@ pre code { background: transparent; border: none; padding: 0; color: inherit; }
       <a href="#sec23">Module 6 — Démantèlement</a>
       <a href="#sec24">Références</a>
       <a href="#sec25">Merci · Thank you</a>
-    </div>
+      </div>
+    </details>
   </nav>
 <div class="container">
 
