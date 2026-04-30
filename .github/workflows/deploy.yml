@@ -37,6 +37,8 @@ jobs:
       AZURE_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
       AZURE_LOCATION:        ${{ vars.AZURE_LOCATION || 'canadaeast' }}
       AZURE_ENV_NAME:        ${{ inputs.azureEnvName || vars.AZURE_ENV_NAME || 'dev-001' }}
+      SQL_ADMIN_LOGIN:       ${{ vars.SQL_ADMIN_LOGIN }}
+      SQL_ADMIN_OBJECT_ID:   ${{ vars.SQL_ADMIN_OBJECT_ID }}
     steps:
       - name: Checkout
         uses: actions/checkout@v5
@@ -59,6 +61,8 @@ jobs:
             --location "$AZURE_LOCATION" \
             --subscription "$AZURE_SUBSCRIPTION_ID" || true
           azd env select "$AZURE_ENV_NAME"
+          azd env set SQL_ADMIN_LOGIN "$SQL_ADMIN_LOGIN"
+          azd env set SQL_ADMIN_OBJECT_ID "$SQL_ADMIN_OBJECT_ID"
           azd up --no-prompt
           endpoint=$(azd env get-values | grep -E '^WEB_URI=' | cut -d= -f2- | tr -d '"' || true)
           echo "endpoint=$endpoint" >> "$GITHUB_OUTPUT"
