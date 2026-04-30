@@ -129,7 +129,6 @@ public static class MapaqDemoSeeder
 
         // ---- Establishments (~12 per region = ~200 total) ----
         var establishments = new List<Establishment>();
-        long estId = 1000;
         foreach (var (region, cities) in Regions)
         {
             var count = rng.Next(8, 15);
@@ -144,7 +143,6 @@ public static class MapaqDemoSeeder
 
                 establishments.Add(new Establishment
                 {
-                    EstablishmentId = ++estId,
                     Name = name,
                     Address = $"{streetNumber} {street}",
                     City = city,
@@ -155,10 +153,10 @@ public static class MapaqDemoSeeder
             }
         }
         db.Establishments.AddRange(establishments);
+        db.SaveChanges(); // flush so SQL Server generates EstablishmentId values
 
         // ---- Convictions: 0-5 per establishment, last 3 years ----
         var convictions = new List<Conviction>();
-        long convId = 1;
         var today = DateOnly.FromDateTime(DateTime.UtcNow);
         var earliest = today.AddYears(-3);
         foreach (var est in establishments)
@@ -174,7 +172,6 @@ public static class MapaqDemoSeeder
                     CultureInfo.InvariantCulture);
                 convictions.Add(new Conviction
                 {
-                    ConvictionId = convId++,
                     EstablishmentId = est.EstablishmentId,
                     ConvictionDate = date,
                     AmountCad = amount,
@@ -188,7 +185,6 @@ public static class MapaqDemoSeeder
 
         // ---- Suspensions: 1-2% of establishments currently suspended ----
         var suspensions = new List<Suspension>();
-        long suspId = 1;
         foreach (var est in establishments)
         {
             if (rng.NextDouble() > 0.02)
@@ -201,7 +197,6 @@ public static class MapaqDemoSeeder
                 : start.AddDays(rng.Next(7, 90));
             suspensions.Add(new Suspension
             {
-                SuspensionId = suspId++,
                 EstablishmentId = est.EstablishmentId,
                 StartDate = start,
                 EndDate = endNullable,
@@ -215,7 +210,6 @@ public static class MapaqDemoSeeder
 
         // ---- Inspection rollups: every region × current+previous year × 12 months × 4 indicators ----
         var rollups = new List<InspectionRollup>();
-        long rollupId = 1;
         var years = new[] { today.Year - 1, today.Year };
         foreach (var (region, _) in Regions)
         {
@@ -248,7 +242,6 @@ public static class MapaqDemoSeeder
 
                         rollups.Add(new InspectionRollup
                         {
-                            RollupId = rollupId++,
                             Region = region,
                             Year = year,
                             Month = month,
@@ -266,7 +259,6 @@ public static class MapaqDemoSeeder
         {
             new SyncJob
             {
-                SyncJobId = 1,
                 StartedUtc = DateTime.UtcNow.AddDays(-7),
                 CompletedUtc = DateTime.UtcNow.AddDays(-7).AddSeconds(45),
                 Status = "Succeeded",
@@ -276,7 +268,6 @@ public static class MapaqDemoSeeder
             },
             new SyncJob
             {
-                SyncJobId = 2,
                 StartedUtc = DateTime.UtcNow.AddHours(-3),
                 CompletedUtc = DateTime.UtcNow.AddHours(-3).AddSeconds(58),
                 Status = "Succeeded",
