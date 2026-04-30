@@ -30,6 +30,10 @@ stages:
 
                 - task: AzureCLI@2
                   displayName: azd env select + azd down --purge --force (WIF)
+                  env:
+                    # azd's azure-pipelines federated provider exchanges this token for an Entra access token.
+                    SYSTEM_ACCESSTOKEN: $(System.AccessToken)
+                    AZURESUBSCRIPTION_SERVICE_CONNECTION_ID: sc-workshop-teardown
                   inputs:
                     connectedServiceNameARM: 'sc-workshop-teardown'
                     azureSubscription: 'sc-workshop-teardown'
@@ -53,5 +57,18 @@ stages:
                         --tenant-id "$AZURE_TENANT_ID" \
                         --federated-credential-provider azure-pipelines
 
-                      azd env select "${{ parameters.azureEnvName }}"
-                      azd down --purge --force --no-prompt
+                      AZD_ENV_NAME="${{ parameters.azureEnvName }}"
+
+                      # Re-hydrate or create the azd env so 'azd down' has state to work with.
+                      azd env select "$AZD_ENV_NAME" || \
+                        azd env new "$AZD_ENV_NAME" \
+                          --no-prompt \
+                          --location "$(az account list-locations --query "[0].name" -o tsv)" \
+                          --subscription "$AZURE_SUBSCRIPTION_ID"
+
+                      # Best-effort azd down; tolerate missing state.
+                      azd down --environment "$AZD_ENV_NAME" --purge --force --no-prompt || true
+
+                      # Belt-and-braces: force-delete the resource group if azd state was missing
+                      # or partial. No-op when the RG is already gone.
+                      az group delete --name "rg-$AZD_ENV_NAME" --yes --no-wait || true

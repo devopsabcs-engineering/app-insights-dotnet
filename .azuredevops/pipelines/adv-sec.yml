@@ -1,0 +1,52 @@
+# GitHub Advanced Security for Azure DevOps — CodeQL + dependency scanning.
+#
+# CodeQL needs to observe the compiler for compiled languages (C#). The Init
+# task installs an extractor that wraps the .NET build; if no build runs
+# between Init and Analyze, the C# database stays empty and Analyze fails with
+# exit code 32 ("the build did not produce any extracted CodeQL database").
+# JavaScript and Python are extracted directly from source and need no build.
+
+trigger:
+- main
+
+pool:
+  vmImage: ubuntu-latest
+
+variables:
+  - name: DOTNET_VERSION
+    value: '10.0.x'
+
+steps:
+  - task: UseDotNet@2
+    displayName: Install .NET SDK $(DOTNET_VERSION)
+    inputs:
+      packageType: sdk
+      version: $(DOTNET_VERSION)
+
+  - task: AdvancedSecurity-Codeql-Init@1
+    displayName: CodeQL init (csharp, javascript, python)
+    inputs:
+      enableAutomaticCodeQLInstall: true
+      languages: 'csharp, javascript, python'
+      querysuite: 'code-scanning'
+
+  - script: dotnet restore Mapaq.sln
+    displayName: dotnet restore
+
+  # Build everything from clean so the CodeQL extractor sees every csc invocation.
+  # --no-incremental + /p:UseSharedCompilation=false defeat Roslyn's build-server
+  # caching, which otherwise causes CodeQL to miss source files on warm agents.
+  - script: |
+      dotnet build Mapaq.sln \
+        --configuration Release \
+        --no-restore \
+        --no-incremental \
+        /p:UseSharedCompilation=false
+    displayName: dotnet build (no-incremental, no-shared-compilation)
+
+  - task: AdvancedSecurity-Dependency-Scanning@1
+    displayName: Dependency scanning
+
+  - task: AdvancedSecurity-Codeql-Analyze@1
+    displayName: CodeQL analyze
+

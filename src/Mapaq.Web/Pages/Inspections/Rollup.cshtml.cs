@@ -1,3 +1,5 @@
+using System.Diagnostics;
+using Mapaq.Web.Telemetry;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 

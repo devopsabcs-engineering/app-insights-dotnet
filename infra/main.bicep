@@ -22,6 +22,10 @@ param sqlAdminPrincipalId string
 @description('UPN or display name of the SQL admin principal (shown in portal).')
 param sqlAdminLogin string
 
+@allowed(['User', 'Group'])
+@description('Entra principal type for the SQL admin (User or Group).')
+param sqlAdminPrincipalType string = 'Group'
+
 // Stable token unique per (subscription, env, region) - avoids name collisions across attendees.
 var resourceToken = toLower(uniqueString(subscription().id, environmentName, location))
 
@@ -96,6 +100,7 @@ module sql 'modules/sql.bicep' = {
     tags: tags
     sqlAdminLogin: sqlAdminLogin
     sqlAdminPrincipalId: sqlAdminPrincipalId
+    sqlAdminPrincipalType: sqlAdminPrincipalType
   }
 }
 

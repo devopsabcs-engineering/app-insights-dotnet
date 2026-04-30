@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using System.Text.Json;
+using Mapaq.Api.Telemetry;
 using Mapaq.Domain;
 using Mapaq.Infrastructure;
 using Microsoft.EntityFrameworkCore;

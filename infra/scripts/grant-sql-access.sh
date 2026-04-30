@@ -10,9 +10,9 @@
 #   UAMI_NAME          - User-Assigned Managed Identity display name
 set -euo pipefail
 
-# In CI (GitHub Actions), SQL public access is disabled and the UAMI gets
-# SQL access via Entra group membership instead. Skip this hook.
-if [[ "${GITHUB_ACTIONS:-}" == "true" ]]; then
+# In CI (GitHub Actions or Azure DevOps Pipelines), SQL public access is disabled
+# and the UAMI gets SQL access via Entra group membership instead. Skip this hook.
+if [[ "${GITHUB_ACTIONS:-}" == "true" || "${TF_BUILD:-}" == "True" || "${TF_BUILD:-}" == "true" ]]; then
   echo ">> Skipping SQL grant in CI — UAMI uses Entra group membership for SQL access."
   exit 0
 fi

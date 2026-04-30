@@ -1,0 +1,15 @@
+{
+  "name": "mapaq-ui-tests",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Playwright smoke tests covering the Mapaq.Web Razor pages.",
+  "scripts": {
+    "test": "playwright test",
+    "test:headed": "playwright test --headed",
+    "report": "playwright show-report"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.47.0",
+    "typescript": "^5.5.0"
+  }
+}

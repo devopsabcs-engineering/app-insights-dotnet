@@ -2,9 +2,10 @@
   "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentParameters.json#",
   "contentVersion": "1.0.0.0",
   "parameters": {
-    "environmentName":     { "value": "${AZURE_ENV_NAME}" },
-    "location":            { "value": "${AZURE_LOCATION=canadacentral}" },
-    "sqlAdminLogin":       { "value": "${SQL_ADMIN_LOGIN}" },
-    "sqlAdminPrincipalId": { "value": "${SQL_ADMIN_OBJECT_ID}" }
+    "environmentName":       { "value": "${AZURE_ENV_NAME}" },
+    "location":              { "value": "${AZURE_LOCATION=canadacentral}" },
+    "sqlAdminLogin":         { "value": "${SQL_ADMIN_LOGIN}" },
+    "sqlAdminPrincipalId":   { "value": "${SQL_ADMIN_OBJECT_ID}" },
+    "sqlAdminPrincipalType": { "value": "${SQL_ADMIN_PRINCIPAL_TYPE=Group}" }
   }
 }

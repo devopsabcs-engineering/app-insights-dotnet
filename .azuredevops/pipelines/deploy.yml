@@ -1,35 +1,51 @@
 # azure-pipelines/deploy.yml
 # Deploy pipeline for the MAPAQ App Insights .NET 10 bilingual workshop.
-# Triggers on push to main AND can be run manually from the ADO UI.
+# Runs ONLY after the CI pipeline completes successfully on main, or manually
+# from the ADO UI. We intentionally do NOT declare a CI-style branch `trigger:`
+# here so deploy never runs in parallel with ci.yml on the same commit.
 # Authenticates to Azure via Workload Identity Federation (WIF) using the
 # `sc-workshop-dev` service connection — no PAT, no client secret.
 # Uses an `environment:` (workshop-dev) so manual approval gates can be configured in ADO.
 
-trigger:
-  branches:
-    include:
-      - main
-  paths:
-    include:
-      - src/**
-      - infra/**
-      - azure.yaml
-      - azure-pipelines/**
-
+# Disable CI/PR branch triggers — deploy is gated on CI completion below.
+trigger: none
 pr: none
+
+# Pipeline-completion trigger: deploy starts only when the `ci` pipeline
+# finishes successfully on `main`. The `source:` value MUST match the
+# pipeline definition name registered in Azure DevOps for ci.yml. Update
+# it here if the ADO pipeline is registered under a different name.
+resources:
+  pipelines:
+    - pipeline: ci
+      source: ci
+      trigger:
+        branches:
+          include:
+            - main
 
 pool:
   vmImage: ubuntu-latest
 
 parameters:
   - name: azureEnvName
-    displayName: Azure Developer CLI environment name
+    displayName: Azure Developer CLI environment name (max 20 chars)
     type: string
-    default: 'workshop-dev'
+    default: 'dev-001'
 
 variables:
   - name: AZURE_LOCATION
     value: canadacentral
+  # SQL admin = Entra group 'azureSqlDBAdmins'. The deploy SP is an owner of this
+  # group, so the post-azd step below can add the workshop UAMI as a member,
+  # which gives the API passwordless dbo access on mapaqdb. Override per-attendee
+  # via pipeline variables in ADO if needed.
+  - name: SQL_ADMIN_LOGIN
+    value: azureSqlDBAdmins
+  - name: SQL_ADMIN_OBJECT_ID
+    value: b817fa2d-6c4b-473b-b82c-1f405f5ef2d8
+  - name: SQL_ADMIN_PRINCIPAL_TYPE
+    value: Group
 
 stages:
   - stage: Deploy
@@ -46,6 +62,13 @@ stages:
 
                 - task: AzureCLI@2
                   displayName: azd auth login + azd up (WIF)
+                  env:
+                    # azd's azure-pipelines federated provider exchanges this token for an Entra access token.
+                    SYSTEM_ACCESSTOKEN: $(System.AccessToken)
+                    AZURESUBSCRIPTION_SERVICE_CONNECTION_ID: sc-workshop-dev
+                    SQL_ADMIN_LOGIN: $(SQL_ADMIN_LOGIN)
+                    SQL_ADMIN_OBJECT_ID: $(SQL_ADMIN_OBJECT_ID)
+                    SQL_ADMIN_PRINCIPAL_TYPE: $(SQL_ADMIN_PRINCIPAL_TYPE)
                   inputs:
                     connectedServiceNameARM: 'sc-workshop-dev'
                     azureSubscription: 'sc-workshop-dev'
@@ -71,11 +94,57 @@ stages:
                         --federated-credential-provider azure-pipelines
 
                       # Create (or reuse) the azd environment for this build, then deploy.
-                      AZD_ENV_NAME="${{ parameters.azureEnvName }}-$(Build.BuildNumber)"
+                      # Bicep limits environmentName to 20 chars, so we use the supplied name as-is.
+                      AZD_ENV_NAME="${{ parameters.azureEnvName }}"
                       azd env new "$AZD_ENV_NAME" \
                         --no-prompt \
                         --location "$(AZURE_LOCATION)" \
                         --subscription "$AZURE_SUBSCRIPTION_ID" || true
                       azd env select "$AZD_ENV_NAME"
 
+                      # Bicep params required by infra/main.parameters.json.
+                      azd env set SQL_ADMIN_LOGIN "$SQL_ADMIN_LOGIN"
+                      azd env set SQL_ADMIN_OBJECT_ID "$SQL_ADMIN_OBJECT_ID"
+                      azd env set SQL_ADMIN_PRINCIPAL_TYPE "$SQL_ADMIN_PRINCIPAL_TYPE"
+
                       azd up --no-prompt
+
+                - task: AzureCLI@2
+                  displayName: Grant UAMI dbo via Entra group (idempotent)
+                  env:
+                    SQL_ADMIN_OBJECT_ID: $(SQL_ADMIN_OBJECT_ID)
+                  inputs:
+                    connectedServiceNameARM: 'sc-workshop-dev'
+                    azureSubscription: 'sc-workshop-dev'
+                    scriptType: bash
+                    scriptLocation: inlineScript
+                    inlineScript: |
+                      set -euo pipefail
+
+                      # The SQL admin is the 'azureSqlDBAdmins' Entra group. Adding the workshop
+                      # UAMI as a member gives it implicit dbo on every database under the server
+                      # without flipping the SQL public network or running CREATE USER. The deploy
+                      # SP is an owner of this group, so this call is authorized via Graph (no
+                      # SQL connection required, so it works even with publicNetworkAccess=Disabled).
+
+                      AZD_ENV_NAME="${{ parameters.azureEnvName }}"
+
+                      UAMI_PRINCIPAL_ID="$(azd env get-value UAMI_PRINCIPAL_ID --environment "$AZD_ENV_NAME" 2>/dev/null || true)"
+                      if [[ -z "$UAMI_PRINCIPAL_ID" ]]; then
+                        UAMI_NAME="$(azd env get-value UAMI_NAME --environment "$AZD_ENV_NAME")"
+                        RG="$(azd env get-value AZURE_RESOURCE_GROUP --environment "$AZD_ENV_NAME")"
+                        UAMI_PRINCIPAL_ID="$(az identity show --name "$UAMI_NAME" --resource-group "$RG" --query principalId -o tsv)"
+                      fi
+
+                      echo ">> Adding UAMI principal $UAMI_PRINCIPAL_ID to group $SQL_ADMIN_OBJECT_ID"
+                      az ad group member add \
+                        --group "$SQL_ADMIN_OBJECT_ID" \
+                        --member-id "$UAMI_PRINCIPAL_ID" 2>/dev/null \
+                        || echo ">> UAMI already a group member (or insufficient permissions — verify manually)."
+
+                      # Restart the API so its connection pool picks up the new SQL access.
+                      WEB_API="$(az resource list -g "$(azd env get-value AZURE_RESOURCE_GROUP --environment "$AZD_ENV_NAME")" --resource-type Microsoft.Web/sites --query "[?starts_with(name, 'mapaq-api-')].name | [0]" -o tsv)"
+                      if [[ -n "$WEB_API" ]]; then
+                        echo ">> Restarting $WEB_API"
+                        az webapp restart -g "$(azd env get-value AZURE_RESOURCE_GROUP --environment "$AZD_ENV_NAME")" -n "$WEB_API"
+                      fi

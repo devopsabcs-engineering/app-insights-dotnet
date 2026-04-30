@@ -1,0 +1,245 @@
+# azure-pipelines/ui-tests.yml
+# Playwright UI tests against the deployed Mapaq.Web App Service. Defaults to
+# the workshop-dev environment (rg-dev-001) and discovers the public Web URL at
+# run time, so attendees do not have to memorize the resourceToken-suffixed
+# hostname. Override `webUrl` (or `azureEnvName`) at queue time to retarget.
+#
+# Outputs:
+#   * ADO Test tab        — Playwright JUnit XML, one row per test (PublishTestResults).
+#   * Build artifact `ui-test-report` — playwright-report/ + screenshots + raw test-results.
+#   * Project wiki page   — `UI-Tests-Latest.md` updated with the freshly captured PNGs
+#                            (when publishToWiki=true, gracefully skipped on auth failure).
+
+trigger: none
+
+pr: none
+
+parameters:
+  - name: azureEnvName
+    displayName: azd environment name (resource group rg-<name>)
+    type: string
+    default: 'dev-001'
+  - name: webUrl
+    displayName: 'Web base URL (use "auto" to discover from rg-<azureEnvName>)'
+    type: string
+    default: 'auto'
+  - name: publishToWiki
+    displayName: Publish screenshots to the project wiki (UI-Tests-Latest)
+    type: boolean
+    default: true
+  - name: failOnTestErrors
+    displayName: Fail the pipeline when any UI test fails
+    type: boolean
+    default: true
+
+pool:
+  vmImage: ubuntu-latest
+
+variables:
+  # Secrets (WIKI_PAT — scope: vso.wiki_write) live in the linked variable group.
+  # Manage via:
+  #   az pipelines variable-group variable update --group-id 51 --name WIKI_PAT --secret true --value <pat>
+  - group: mapaq-ui-pipeline
+  - name: NODE_VERSION
+    value: '20.x'
+  - name: PYTHON_VERSION
+    value: '3.12'
+  - name: REPORT_DIR
+    value: '$(Build.ArtifactStagingDirectory)/ui-test-report'
+  - name: WIKI_REPO_URL
+    value: '$(System.CollectionUri)$(System.TeamProject)/_git/$(System.TeamProject).wiki'
+
+stages:
+  - stage: UITests
+    displayName: Playwright UI tests
+    jobs:
+      - job: run_playwright
+        displayName: Run Playwright against deployed Web
+        timeoutInMinutes: 30
+        variables:
+          # Required so `git push` against dev.azure.com inherits the build identity
+          # via System.AccessToken. The Build Service identity needs Contribute on
+          # the wiki repo for the publishToWiki step to succeed.
+          System.Debug: false
+        steps:
+          - checkout: self
+            persistCredentials: true
+
+          - task: NodeTool@0
+            displayName: Use Node $(NODE_VERSION)
+            inputs:
+              versionSpec: '$(NODE_VERSION)'
+
+          - task: UsePythonVersion@0
+            displayName: Use Python $(PYTHON_VERSION)
+            inputs:
+              versionSpec: '$(PYTHON_VERSION)'
+              addToPath: true
+
+          - task: AzureCLI@2
+            displayName: Resolve Web URL from rg-${{ parameters.azureEnvName }}
+            inputs:
+              connectedServiceNameARM: 'sc-workshop-dev'
+              azureSubscription: 'sc-workshop-dev'
+              scriptType: bash
+              scriptLocation: inlineScript
+              inlineScript: |
+                set -euo pipefail
+
+                RG="rg-${{ parameters.azureEnvName }}"
+                WEB_URL_PARAM='${{ parameters.webUrl }}'
+
+                if [[ -n "$WEB_URL_PARAM" && "$WEB_URL_PARAM" != "auto" ]]; then
+                  RESOLVED_WEB="$WEB_URL_PARAM"
+                else
+                  HOSTNAME="$(az webapp list \
+                      --resource-group "$RG" \
+                      --query "[?starts_with(name, 'mapaq-web-')].defaultHostName | [0]" \
+                      -o tsv)"
+                  if [[ -z "$HOSTNAME" ]]; then
+                    echo "##vso[task.logissue type=error]Could not resolve Web URL from $RG. Pass webUrl explicitly."
+                    exit 1
+                  fi
+                  RESOLVED_WEB="https://${HOSTNAME}"
+                fi
+
+                echo "Resolved Web -> $RESOLVED_WEB"
+                echo "##vso[task.setvariable variable=MAPAQ_WEB_URL]$RESOLVED_WEB"
+                echo "##vso[task.setvariable variable=TARGET_ENV_LABEL]${{ parameters.azureEnvName }}"
+
+          - script: |
+              set -euo pipefail
+              cd tests/ui
+              npm ci --no-audit --no-fund
+            displayName: npm ci (Playwright project)
+
+          - script: |
+              set -euo pipefail
+              cd tests/ui
+              # --with-deps installs the OS libs Playwright needs on Ubuntu agents.
+              npx --no-install playwright install --with-deps chromium
+            displayName: Install Playwright browsers (Chromium)
+
+          - script: |
+              set -uo pipefail
+              cd tests/ui
+
+              # Pre-flight: warn if the home page does not respond, but let
+              # Playwright drive the actual pass/fail signal.
+              if curl -fsS --max-time 10 "$MAPAQ_WEB_URL/" -o /dev/null; then
+                echo "Web tier reachable at $MAPAQ_WEB_URL"
+              else
+                echo "##vso[task.logissue type=warning]Pre-flight curl to $MAPAQ_WEB_URL/ failed."
+              fi
+
+              npx --no-install playwright test
+              PLAYWRIGHT_EXIT=$?
+
+              # Always publish the report bundle, regardless of pass/fail.
+              mkdir -p "$REPORT_DIR"
+              cp -r playwright-report  "$REPORT_DIR/" 2>/dev/null || true
+              cp -r test-results       "$REPORT_DIR/" 2>/dev/null || true
+              cp -r screenshots        "$REPORT_DIR/" 2>/dev/null || true
+
+              echo "Playwright exit code: $PLAYWRIGHT_EXIT (per-test pass/fail decided by the JUnit publish step)"
+              exit 0
+            env:
+              MAPAQ_WEB_URL: $(MAPAQ_WEB_URL)
+              REPORT_DIR: $(REPORT_DIR)
+              CI: 'true'
+            displayName: Run Playwright
+
+          - task: PublishTestResults@2
+            displayName: Publish Playwright JUnit results to ADO Test tab
+            condition: always()
+            inputs:
+              testResultsFormat: JUnit
+              testResultsFiles: 'tests/ui/test-results/junit.xml'
+              testRunTitle: 'Mapaq UI Tests (${{ parameters.azureEnvName }})'
+              mergeTestResults: true
+              failTaskOnFailedTests: ${{ parameters.failOnTestErrors }}
+
+          - task: PublishPipelineArtifact@1
+            displayName: Publish HTML + screenshots bundle
+            condition: always()
+            inputs:
+              targetPath: '$(REPORT_DIR)'
+              artifact: 'ui-test-report'
+              publishLocation: pipeline
+
+          - script: |
+              set -uo pipefail
+
+              SCREENSHOT_DIR="tests/ui/screenshots"
+              if [ ! -d "$SCREENSHOT_DIR" ] || [ -z "$(ls -A "$SCREENSHOT_DIR" 2>/dev/null)" ]; then
+                echo "No screenshots produced; skipping wiki publish."
+                exit 0
+              fi
+
+              # Pick the auth token. Prefer a user-supplied WIKI_PAT pipeline
+              # secret (set in the pipeline's Variables → 'Keep this value secret'
+              # → name 'WIKI_PAT') because most ADO orgs disable Build Service
+              # writes by default. Fall back to System.AccessToken when WIKI_PAT
+              # is empty — that path requires the project's Build Service
+              # identity ('<project> Build Service (<org>)') to have Contribute
+              # on the <project>.wiki repository.
+              TOKEN="${WIKI_PAT:-}"
+              TOKEN_SOURCE="WIKI_PAT secret variable"
+              if [ -z "$TOKEN" ]; then
+                TOKEN="$SYSTEM_ACCESSTOKEN"
+                TOKEN_SOURCE="System.AccessToken (Build Service identity)"
+              fi
+
+              if [ -z "$TOKEN" ]; then
+                echo "##vso[task.logissue type=warning]No WIKI_PAT and no System.AccessToken available; skipping wiki publish."
+                exit 0
+              fi
+              echo "Authenticating to wiki via: $TOKEN_SOURCE"
+
+              # Azure DevOps Git accepts HTTP Basic auth with empty username and
+              # the PAT as the password — this is the most reliable header form
+              # (more so than 'Authorization: Bearer <token>'). Encode the
+              # ':<token>' string to base64 to build the Authorization value.
+              B64="$(printf ':%s' "$TOKEN" | base64 -w0)"
+              AUTH_HEADER="Authorization: Basic $B64"
+              git config --global http.extraHeader "$AUTH_HEADER"
+
+              # Probe the wiki repo first so a missing wiki yields a clear warning.
+              if ! git ls-remote "$WIKI_REPO_URL" >/dev/null 2>&1; then
+                echo "##vso[task.logissue type=warning]Project wiki repo not reachable at $WIKI_REPO_URL."
+                echo "Resolution checklist:"
+                echo "  1. ADO → Overview → Wiki → 'Create project wiki' (must exist before this pipeline can write to it)."
+                echo "  2. Either:"
+                echo "       a) supply a PAT in the pipeline Variables tab as a secret named 'WIKI_PAT' with 'Wiki (read & write)', or"
+                echo "       b) Project Settings → Repositories → '<project>.wiki' → Permissions → grant 'Contribute' to '<project> Build Service (<org>)'."
+                echo "  3. If using OAuth, confirm 'Limit job authorization scope to current project' is OFF in Project Settings → Pipelines (or scope the wiki to the current project)."
+                exit 0
+              fi
+
+              python tests/ui/publish_screenshots_to_wiki.py \
+                --wiki-repo-url "$WIKI_REPO_URL" \
+                --screenshots-dir "$SCREENSHOT_DIR" \
+                --build-id     "$BUILD_BUILDID" \
+                --build-number "$BUILD_BUILDNUMBER" \
+                --build-url    "$BUILD_URL" \
+                --target-env   "$TARGET_ENV_LABEL" \
+                --git-user     "Mapaq UI Pipeline" \
+                --git-email    "pipeline@mapaq.local"
+              SCRIPT_EXIT=$?
+              if [ $SCRIPT_EXIT -ne 0 ]; then
+                echo "##vso[task.logissue type=warning]Wiki publish script exited $SCRIPT_EXIT."
+              fi
+              # Never fail the pipeline on wiki-publish issues — the test outcome
+              # is the source of truth for build status.
+              exit 0
+            env:
+              SYSTEM_ACCESSTOKEN: $(System.AccessToken)
+              # Optional PAT — declare an empty default here so the variable is
+              # always defined; override at queue time or via a secret pipeline
+              # variable named 'WIKI_PAT' (Variables tab → 'Keep this value secret').
+              WIKI_PAT: $(WIKI_PAT)
+              WIKI_REPO_URL: $(WIKI_REPO_URL)
+              BUILD_URL: $(System.CollectionUri)$(System.TeamProject)/_build/results?buildId=$(Build.BuildId)
+              TARGET_ENV_LABEL: $(TARGET_ENV_LABEL)
+            condition: and(always(), eq('${{ parameters.publishToWiki }}', true))
+            displayName: Publish screenshots to project wiki

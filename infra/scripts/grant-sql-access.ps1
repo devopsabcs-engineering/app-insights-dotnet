@@ -7,9 +7,9 @@
 # Requires: SqlServer module (Install-Module SqlServer -Scope CurrentUser).
 $ErrorActionPreference = 'Stop'
 
-# In CI (GitHub Actions), SQL public access is disabled and the UAMI gets
-# SQL access via Entra group membership instead. Skip this hook.
-if ($env:GITHUB_ACTIONS -eq 'true') {
+# In CI (GitHub Actions or Azure DevOps Pipelines), SQL public access is disabled
+# and the UAMI gets SQL access via Entra group membership instead. Skip this hook.
+if ($env:GITHUB_ACTIONS -eq 'true' -or $env:TF_BUILD -eq 'True' -or $env:TF_BUILD -eq 'true') {
     Write-Host '>> Skipping SQL grant in CI - UAMI uses Entra group membership for SQL access.'
     exit 0
 }

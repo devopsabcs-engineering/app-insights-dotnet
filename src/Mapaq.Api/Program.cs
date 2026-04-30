@@ -1,7 +1,7 @@
 using System.Diagnostics;
-using System.Diagnostics.Metrics;
 using Azure.Monitor.OpenTelemetry.AspNetCore;
 using Mapaq.Api.Sync;
+using Mapaq.Api.Telemetry;
 using Mapaq.Domain;
 using Mapaq.Infrastructure;
 using Microsoft.EntityFrameworkCore;
@@ -129,9 +129,9 @@ app.UseSwaggerUI(o =>
     o.DocumentTitle = "Mapaq.Api — Swagger UI";
 });
 
-var apiSource = new ActivitySource("Mapaq.Api");
-var apiMeter  = new Meter("Mapaq.Api");
-var queryCounter = apiMeter.CreateCounter<long>("mapaq.api.queries");
+// All endpoints below use ApiTelemetry.Source/Meter so spans, custom metrics,
+// and exceptions are captured uniformly and surfaced in Application Insights
+// via the Azure Monitor OpenTelemetry Distro registered above.
 
 app.MapGet("/api/establishments", async (
     string? city,
@@ -139,31 +139,50 @@ app.MapGet("/api/establishments", async (
     MapaqDbContext db,
     CancellationToken ct) =>
 {
-    using var activity = apiSource.StartActivity("SearchEstablishments");
-    queryCounter.Add(1, new KeyValuePair<string, object?>("endpoint", "/api/establishments"));
-
-    var query = db.Establishments.AsNoTracking().AsQueryable();
-    if (!string.IsNullOrWhiteSpace(city))
+    const string endpoint = "/api/establishments";
+    using var activity = ApiTelemetry.Source.StartActivity("SearchEstablishments", ActivityKind.Server);
+    activity?.SetTag("mapaq.endpoint", endpoint);
+    activity?.SetTag("mapaq.filter.city", city);
+    activity?.SetTag("mapaq.filter.region", region);
+    ApiTelemetry.Queries.Add(1, new KeyValuePair<string, object?>("endpoint", endpoint));
+    var sw = Stopwatch.StartNew();
+    try
     {
-        query = query.Where(e => e.City == city);
-    }
-    if (!string.IsNullOrWhiteSpace(region))
-    {
-        query = query.Where(e => e.Region == region);
-    }
-    var rows = await query
-        .OrderBy(e => e.Name)
-        .Take(50)
-        .Select(e => new
+        var query = db.Establishments.AsNoTracking().AsQueryable();
+        if (!string.IsNullOrWhiteSpace(city))
         {
-            e.EstablishmentId,
-            e.Name,
-            e.Address,
-            e.City,
-            e.Region
-        })
-        .ToListAsync(ct);
-    return Results.Ok(rows);
+            query = query.Where(e => e.City == city);
+        }
+        if (!string.IsNullOrWhiteSpace(region))
+        {
+            query = query.Where(e => e.Region == region);
+        }
+        var rows = await query
+            .OrderBy(e => e.Name)
+            .Take(50)
+            .Select(e => new
+            {
+                e.EstablishmentId,
+                e.Name,
+                e.Address,
+                e.City,
+                e.Region
+            })
+            .ToListAsync(ct);
+        activity?.SetTag("mapaq.result.count", rows.Count);
+        ApiTelemetry.ResultRows.Add(rows.Count, new KeyValuePair<string, object?>("endpoint", endpoint));
+        return Results.Ok(rows);
+    }
+    catch (Exception ex)
+    {
+        ApiTelemetry.RecordError(activity, endpoint, ex);
+        throw;
+    }
+    finally
+    {
+        ApiTelemetry.EndpointDurationMs.Record(sw.Elapsed.TotalMilliseconds,
+            new KeyValuePair<string, object?>("endpoint", endpoint));
+    }
 });
 
 app.MapGet("/api/establishments/{id:long}", async (
@@ -171,35 +190,54 @@ app.MapGet("/api/establishments/{id:long}", async (
     MapaqDbContext db,
     CancellationToken ct) =>
 {
-    using var activity = apiSource.StartActivity("GetEstablishment");
-    queryCounter.Add(1, new KeyValuePair<string, object?>("endpoint", "/api/establishments/{id}"));
-
-    var e = await db.Establishments
-        .AsNoTracking()
-        .Include(x => x.Convictions)
-        .FirstOrDefaultAsync(x => x.EstablishmentId == id, ct);
-    if (e is null)
+    const string endpoint = "/api/establishments/{id}";
+    using var activity = ApiTelemetry.Source.StartActivity("GetEstablishment", ActivityKind.Server);
+    activity?.SetTag("mapaq.endpoint", endpoint);
+    activity?.SetTag("mapaq.establishment.id", id);
+    ApiTelemetry.Queries.Add(1, new KeyValuePair<string, object?>("endpoint", endpoint));
+    var sw = Stopwatch.StartNew();
+    try
     {
-        return Results.NotFound();
+        var e = await db.Establishments
+            .AsNoTracking()
+            .Include(x => x.Convictions)
+            .FirstOrDefaultAsync(x => x.EstablishmentId == id, ct);
+        if (e is null)
+        {
+            activity?.SetTag("mapaq.result.found", false);
+            return Results.NotFound();
+        }
+        activity?.SetTag("mapaq.result.found", true);
+        activity?.SetTag("mapaq.result.convictions", e.Convictions.Count);
+        return Results.Ok(new
+        {
+            e.EstablishmentId,
+            e.Name,
+            e.Address,
+            e.City,
+            e.Region,
+            Convictions = e.Convictions
+                .OrderByDescending(c => c.ConvictionDate)
+                .Select(c => new
+                {
+                    c.ConvictionDate,
+                    c.AmountCad,
+                    c.ArticleCode,
+                    c.ArticleTitleFr,
+                    c.ArticleTitleEn
+                })
+        });
     }
-    return Results.Ok(new
+    catch (Exception ex)
     {
-        e.EstablishmentId,
-        e.Name,
-        e.Address,
-        e.City,
-        e.Region,
-        Convictions = e.Convictions
-            .OrderByDescending(c => c.ConvictionDate)
-            .Select(c => new
-            {
-                c.ConvictionDate,
-                c.AmountCad,
-                c.ArticleCode,
-                c.ArticleTitleFr,
-                c.ArticleTitleEn
-            })
-    });
+        ApiTelemetry.RecordError(activity, endpoint, ex);
+        throw;
+    }
+    finally
+    {
+        ApiTelemetry.EndpointDurationMs.Record(sw.Elapsed.TotalMilliseconds,
+            new KeyValuePair<string, object?>("endpoint", endpoint));
+    }
 });
 
 app.MapGet("/api/inspections/rollup", async (
@@ -208,30 +246,69 @@ app.MapGet("/api/inspections/rollup", async (
     MapaqDbContext db,
     CancellationToken ct) =>
 {
-    using var activity = apiSource.StartActivity("InspectionRollup");
-    queryCounter.Add(1, new KeyValuePair<string, object?>("endpoint", "/api/inspections/rollup"));
-
-    var rows = await db.InspectionRollups
-        .AsNoTracking()
-        .Where(r => r.Region == region && r.Year == year)
-        .OrderBy(r => r.Month).ThenBy(r => r.IndicatorCode)
-        .Select(r => new
-        {
-            r.Region,
-            r.Year,
-            r.Month,
-            r.IndicatorCode,
-            r.Value
-        })
-        .ToListAsync(ct);
-    return Results.Ok(rows);
+    const string endpoint = "/api/inspections/rollup";
+    using var activity = ApiTelemetry.Source.StartActivity("InspectionRollup", ActivityKind.Server);
+    activity?.SetTag("mapaq.endpoint", endpoint);
+    activity?.SetTag("mapaq.filter.region", region);
+    activity?.SetTag("mapaq.filter.year", year);
+    ApiTelemetry.Queries.Add(1, new KeyValuePair<string, object?>("endpoint", endpoint));
+    var sw = Stopwatch.StartNew();
+    try
+    {
+        var rows = await db.InspectionRollups
+            .AsNoTracking()
+            .Where(r => r.Region == region && r.Year == year)
+            .OrderBy(r => r.Month).ThenBy(r => r.IndicatorCode)
+            .Select(r => new
+            {
+                r.Region,
+                r.Year,
+                r.Month,
+                r.IndicatorCode,
+                r.Value
+            })
+            .ToListAsync(ct);
+        activity?.SetTag("mapaq.result.count", rows.Count);
+        ApiTelemetry.ResultRows.Add(rows.Count, new KeyValuePair<string, object?>("endpoint", endpoint));
+        return Results.Ok(rows);
+    }
+    catch (Exception ex)
+    {
+        ApiTelemetry.RecordError(activity, endpoint, ex);
+        throw;
+    }
+    finally
+    {
+        ApiTelemetry.EndpointDurationMs.Record(sw.Elapsed.TotalMilliseconds,
+            new KeyValuePair<string, object?>("endpoint", endpoint));
+    }
 });
 
 app.MapPost("/api/sync", async (CkanSyncService sync, CancellationToken ct) =>
 {
-    using var activity = apiSource.StartActivity("SyncFromDonneesQuebec");
-    var result = await sync.RunAsync(ct);
-    return Results.Ok(result);
+    const string endpoint = "/api/sync";
+    using var activity = ApiTelemetry.Source.StartActivity("SyncFromDonneesQuebec", ActivityKind.Server);
+    activity?.SetTag("mapaq.endpoint", endpoint);
+    ApiTelemetry.Queries.Add(1, new KeyValuePair<string, object?>("endpoint", endpoint));
+    var sw = Stopwatch.StartNew();
+    try
+    {
+        var result = await sync.RunAsync(ct);
+        activity?.SetTag("mapaq.sync.status", result.Status);
+        activity?.SetTag("mapaq.sync.rows_read", result.RowsRead);
+        activity?.SetTag("mapaq.sync.rows_upserted", result.RowsUpserted);
+        return Results.Ok(result);
+    }
+    catch (Exception ex)
+    {
+        ApiTelemetry.RecordError(activity, endpoint, ex);
+        throw;
+    }
+    finally
+    {
+        ApiTelemetry.EndpointDurationMs.Record(sw.Elapsed.TotalMilliseconds,
+            new KeyValuePair<string, object?>("endpoint", endpoint));
+    }
 });
 
 app.Run();
