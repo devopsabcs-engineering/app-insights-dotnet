@@ -7,6 +7,13 @@
 # Requires: SqlServer module (Install-Module SqlServer -Scope CurrentUser).
 $ErrorActionPreference = 'Stop'
 
+# In CI (GitHub Actions), SQL public access is disabled and the UAMI gets
+# SQL access via Entra group membership instead. Skip this hook.
+if ($env:GITHUB_ACTIONS -eq 'true') {
+    Write-Host '>> Skipping SQL grant in CI - UAMI uses Entra group membership for SQL access.'
+    exit 0
+}
+
 $sqlServer = & azd env get-value SQL_FQDN
 $sqlDb     = & azd env get-value SQL_DATABASE_NAME
 $uamiName  = & azd env get-value UAMI_NAME

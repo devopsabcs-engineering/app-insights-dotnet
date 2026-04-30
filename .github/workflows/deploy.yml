@@ -1,5 +1,5 @@
-# Provisions infra and deploys application code via azd. Manual dispatch or
-# automatic on push to main when src/, infra/, or azure.yaml change. Uses
+# Provisions infra and deploys application code via azd. Triggered automatically
+# after a successful CI run on main, or manually via workflow_dispatch. Uses
 # OIDC federated credentials (no secrets) and gates on the workshop-dev
 # GitHub Environment for branch protection and reviewer approval.
 name: deploy
@@ -12,13 +12,10 @@ on:
         required: false
         type: string
         default: dev-001
-  push:
+  workflow_run:
+    workflows: [ci]
+    types: [completed]
     branches: [main]
-    paths:
-      - "src/**"
-      - "infra/**"
-      - "azure.yaml"
-      - ".github/workflows/deploy.yml"
 
 permissions:
   id-token: write
@@ -28,6 +25,7 @@ jobs:
   deploy:
     name: azd up
     runs-on: ubuntu-latest
+    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
     environment:
       name: workshop-dev
       url: ${{ steps.azd.outputs.endpoint }}
@@ -72,10 +70,6 @@ jobs:
           azd env select "$AZURE_ENV_NAME"
           azd env set SQL_ADMIN_LOGIN "$SQL_ADMIN_LOGIN"
           azd env set SQL_ADMIN_OBJECT_ID "$SQL_ADMIN_OBJECT_ID"
-
-          # Skip postprovision hook in CI — SQL public access is disabled;
-          # UAMI gets SQL access via Entra group membership instead (next step).
-          export AZD_HOOKS_SKIP=postprovision
           azd up --no-prompt
 
           endpoint=$(azd env get-values | grep -E '^WEB_URI=' | cut -d= -f2- | tr -d '"' || true)

@@ -10,6 +10,13 @@
 #   UAMI_NAME          - User-Assigned Managed Identity display name
 set -euo pipefail
 
+# In CI (GitHub Actions), SQL public access is disabled and the UAMI gets
+# SQL access via Entra group membership instead. Skip this hook.
+if [[ "${GITHUB_ACTIONS:-}" == "true" ]]; then
+  echo ">> Skipping SQL grant in CI — UAMI uses Entra group membership for SQL access."
+  exit 0
+fi
+
 SQL_SERVER="$(azd env get-value SQL_FQDN)"
 SQL_DB="$(azd env get-value SQL_DATABASE_NAME)"
 UAMI_NAME="$(azd env get-value UAMI_NAME)"
