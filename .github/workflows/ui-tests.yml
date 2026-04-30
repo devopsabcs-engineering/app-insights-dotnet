@@ -10,13 +10,15 @@
 #   * Workflow run   - artifact `ui-test-report` (playwright-report/ + screenshots
 #                       + raw test-results).
 #   * GitHub wiki    - page `UI-Tests-Latest.md` updated with the freshly captured
-#                       PNGs (when publishToWiki=true). Requires repo secret
-#                       `WIKI_PAT` - a PAT with `repo` (classic) or
-#                       `Contents: Read and write` (fine-grained, scoped to this
-#                       repo's wiki). The default GITHUB_TOKEN cannot push to the
-#                       wiki, so a PAT is mandatory; the step is skipped with a
-#                       warning when the secret is absent. The wiki must already
-#                       be initialized (Wiki tab -> Create the first page).
+#                       Mapaq.Web PNGs and page `API-Tests-Latest.md` updated with
+#                       Mapaq.Api Swagger UI PNGs (both when publishToWiki=true).
+#                       Requires repo secret `WIKI_PAT` - a PAT with `repo`
+#                       (classic) or `Contents: Read and write` (fine-grained,
+#                       scoped to this repo's wiki). The default GITHUB_TOKEN
+#                       cannot push to the wiki, so a PAT is mandatory; the
+#                       publish steps are skipped with a warning when the secret
+#                       is absent. The wiki must already be initialized (Wiki tab
+#                       -> Create the first page).
 name: ui-tests
 
 on:
@@ -33,7 +35,7 @@ on:
         type: string
         default: auto
       publishToWiki:
-        description: "Publish screenshots to the GitHub wiki (UI-Tests-Latest)"
+        description: "Publish screenshots to the GitHub wiki (UI-Tests-Latest + API-Tests-Latest)"
         required: false
         type: boolean
         default: true
@@ -105,9 +107,26 @@ jobs:
             RESOLVED_WEB="https://${HOSTNAME}"
           fi
 
+          # Also resolve the public Mapaq.Api hostname so the new swagger.spec
+          # can drive Swagger UI without hard-coding the App Service slug. We
+          # treat a missing API as a soft warning so workflow runs that pre-
+          # date the API deployment still complete the UI tests.
+          API_HOSTNAME="$(az webapp list \
+              --resource-group "$RG" \
+              --query "[?starts_with(name, 'mapaq-api-')].defaultHostName | [0]" \
+              -o tsv)"
+          if [[ -n "$API_HOSTNAME" ]]; then
+            RESOLVED_API="https://${API_HOSTNAME}"
+            echo "Resolved API -> $RESOLVED_API"
+          else
+            RESOLVED_API=""
+            echo "::warning::Could not resolve Mapaq.Api host from $RG; Swagger spec will fail and that is OK."
+          fi
+
           echo "Resolved Web -> $RESOLVED_WEB"
           {
             echo "MAPAQ_WEB_URL=$RESOLVED_WEB"
+            echo "MAPAQ_API_URL=$RESOLVED_API"
             echo "TARGET_ENV_LABEL=$AZURE_ENV_NAME"
           } >> "$GITHUB_ENV"
 
@@ -135,6 +154,17 @@ jobs:
             echo "::warning::Pre-flight curl to $MAPAQ_WEB_URL/ failed."
           fi
 
+          # Same pre-flight against the API; informational only because the
+          # Swagger spec produces a useful error-state screenshot even when
+          # the API is briefly unreachable.
+          if [ -n "${MAPAQ_API_URL:-}" ]; then
+            if curl -fsS --max-time 10 "$MAPAQ_API_URL/healthz" -o /dev/null; then
+              echo "API tier reachable at $MAPAQ_API_URL"
+            else
+              echo "::warning::Pre-flight curl to $MAPAQ_API_URL/healthz failed."
+            fi
+          fi
+
           npx --no-install playwright test
           PLAYWRIGHT_EXIT=$?
 
@@ -143,6 +173,7 @@ jobs:
           cp -r playwright-report  "$REPORT_DIR/" 2>/dev/null || true
           cp -r test-results       "$REPORT_DIR/" 2>/dev/null || true
           cp -r screenshots        "$REPORT_DIR/" 2>/dev/null || true
+          cp -r api-screenshots    "$REPORT_DIR/" 2>/dev/null || true
 
           echo "Playwright exit code: $PLAYWRIGHT_EXIT (per-test pass/fail decided by the JUnit publish step)"
           exit 0
@@ -257,4 +288,70 @@ jobs:
           fi
           # Never fail the workflow on wiki-publish issues - the test outcome
           # is the source of truth for build status.
+          exit 0
+
+      - name: Publish API (Swagger) screenshots to GitHub wiki
+        # Same enable conditions as the UI publish step above. Mirrors all of
+        # the same hardening (no `bash -e`, PAT whitespace strip, captured git
+        # stderr, wiki-branch auto-detect, never fail the workflow). Targets
+        # a different wiki page (API-Tests-Latest) and a different attachments
+        # subfolder (images/api-tests/) so the two pages stay independent.
+        if: always() && inputs.publishToWiki
+        shell: bash --noprofile --norc -uo pipefail {0}
+        env:
+          WIKI_PAT: ${{ secrets.WIKI_PAT }}
+          BUILD_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          BUILD_NUMBER: ${{ github.run_number }}
+          BUILD_ID: ${{ github.run_id }}
+          TARGET_ENV_LABEL: ${{ env.TARGET_ENV_LABEL }}
+        run: |
+          API_SCREENSHOT_DIR="tests/ui/api-screenshots"
+          if [ ! -d "$API_SCREENSHOT_DIR" ] || [ -z "$(ls -A "$API_SCREENSHOT_DIR" 2>/dev/null)" ]; then
+            echo "No API screenshots produced; skipping API wiki publish."
+            exit 0
+          fi
+
+          if [ -z "${WIKI_PAT:-}" ]; then
+            echo "::warning::Repository secret 'WIKI_PAT' is not set; skipping API wiki publish."
+            exit 0
+          fi
+
+          WIKI_PAT="$(printf '%s' "$WIKI_PAT" | tr -d '\r\n\t ')"
+          WIKI_REPO_URL="https://x-access-token:${WIKI_PAT}@github.com/${GITHUB_REPOSITORY}.wiki.git"
+          GIT_STDERR="$(mktemp)"
+          WIKI_BRANCH="$(git ls-remote --symref "$WIKI_REPO_URL" HEAD 2>"$GIT_STDERR" \
+            | awk '/^ref:/ {sub("refs/heads/", "", $2); print $2; exit}')" || true
+          if [ -z "$WIKI_BRANCH" ]; then
+            echo "::warning::GitHub wiki repo not reachable at github.com/${GITHUB_REPOSITORY}/wiki."
+            echo "Underlying git error:"
+            sed 's/^/  /' "$GIT_STDERR" || true
+            rm -f "$GIT_STDERR"
+            exit 0
+          fi
+          rm -f "$GIT_STDERR"
+          echo "Wiki default branch detected: $WIKI_BRANCH"
+
+          # Same publisher, different page + subdir. The script also sweeps any
+          # prior .attachments/api-tests/ folder when --wiki-flavor github is
+          # used so the wiki self-heals if it was ever published with the ADO
+          # path layout.
+          python tests/ui/publish_screenshots_to_wiki.py \
+            --wiki-flavor       github \
+            --wiki-repo-url    "$WIKI_REPO_URL" \
+            --branch            "$WIKI_BRANCH" \
+            --screenshots-dir  "$API_SCREENSHOT_DIR" \
+            --build-id         "$BUILD_ID" \
+            --build-number     "$BUILD_NUMBER" \
+            --build-url        "$BUILD_URL" \
+            --target-env       "$TARGET_ENV_LABEL" \
+            --git-user         "Mapaq UI Pipeline" \
+            --git-email        "pipeline@mapaq.local" \
+            --page-name         API-Tests-Latest \
+            --page-title       "Mapaq API tests — latest run" \
+            --source-link-label "Mapaq UI Tests pipeline" \
+            --attachments-subdir api-tests
+          SCRIPT_EXIT=$?
+          if [ $SCRIPT_EXIT -ne 0 ]; then
+            echo "::warning::API wiki publish script exited $SCRIPT_EXIT."
+          fi
           exit 0

@@ -61,6 +61,8 @@ def _build_markdown(
     target_env: str,
     timestamp: _dt.datetime,
     image_link_prefix: str = "/",
+    page_title: str = "Mapaq UI tests — latest run",
+    source_link_label: str = "Mapaq UI Tests pipeline",
 ) -> str:
     """Return the wiki page body as Markdown.
 
@@ -69,13 +71,16 @@ def _build_markdown(
       - ""   -> relative to the page (GitHub wiki convention; a leading
                slash on github.com is interpreted as the github.com domain root
                and breaks the image render).
+
+    *page_title* and *source_link_label* let the same script publish multiple
+    sibling pages (e.g. UI-Tests-Latest + API-Tests-Latest) without forking.
     """
     lines: list[str] = []
-    lines.append("# Mapaq UI tests — latest run")
+    lines.append(f"# {page_title}")
     lines.append("")
     lines.append(
         "_Auto-generated from the most recent successful run of the_ "
-        "[Mapaq UI Tests pipeline]("
+        f"[{source_link_label}]("
         f"{build_url})._"
     )
     lines.append("")
@@ -117,15 +122,35 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--git-email", default="pipeline@mapaq.local")
     parser.add_argument("--branch", default="wikiMaster", help="Branch to push to (project wikis use 'wikiMaster').")
     parser.add_argument("--page-name", default="UI-Tests-Latest", help="Wiki page filename (no extension).")
+    parser.add_argument(
+        "--page-title",
+        default="Mapaq UI tests — latest run",
+        help="H1 heading rendered at the top of the wiki page.",
+    )
+    parser.add_argument(
+        "--source-link-label",
+        default="Mapaq UI Tests pipeline",
+        help="Label for the build URL link on the wiki page.",
+    )
+    parser.add_argument(
+        "--attachments-subdir",
+        default="ui-tests",
+        help=(
+            "Sub-folder under the wiki's attachments root where this page's "
+            "images are stored (e.g. 'ui-tests' or 'api-tests'). Allows the "
+            "same script to publish multiple sibling pages without their "
+            "images stomping on each other."
+        ),
+    )
     parser.add_argument("--retain-runs", type=int, default=10, help="How many historical attachment folders to keep.")
     parser.add_argument(
         "--wiki-flavor",
         choices=("ado", "github"),
         default="ado",
         help=(
-            "Target wiki flavor. 'ado' uses '.attachments/ui-tests/build-<id>/' "
+            "Target wiki flavor. 'ado' uses '.attachments/<subdir>/build-<id>/' "
             "with absolute-from-root image links (Azure DevOps convention). "
-            "'github' uses 'images/ui-tests/build-<id>/' with relative image links "
+            "'github' uses 'images/<subdir>/build-<id>/' with relative image links "
             "because GitHub wikis treat a leading slash as the github.com domain root."
         ),
     )
@@ -133,11 +158,11 @@ def main(argv: list[str] | None = None) -> int:
 
     # Per-flavor defaults: storage subdir + image link prefix.
     if args.wiki_flavor == "github":
-        attachments_root_relpath = "images/ui-tests"
+        attachments_root_relpath = f"images/{args.attachments_subdir}"
         image_link_prefix = ""   # relative to the wiki page
-        legacy_attachments_root = ".attachments/ui-tests"  # cleaned up if present
+        legacy_attachments_root = f".attachments/{args.attachments_subdir}"  # cleaned up if present
     else:  # ado
-        attachments_root_relpath = ".attachments/ui-tests"
+        attachments_root_relpath = f".attachments/{args.attachments_subdir}"
         image_link_prefix = "/"  # absolute from wiki root
         legacy_attachments_root = None
 
@@ -193,6 +218,8 @@ def main(argv: list[str] | None = None) -> int:
             target_env=args.target_env,
             timestamp=timestamp,
             image_link_prefix=image_link_prefix,
+            page_title=args.page_title,
+            source_link_label=args.source_link_label,
         )
         page_path = wiki_dir / f"{args.page_name}.md"
         page_path.write_text(page_body, encoding="utf-8")
