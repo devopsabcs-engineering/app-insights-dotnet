@@ -1,0 +1,44 @@
+# lychee link-check configuration for the MAPAQ App Insights .NET 10 workshop.
+#
+# CI runs lychee against the built Jekyll site under `_site/` (see
+# .github/workflows/link-check.yml). Rationale:
+#   * Source markdown contains Jekyll permalinks (e.g. `lab-01-provisionnement`)
+#     that resolve only after `jekyll build` rewrites them to `/labs/.../`.
+#     Checking source would always report file-not-found false positives.
+#   * Generated artefacts under `docs/decks/` may not exist until the
+#     `build-decks` workflow has run; checking the rendered `_site/` keeps
+#     link-check independent of deck regeneration.
+
+# ---- Status codes accepted as "OK" ----
+# 200/206  - normal success
+# 403      - donneesquebec.ca and similar gov portals reject bot user agents
+# 429      - rate-limit; treat as transient rather than failing the build
+accept = [200, 206, 403, 429]
+
+# ---- Patterns that should never be checked ----
+exclude = [
+  # Local dev URLs from scripts/start-local.ps1 docs
+  "^https?://localhost",
+  "^https?://127\\.0\\.0\\.1",
+  # Quebec open data portal returns 403 to non-browser clients but works in
+  # an interactive browser; AC for citing the dataset is met regardless.
+  "^https://www\\.donneesquebec\\.ca",
+]
+
+# ---- Filesystem paths to skip entirely ----
+exclude_path = [
+  "node_modules",
+  "vendor",
+  "_site/assets/branding",     # binary SVGs, no links inside
+  "src",                       # .NET source, not part of the published site
+  "tests",
+  "infra",
+  "slides/build",              # build scripts, not docs
+]
+
+# ---- Behaviour ----
+max_concurrency = 4
+no_progress = true
+include_verbatim = true        # also scan inline code blocks
+cache = true
+max_cache_age = "1d"
