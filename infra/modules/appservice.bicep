@@ -79,9 +79,10 @@ resource webApp 'Microsoft.Web/sites@2023-12-01' = {
     vnetRouteAllEnabled: true
     siteConfig: {
       linuxFxVersion: 'DOTNETCORE|10.0'
-      alwaysOn: false
+      alwaysOn: true
       ftpsState: 'Disabled'
       minTlsVersion: '1.2'
+      healthCheckPath: '/healthz'
       cors: {
         allowedOrigins: [ '*' ]
       }
@@ -121,9 +122,10 @@ resource apiApp 'Microsoft.Web/sites@2023-12-01' = {
     vnetRouteAllEnabled: true
     siteConfig: {
       linuxFxVersion: 'DOTNETCORE|10.0'
-      alwaysOn: false
+      alwaysOn: true
       ftpsState: 'Disabled'
       minTlsVersion: '1.2'
+      healthCheckPath: '/healthz'
       cors: {
         allowedOrigins: [ '*' ]
       }

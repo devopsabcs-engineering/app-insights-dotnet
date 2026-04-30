@@ -103,6 +103,9 @@ app.UseRequestLocalization(app.Services.GetRequiredService<IOptions<RequestLocal
 app.UseRouting();
 app.UseAuthorization();
 
+// Health check endpoint — responds instantly for App Service warmup/health probes.
+app.MapGet("/healthz", () => Results.Ok("ok"));
+
 // Language switcher endpoint: writes the AspNetCore.Culture cookie so
 // CookieRequestCultureProvider picks it up on subsequent requests.
 app.MapGet("/setlang", (string culture, string? returnUrl, HttpContext ctx) =>

@@ -113,6 +113,10 @@ if (!string.IsNullOrWhiteSpace(builder.Configuration.GetConnectionString("MapaqS
 }
 
 app.UseCors("default");
+
+// Health check endpoint — responds instantly for App Service warmup/health probes.
+app.MapGet("/healthz", () => Results.Ok("ok")).ExcludeFromDescription();
+
 app.MapOpenApi();
 
 // Swagger UI served at /swagger, consuming the .NET 10 OpenApi document at
