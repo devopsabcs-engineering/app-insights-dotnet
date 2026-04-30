@@ -208,11 +208,18 @@ jobs:
           fi
           echo "Wiki default branch detected: $WIKI_BRANCH"
 
-          # Reuse tests/ui/publish_screenshots_to_wiki.py: it is pure-stdlib,
-          # accepts any Git URL and any branch, and the .attachments/... path
-          # plus leading-slash image refs it generates render correctly on
-          # GitHub wikis (paths resolve from the wiki root).
+          # Reuse tests/ui/publish_screenshots_to_wiki.py: it is pure-stdlib
+          # and accepts any Git URL / branch. --wiki-flavor github switches the
+          # script to:
+          #   * store images under images/ui-tests/build-<id>/ (a normal,
+          #     non-hidden folder), and
+          #   * emit relative image links (no leading slash) so GitHub wiki
+          #     resolves them inside the wiki repo instead of treating them as
+          #     paths on the github.com domain root (which 404s).
+          # It also sweeps away any legacy .attachments/ui-tests/ folder left
+          # behind by older runs of this workflow.
           python tests/ui/publish_screenshots_to_wiki.py \
+            --wiki-flavor    github \
             --wiki-repo-url "$WIKI_REPO_URL" \
             --branch         "$WIKI_BRANCH" \
             --screenshots-dir "$SCREENSHOT_DIR" \

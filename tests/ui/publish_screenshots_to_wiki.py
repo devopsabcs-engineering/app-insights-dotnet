@@ -60,8 +60,16 @@ def _build_markdown(
     build_url: str,
     target_env: str,
     timestamp: _dt.datetime,
+    image_link_prefix: str = "/",
 ) -> str:
-    """Return the wiki page body as Markdown."""
+    """Return the wiki page body as Markdown.
+
+    *image_link_prefix* controls how image src paths are emitted:
+      - "/"  (default) -> absolute-from-wiki-root (Azure DevOps wiki convention)
+      - ""   -> relative to the page (GitHub wiki convention; a leading
+               slash on github.com is interpreted as the github.com domain root
+               and breaks the image render).
+    """
     lines: list[str] = []
     lines.append("# Mapaq UI tests — latest run")
     lines.append("")
@@ -89,7 +97,7 @@ def _build_markdown(
             title = f"{spec} · {name.replace('-', ' ')}"
         else:
             title = stem.replace("-", " ")
-        rel = f"/{attachments_relpath}/{img.name}".replace("\\", "/")
+        rel = f"{image_link_prefix}{attachments_relpath}/{img.name}".replace("\\", "/")
         lines.append(f"### {title}")
         lines.append("")
         lines.append(f"![{img.name}]({rel})")
@@ -110,7 +118,28 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--branch", default="wikiMaster", help="Branch to push to (project wikis use 'wikiMaster').")
     parser.add_argument("--page-name", default="UI-Tests-Latest", help="Wiki page filename (no extension).")
     parser.add_argument("--retain-runs", type=int, default=10, help="How many historical attachment folders to keep.")
+    parser.add_argument(
+        "--wiki-flavor",
+        choices=("ado", "github"),
+        default="ado",
+        help=(
+            "Target wiki flavor. 'ado' uses '.attachments/ui-tests/build-<id>/' "
+            "with absolute-from-root image links (Azure DevOps convention). "
+            "'github' uses 'images/ui-tests/build-<id>/' with relative image links "
+            "because GitHub wikis treat a leading slash as the github.com domain root."
+        ),
+    )
     args = parser.parse_args(argv)
+
+    # Per-flavor defaults: storage subdir + image link prefix.
+    if args.wiki_flavor == "github":
+        attachments_root_relpath = "images/ui-tests"
+        image_link_prefix = ""   # relative to the wiki page
+        legacy_attachments_root = ".attachments/ui-tests"  # cleaned up if present
+    else:  # ado
+        attachments_root_relpath = ".attachments/ui-tests"
+        image_link_prefix = "/"  # absolute from wiki root
+        legacy_attachments_root = None
 
     screenshots = sorted(Path(args.screenshots_dir).glob("*.png"))
     if not screenshots:
@@ -126,7 +155,7 @@ def main(argv: list[str] | None = None) -> int:
         _run(["git", "config", "user.name", args.git_user], cwd=str(wiki_dir))
         _run(["git", "config", "user.email", args.git_email], cwd=str(wiki_dir))
 
-        attachments_relpath = f".attachments/ui-tests/build-{args.build_id}"
+        attachments_relpath = f"{attachments_root_relpath}/build-{args.build_id}"
         attachments_dir = wiki_dir / attachments_relpath
         attachments_dir.mkdir(parents=True, exist_ok=True)
         for src in screenshots:
@@ -134,7 +163,7 @@ def main(argv: list[str] | None = None) -> int:
 
         # Retain only the most recent N historical attachment folders to stop the
         # wiki repo from growing without bound across hundreds of pipeline runs.
-        ui_tests_root = wiki_dir / ".attachments" / "ui-tests"
+        ui_tests_root = wiki_dir / Path(attachments_root_relpath)
         if ui_tests_root.exists() and args.retain_runs > 0:
             run_dirs = sorted(
                 (p for p in ui_tests_root.iterdir() if p.is_dir() and p.name.startswith("build-")),
@@ -145,6 +174,16 @@ def main(argv: list[str] | None = None) -> int:
                 print(f"Pruning stale attachment folder: {stale.relative_to(wiki_dir)}")
                 shutil.rmtree(stale, ignore_errors=True)
 
+        # On GitHub wikis, sweep away any prior ADO-flavor folder that was
+        # written by an earlier run of this script before --wiki-flavor existed.
+        # Those images render as broken on GitHub because their links use a
+        # leading slash. Removing the folder removes the dangling references too.
+        if legacy_attachments_root:
+            legacy_root = wiki_dir / Path(legacy_attachments_root)
+            if legacy_root.exists():
+                print(f"Removing legacy ADO-flavor attachments folder: {legacy_root.relative_to(wiki_dir)}")
+                shutil.rmtree(legacy_root, ignore_errors=True)
+
         page_body = _build_markdown(
             images=screenshots,
             attachments_relpath=attachments_relpath,
@@ -153,6 +192,7 @@ def main(argv: list[str] | None = None) -> int:
             build_url=args.build_url,
             target_env=args.target_env,
             timestamp=timestamp,
+            image_link_prefix=image_link_prefix,
         )
         page_path = wiki_dir / f"{args.page_name}.md"
         page_path.write_text(page_body, encoding="utf-8")
