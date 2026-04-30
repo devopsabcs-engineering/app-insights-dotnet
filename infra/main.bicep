@@ -161,3 +161,4 @@ output RESOURCE_TOKEN string = resourceToken
 // Used by grant-sql-access.{sh,ps1} postprovision hooks
 output SQL_DATABASE_NAME string = sql.outputs.dbName
 output UAMI_NAME string = id.outputs.name
+output UAMI_PRINCIPAL_ID string = id.outputs.principalId

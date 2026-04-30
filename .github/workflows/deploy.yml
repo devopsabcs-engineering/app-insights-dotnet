@@ -39,6 +39,7 @@ jobs:
       AZURE_ENV_NAME:        ${{ inputs.azureEnvName || vars.AZURE_ENV_NAME || 'dev-001' }}
       SQL_ADMIN_LOGIN:       ${{ vars.SQL_ADMIN_LOGIN }}
       SQL_ADMIN_OBJECT_ID:   ${{ vars.SQL_ADMIN_OBJECT_ID }}
+      SQL_ADMIN_GROUP_ID:    ${{ vars.SQL_ADMIN_GROUP_ID }}
     steps:
       - name: Checkout
         uses: actions/checkout@v5
@@ -53,6 +54,13 @@ jobs:
             --tenant-id "$AZURE_TENANT_ID" \
             --federated-credential-provider github
 
+      - name: Log in to Azure CLI (OIDC)
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
       - name: azd provision + deploy
         id: azd
         run: |
@@ -64,6 +72,26 @@ jobs:
           azd env select "$AZURE_ENV_NAME"
           azd env set SQL_ADMIN_LOGIN "$SQL_ADMIN_LOGIN"
           azd env set SQL_ADMIN_OBJECT_ID "$SQL_ADMIN_OBJECT_ID"
+
+          # Skip postprovision hook in CI — SQL public access is disabled;
+          # UAMI gets SQL access via Entra group membership instead (next step).
+          export AZD_HOOKS_SKIP=postprovision
           azd up --no-prompt
+
           endpoint=$(azd env get-values | grep -E '^WEB_URI=' | cut -d= -f2- | tr -d '"' || true)
           echo "endpoint=$endpoint" >> "$GITHUB_OUTPUT"
+
+      - name: Grant UAMI SQL access via Entra group
+        run: |
+          # Retrieve the UAMI principal ID from azd env outputs
+          uami_principal_id=$(azd env get-value UAMI_PRINCIPAL_ID 2>/dev/null || \
+            az identity show \
+              --name "$(azd env get-value UAMI_NAME)" \
+              --resource-group "$(azd env get-value AZURE_RESOURCE_GROUP)" \
+              --query principalId -o tsv)
+
+          # Add UAMI to the SQL admin Entra group (idempotent — ignores if already member)
+          az ad group member add \
+            --group "$SQL_ADMIN_GROUP_ID" \
+            --member-id "$uami_principal_id" 2>/dev/null \
+            || echo "UAMI already a member of SQL admin group (or insufficient permissions — verify manually)"
