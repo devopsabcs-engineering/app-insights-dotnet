@@ -26,9 +26,14 @@
   </div>
   <nav aria-label="Navigation principale" id="site-nav" class="site-nav">
     <ul class="nav-list">
+      {%- comment -%}
+        FR pages carry `nav_exclude: true` so the just-the-docs default
+        site_nav (used by the EN sidebar) does not list them. The custom
+        FR sidebar already scopes by `lang: fr`, so we deliberately ignore
+        `nav_exclude` here to surface every French page.
+      {%- endcomment -%}
       {%- assign fr_pages = site.pages
             | where: "lang", "fr"
-            | where_exp: "p", "p.nav_exclude != true"
             | sort: "nav_order" -%}
       {%- for p in fr_pages -%}
       <li class="nav-list-item">
