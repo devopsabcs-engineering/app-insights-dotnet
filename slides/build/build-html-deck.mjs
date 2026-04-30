@@ -100,10 +100,16 @@ function renderToc(slides, contentsLabel) {
   const links = slides
     .map((s, i) => `      <a href="#sec${i + 1}">${escapeHtml(s.title || s.key || `Slide ${i + 1}`)}</a>`)
     .join('\n');
+  // Wrap the table of contents in <details> so it ships collapsed by
+  // default. The previous always-visible sticky nav.toc obscured slide
+  // content (25 wrapped titles ate ~5 rows of viewport on every scroll).
   return `<nav class="toc" aria-label="${escapeHtml(contentsLabel)}">
-    <div class="toc-inner">
+    <details class="toc-details">
+      <summary>${escapeHtml(contentsLabel)}</summary>
+      <div class="toc-inner">
 ${links}
-    </div>
+      </div>
+    </details>
   </nav>`;
 }
 
