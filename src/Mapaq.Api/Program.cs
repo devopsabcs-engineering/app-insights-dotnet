@@ -70,17 +70,22 @@ builder.Services.AddHttpClient<CkanSyncService>(client =>
 
 var app = builder.Build();
 
-// Seed the in-memory demo dataset on startup so attendees can hit a populated
-// UI before any SQL provisioning. Skipped for SQL Server because EF Core
-// migrations + HasData handle initial rows on the production path.
+// Seed the demo dataset on startup. For SQL, EnsureCreated() creates tables
+// if they don't exist (no migration required for the workshop scaffold).
+// For in-memory, it works as before. MapaqDemoSeeder populates both paths.
 using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<MapaqDbContext>();
     if (db.Database.IsInMemory())
     {
         db.Database.EnsureCreated();
-        MapaqDemoSeeder.SeedIfEmpty(db);
     }
+    else
+    {
+        // Create tables from the model if they don't exist (idempotent).
+        db.Database.EnsureCreated();
+    }
+    MapaqDemoSeeder.SeedIfEmpty(db);
 }
 
 app.UseCors("default");

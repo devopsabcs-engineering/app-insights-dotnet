@@ -43,6 +43,12 @@ var commonAppSettings = [
     value: appInsightsConnectionString
   }
   {
+    // Maps to Configuration["ApplicationInsights:ConnectionString"] for the
+    // JS SDK JavaScriptSnippet helper and TelemetryConfiguration setup.
+    name: 'ApplicationInsights__ConnectionString'
+    value: appInsightsConnectionString
+  }
+  {
     // Required because App Insights is configured with DisableLocalAuth: true.
     // Format documented for the Azure Monitor OpenTelemetry distro.
     name: 'APPLICATIONINSIGHTS_AUTHENTICATION_STRING'

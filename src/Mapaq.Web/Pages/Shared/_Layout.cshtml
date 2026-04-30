@@ -37,16 +37,33 @@
             "login.microsoftonline.com",
             "graph.microsoft.com"
           ];
-          window.appInsights.addTelemetryInitializer(function (envelope) {
-            envelope.tags = envelope.tags || {};
-            envelope.tags["ai.cloud.role"]         = "Mapaq.Browser";
-            envelope.tags["ai.cloud.roleInstance"] = "browser";
-          });
-          if (typeof Microsoft !== "undefined" && Microsoft.ApplicationInsights) {
-            var clickPlugin = new Microsoft.ApplicationInsights.ClickAnalyticsPlugin();
-            window.appInsights.addPlugin(clickPlugin, false, function () {
-              clickPlugin.processTelemetry = clickPlugin.processTelemetry.bind(clickPlugin);
+          // Cloud role tag initializer
+          if (typeof window.appInsights.addTelemetryInitializer === "function") {
+            window.appInsights.addTelemetryInitializer(function (envelope) {
+              envelope.tags = envelope.tags || {};
+              envelope.tags["ai.cloud.role"]         = "Mapaq.Browser";
+              envelope.tags["ai.cloud.roleInstance"] = "browser";
             });
+          }
+          // Click Analytics plugin — load via extensions array (compatible with SDK v3+)
+          if (typeof Microsoft !== "undefined" && Microsoft.ApplicationInsights &&
+              Microsoft.ApplicationInsights.ClickAnalyticsPlugin) {
+            try {
+              var clickPlugin = new Microsoft.ApplicationInsights.ClickAnalyticsPlugin();
+              var clickConfig = { autoCapture: true, dataTags: { useAi: true } };
+              if (typeof window.appInsights.addPlugin === "function") {
+                window.appInsights.addPlugin(clickPlugin, false);
+              } else {
+                // SDK v3+ does not expose addPlugin; configure via extensions
+                window.appInsights.config.extensions = window.appInsights.config.extensions || [];
+                window.appInsights.config.extensions.push(clickPlugin);
+                window.appInsights.config.extensionConfig = window.appInsights.config.extensionConfig || {};
+                window.appInsights.config.extensionConfig[clickPlugin.identifier] = clickConfig;
+              }
+            } catch (e) {
+              // Click analytics is non-critical — log and continue
+              console.warn("Click Analytics plugin load failed:", e);
+            }
           }
         }
       })();
