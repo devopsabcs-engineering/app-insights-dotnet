@@ -101,6 +101,9 @@ module sql 'modules/sql.bicep' = {
     sqlAdminLogin: sqlAdminLogin
     sqlAdminPrincipalId: sqlAdminPrincipalId
     sqlAdminPrincipalType: sqlAdminPrincipalType
+    // UAMI clientId is baked into the SQL connection string so the App Service
+    // authenticates as the UAMI (not its SystemAssigned MI) when calling SQL.
+    uamiClientId: id.outputs.clientId
   }
 }
 

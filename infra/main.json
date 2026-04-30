@@ -5,7 +5,7 @@
     "_generator": {
       "name": "bicep",
       "version": "0.42.1.51946",
-      "templateHash": "8672973791339837759"
+      "templateHash": "10745019048897103536"
     }
   },
   "parameters": {
@@ -34,6 +34,17 @@
       "type": "string",
       "metadata": {
         "description": "UPN or display name of the SQL admin principal (shown in portal)."
+      }
+    },
+    "sqlAdminPrincipalType": {
+      "type": "string",
+      "defaultValue": "Group",
+      "allowedValues": [
+        "User",
+        "Group"
+      ],
+      "metadata": {
+        "description": "Entra principal type for the SQL admin (User or Group)."
       }
     }
   },
@@ -538,6 +549,12 @@
           },
           "sqlAdminPrincipalId": {
             "value": "[parameters('sqlAdminPrincipalId')]"
+          },
+          "sqlAdminPrincipalType": {
+            "value": "[parameters('sqlAdminPrincipalType')]"
+          },
+          "uamiClientId": {
+            "value": "[reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, format('rg-{0}', parameters('environmentName'))), 'Microsoft.Resources/deployments', format('id-{0}', variables('resourceToken'))), '2025-04-01').outputs.clientId.value]"
           }
         },
         "template": {
@@ -547,7 +564,7 @@
             "_generator": {
               "name": "bicep",
               "version": "0.42.1.51946",
-              "templateHash": "3086284193355670669"
+              "templateHash": "4310111561129253893"
             }
           },
           "parameters": {
@@ -575,6 +592,12 @@
               ],
               "metadata": {
                 "description": "Entra principal type for the SQL admin (User or Group)."
+              }
+            },
+            "uamiClientId": {
+              "type": "string",
+              "metadata": {
+                "description": "Client ID (appId) of the workshop UAMI used by the App Service for passwordless SQL auth."
               }
             }
           },
@@ -657,12 +680,13 @@
             },
             "connectionString": {
               "type": "string",
-              "value": "[format('Server=tcp:{0},1433;Database={1};Authentication=Active Directory Default;Encrypt=True;TrustServerCertificate=False;', reference(resourceId('Microsoft.Sql/servers', variables('serverName')), '2023-08-01-preview').fullyQualifiedDomainName, variables('dbName'))]"
+              "value": "[format('Server=tcp:{0},1433;Database={1};Authentication=Active Directory Managed Identity;User Id={2};Encrypt=True;TrustServerCertificate=False;', reference(resourceId('Microsoft.Sql/servers', variables('serverName')), '2023-08-01-preview').fullyQualifiedDomainName, variables('dbName'), parameters('uamiClientId'))]"
             }
           }
         }
       },
       "dependsOn": [
+        "[extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, format('rg-{0}', parameters('environmentName'))), 'Microsoft.Resources/deployments', format('id-{0}', variables('resourceToken')))]",
         "[subscriptionResourceId('Microsoft.Resources/resourceGroups', format('rg-{0}', parameters('environmentName')))]"
       ]
     },
@@ -846,7 +870,7 @@
             "_generator": {
               "name": "bicep",
               "version": "0.42.1.51946",
-              "templateHash": "14239639059458251592"
+              "templateHash": "7195578690212257731"
             }
           },
           "parameters": {
@@ -910,8 +934,8 @@
               "location": "[parameters('location')]",
               "tags": "[parameters('tags')]",
               "sku": {
-                "name": "B1",
-                "tier": "Basic",
+                "name": "P1v3",
+                "tier": "PremiumV3",
                 "capacity": 1
               },
               "kind": "linux",
@@ -939,9 +963,10 @@
                 "vnetRouteAllEnabled": true,
                 "siteConfig": {
                   "linuxFxVersion": "DOTNETCORE|10.0",
-                  "alwaysOn": false,
+                  "alwaysOn": true,
                   "ftpsState": "Disabled",
                   "minTlsVersion": "1.2",
+                  "healthCheckPath": "/healthz",
                   "cors": {
                     "allowedOrigins": [
                       "*"
@@ -974,9 +999,10 @@
                 "vnetRouteAllEnabled": true,
                 "siteConfig": {
                   "linuxFxVersion": "DOTNETCORE|10.0",
-                  "alwaysOn": false,
+                  "alwaysOn": true,
                   "ftpsState": "Disabled",
                   "minTlsVersion": "1.2",
+                  "healthCheckPath": "/healthz",
                   "cors": {
                     "allowedOrigins": [
                       "*"

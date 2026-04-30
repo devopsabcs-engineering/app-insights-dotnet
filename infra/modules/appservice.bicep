@@ -1,6 +1,8 @@
 // B1 Linux App Service Plan + 2 sites (mapaq-web-*, mapaq-api-*).
 // Each site has SystemAssigned + UserAssigned identities; the UAMI is used for
-// Entra auth to App Insights and SQL (passwordless via Active Directory Default).
+// Entra auth to App Insights and SQL. The SQL connection string uses
+// `Authentication=Active Directory Managed Identity` with an explicit
+// `User Id={uamiClientId}` so the SqlClient picks the UAMI (not the SAMI).
 // App settings inject:
 //   APPLICATIONINSIGHTS_CONNECTION_STRING        (workspace-based AI)
 //   APPLICATIONINSIGHTS_AUTHENTICATION_STRING    (Entra-only AI; uses UAMI client id)

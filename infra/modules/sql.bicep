@@ -1,7 +1,14 @@
 // Azure SQL Logical Server (Entra-only auth) + Serverless DB (GP_S_Gen5_1).
 // - administrators block + azureADOnlyAuthentications/Default both set true (belt-and-braces).
 // - autoPauseDelay = 60 min, minCapacity = 0.5 vCore -> caps idle cost at storage-only.
-// - Connection string is passwordless (Active Directory Default + UAMI) — no Key Vault needed.
+// - Connection string is passwordless via the workshop UAMI. We use
+//   `Active Directory Managed Identity` with an explicit `User Id={uamiClientId}`
+//   instead of `Active Directory Default`, because the App Service has BOTH
+//   SystemAssigned + UserAssigned identities and `Active Directory Default`
+//   in Microsoft.Data.SqlClient falls back to the SystemAssigned identity
+//   (it does not honor the AZURE_CLIENT_ID env var the way Azure.Identity does).
+//   The SystemAssigned identity is not a member of the SQL admin Entra group,
+//   so it would fail to authenticate. See infra/modules/appservice.bicep.
 
 param location string
 param resourceToken string
@@ -11,6 +18,9 @@ param sqlAdminPrincipalId string
 @allowed(['User', 'Group'])
 @description('Entra principal type for the SQL admin (User or Group).')
 param sqlAdminPrincipalType string = 'Group'
+
+@description('Client ID (appId) of the workshop UAMI used by the App Service for passwordless SQL auth.')
+param uamiClientId string
 
 var serverName = 'sql${resourceToken}'
 var dbName = 'mapaqdb'
@@ -67,4 +77,7 @@ output serverId string = sqlServer.id
 output serverName string = sqlServer.name
 output serverFqdn string = sqlServer.properties.fullyQualifiedDomainName
 output dbName string = dbName
-output connectionString string = 'Server=tcp:${sqlServer.properties.fullyQualifiedDomainName},1433;Database=${dbName};Authentication=Active Directory Default;Encrypt=True;TrustServerCertificate=False;'
+// Passwordless connection string pinned to the workshop UAMI. `User Id` MUST
+// be the UAMI clientId (not the principalId) when using `Active Directory
+// Managed Identity` with Microsoft.Data.SqlClient.
+output connectionString string = 'Server=tcp:${sqlServer.properties.fullyQualifiedDomainName},1433;Database=${dbName};Authentication=Active Directory Managed Identity;User Id=${uamiClientId};Encrypt=True;TrustServerCertificate=False;'
