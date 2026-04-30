@@ -19,5 +19,11 @@
 
   // MD026 trailing punctuation in headings – allow ":" and "?" because Quebec typography uses
   // typographic colon (e.g., "Atelier 00 :").
-  "MD026": { "punctuation": ".,;!" }
+  "MD026": { "punctuation": ".,;!" },
+
+  // MD025 single H1 – Jekyll pages declare `title:` in YAML front matter AND a body `# Heading`.
+  // Setting front_matter_title to an empty pattern stops markdownlint from counting the
+  // front-matter `title:` as the document's first H1, so the body H1 stops being flagged
+  // as a duplicate top-level heading.
+  "MD025": { "front_matter_title": "" }
 }
