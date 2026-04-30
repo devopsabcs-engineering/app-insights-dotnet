@@ -24,8 +24,8 @@ resource plan 'Microsoft.Web/serverfarms@2023-12-01' = {
   location: location
   tags: tags
   sku: {
-    name: 'B1'
-    tier: 'Basic'
+    name: 'P1v3'
+    tier: 'PremiumV3'
     capacity: 1
   }
   kind: 'linux'
