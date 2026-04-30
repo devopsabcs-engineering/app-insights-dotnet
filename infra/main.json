@@ -5,7 +5,7 @@
     "_generator": {
       "name": "bicep",
       "version": "0.42.1.51946",
-      "templateHash": "119557785307876270"
+      "templateHash": "8672973791339837759"
     }
   },
   "parameters": {
@@ -538,9 +538,6 @@
           },
           "sqlAdminPrincipalId": {
             "value": "[parameters('sqlAdminPrincipalId')]"
-          },
-          "keyVaultName": {
-            "value": "[reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, format('rg-{0}', parameters('environmentName'))), 'Microsoft.Resources/deployments', format('kv-{0}', variables('resourceToken'))), '2025-04-01').outputs.name.value]"
           }
         },
         "template": {
@@ -550,7 +547,7 @@
             "_generator": {
               "name": "bicep",
               "version": "0.42.1.51946",
-              "templateHash": "2864975401427633952"
+              "templateHash": "3086284193355670669"
             }
           },
           "parameters": {
@@ -579,15 +576,11 @@
               "metadata": {
                 "description": "Entra principal type for the SQL admin (User or Group)."
               }
-            },
-            "keyVaultName": {
-              "type": "string"
             }
           },
           "variables": {
             "serverName": "[format('sql{0}', parameters('resourceToken'))]",
-            "dbName": "mapaqdb",
-            "sqlConnSecretName": "sql-conn"
+            "dbName": "mapaqdb"
           },
           "resources": [
             {
@@ -643,17 +636,6 @@
               "dependsOn": [
                 "[resourceId('Microsoft.Sql/servers', variables('serverName'))]"
               ]
-            },
-            {
-              "type": "Microsoft.KeyVault/vaults/secrets",
-              "apiVersion": "2024-04-01-preview",
-              "name": "[format('{0}/{1}', parameters('keyVaultName'), variables('sqlConnSecretName'))]",
-              "properties": {
-                "value": "[format('Server=tcp:{0},1433;Database={1};Authentication=Active Directory Default;Encrypt=True;TrustServerCertificate=False;', reference(resourceId('Microsoft.Sql/servers', variables('serverName')), '2023-08-01-preview').fullyQualifiedDomainName, variables('dbName'))]"
-              },
-              "dependsOn": [
-                "[resourceId('Microsoft.Sql/servers', variables('serverName'))]"
-              ]
             }
           ],
           "outputs": {
@@ -673,15 +655,14 @@
               "type": "string",
               "value": "[variables('dbName')]"
             },
-            "connStringSecretName": {
+            "connectionString": {
               "type": "string",
-              "value": "[variables('sqlConnSecretName')]"
+              "value": "[format('Server=tcp:{0},1433;Database={1};Authentication=Active Directory Default;Encrypt=True;TrustServerCertificate=False;', reference(resourceId('Microsoft.Sql/servers', variables('serverName')), '2023-08-01-preview').fullyQualifiedDomainName, variables('dbName'))]"
             }
           }
         }
       },
       "dependsOn": [
-        "[extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, format('rg-{0}', parameters('environmentName'))), 'Microsoft.Resources/deployments', format('kv-{0}', variables('resourceToken')))]",
         "[subscriptionResourceId('Microsoft.Resources/resourceGroups', format('rg-{0}', parameters('environmentName')))]"
       ]
     },
@@ -713,9 +694,6 @@
           },
           "sqlServerId": {
             "value": "[reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, format('rg-{0}', parameters('environmentName'))), 'Microsoft.Resources/deployments', format('sql-{0}', variables('resourceToken'))), '2025-04-01').outputs.serverId.value]"
-          },
-          "keyVaultId": {
-            "value": "[reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, format('rg-{0}', parameters('environmentName'))), 'Microsoft.Resources/deployments', format('kv-{0}', variables('resourceToken'))), '2025-04-01').outputs.id.value]"
           }
         },
         "template": {
@@ -725,7 +703,7 @@
             "_generator": {
               "name": "bicep",
               "version": "0.42.1.51946",
-              "templateHash": "8897802384998316627"
+              "templateHash": "17093932846223248313"
             }
           },
           "parameters": {
@@ -745,9 +723,6 @@
               "type": "string"
             },
             "sqlServerId": {
-              "type": "string"
-            },
-            "keyVaultId": {
               "type": "string"
             }
           },
@@ -815,76 +790,11 @@
                 "[resourceId('Microsoft.Network/privateDnsZones', format('privatelink{0}', environment().suffixes.sqlServerHostname))]",
                 "[resourceId('Microsoft.Network/privateEndpoints', format('pe-sql-{0}', parameters('resourceToken')))]"
               ]
-            },
-            {
-              "type": "Microsoft.Network/privateDnsZones",
-              "apiVersion": "2024-06-01",
-              "name": "privatelink.vaultcore.azure.net",
-              "location": "global",
-              "tags": "[parameters('tags')]"
-            },
-            {
-              "type": "Microsoft.Network/privateDnsZones/virtualNetworkLinks",
-              "apiVersion": "2024-06-01",
-              "name": "[format('{0}/{1}', 'privatelink.vaultcore.azure.net', 'vnet-link-kv')]",
-              "location": "global",
-              "properties": {
-                "virtualNetwork": {
-                  "id": "[parameters('vnetId')]"
-                },
-                "registrationEnabled": false
-              },
-              "dependsOn": [
-                "[resourceId('Microsoft.Network/privateDnsZones', 'privatelink.vaultcore.azure.net')]"
-              ]
-            },
-            {
-              "type": "Microsoft.Network/privateEndpoints",
-              "apiVersion": "2024-01-01",
-              "name": "[format('pe-kv-{0}', parameters('resourceToken'))]",
-              "location": "[parameters('location')]",
-              "tags": "[parameters('tags')]",
-              "properties": {
-                "subnet": {
-                  "id": "[parameters('privateEndpointsSubnetId')]"
-                },
-                "privateLinkServiceConnections": [
-                  {
-                    "name": "[format('pe-kv-{0}', parameters('resourceToken'))]",
-                    "properties": {
-                      "privateLinkServiceId": "[parameters('keyVaultId')]",
-                      "groupIds": [
-                        "vault"
-                      ]
-                    }
-                  }
-                ]
-              }
-            },
-            {
-              "type": "Microsoft.Network/privateEndpoints/privateDnsZoneGroups",
-              "apiVersion": "2024-01-01",
-              "name": "[format('{0}/{1}', format('pe-kv-{0}', parameters('resourceToken')), 'default')]",
-              "properties": {
-                "privateDnsZoneConfigs": [
-                  {
-                    "name": "privatelink-kv",
-                    "properties": {
-                      "privateDnsZoneId": "[resourceId('Microsoft.Network/privateDnsZones', 'privatelink.vaultcore.azure.net')]"
-                    }
-                  }
-                ]
-              },
-              "dependsOn": [
-                "[resourceId('Microsoft.Network/privateDnsZones', 'privatelink.vaultcore.azure.net')]",
-                "[resourceId('Microsoft.Network/privateEndpoints', format('pe-kv-{0}', parameters('resourceToken')))]"
-              ]
             }
           ]
         }
       },
       "dependsOn": [
-        "[extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, format('rg-{0}', parameters('environmentName'))), 'Microsoft.Resources/deployments', format('kv-{0}', variables('resourceToken')))]",
         "[subscriptionResourceId('Microsoft.Resources/resourceGroups', format('rg-{0}', parameters('environmentName')))]",
         "[extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, format('rg-{0}', parameters('environmentName'))), 'Microsoft.Resources/deployments', format('sql-{0}', variables('resourceToken')))]",
         "[extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, format('rg-{0}', parameters('environmentName'))), 'Microsoft.Resources/deployments', format('vnet-{0}', variables('resourceToken')))]"
@@ -919,11 +829,8 @@
           "appInsightsConnectionString": {
             "value": "[reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, format('rg-{0}', parameters('environmentName'))), 'Microsoft.Resources/deployments', format('ai-{0}', variables('resourceToken'))), '2025-04-01').outputs.connectionString.value]"
           },
-          "keyVaultName": {
-            "value": "[reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, format('rg-{0}', parameters('environmentName'))), 'Microsoft.Resources/deployments', format('kv-{0}', variables('resourceToken'))), '2025-04-01').outputs.name.value]"
-          },
-          "sqlSecretName": {
-            "value": "[reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, format('rg-{0}', parameters('environmentName'))), 'Microsoft.Resources/deployments', format('sql-{0}', variables('resourceToken'))), '2025-04-01').outputs.connStringSecretName.value]"
+          "sqlConnectionString": {
+            "value": "[reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, format('rg-{0}', parameters('environmentName'))), 'Microsoft.Resources/deployments', format('sql-{0}', variables('resourceToken'))), '2025-04-01').outputs.connectionString.value]"
           },
           "workspaceId": {
             "value": "[reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, format('rg-{0}', parameters('environmentName'))), 'Microsoft.Resources/deployments', format('law-{0}', variables('resourceToken'))), '2025-04-01').outputs.workspaceId.value]"
@@ -939,7 +846,7 @@
             "_generator": {
               "name": "bicep",
               "version": "0.42.1.51946",
-              "templateHash": "11008843469331352516"
+              "templateHash": "14239639059458251592"
             }
           },
           "parameters": {
@@ -961,10 +868,7 @@
             "appInsightsConnectionString": {
               "type": "string"
             },
-            "keyVaultName": {
-              "type": "string"
-            },
-            "sqlSecretName": {
+            "sqlConnectionString": {
               "type": "string"
             },
             "workspaceId": {
@@ -975,7 +879,6 @@
             }
           },
           "variables": {
-            "sqlConnRef": "[format('@Microsoft.KeyVault(VaultName={0};SecretName={1})', parameters('keyVaultName'), parameters('sqlSecretName'))]",
             "commonAppSettings": [
               {
                 "name": "APPLICATIONINSIGHTS_CONNECTION_STRING",
@@ -995,7 +898,7 @@
               },
               {
                 "name": "ConnectionStrings__MapaqSql",
-                "value": "[variables('sqlConnRef')]"
+                "value": "[parameters('sqlConnectionString')]"
               }
             ]
           },
@@ -1034,7 +937,6 @@
                 "httpsOnly": true,
                 "virtualNetworkSubnetId": "[parameters('appIntegrationSubnetId')]",
                 "vnetRouteAllEnabled": true,
-                "keyVaultReferenceIdentity": "[parameters('uamiResourceId')]",
                 "siteConfig": {
                   "linuxFxVersion": "DOTNETCORE|10.0",
                   "alwaysOn": false,
@@ -1070,7 +972,6 @@
                 "httpsOnly": true,
                 "virtualNetworkSubnetId": "[parameters('appIntegrationSubnetId')]",
                 "vnetRouteAllEnabled": true,
-                "keyVaultReferenceIdentity": "[parameters('uamiResourceId')]",
                 "siteConfig": {
                   "linuxFxVersion": "DOTNETCORE|10.0",
                   "alwaysOn": false,
@@ -1160,7 +1061,6 @@
       "dependsOn": [
         "[extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, format('rg-{0}', parameters('environmentName'))), 'Microsoft.Resources/deployments', format('ai-{0}', variables('resourceToken')))]",
         "[extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, format('rg-{0}', parameters('environmentName'))), 'Microsoft.Resources/deployments', format('id-{0}', variables('resourceToken')))]",
-        "[extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, format('rg-{0}', parameters('environmentName'))), 'Microsoft.Resources/deployments', format('kv-{0}', variables('resourceToken')))]",
         "[extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, format('rg-{0}', parameters('environmentName'))), 'Microsoft.Resources/deployments', format('law-{0}', variables('resourceToken')))]",
         "[subscriptionResourceId('Microsoft.Resources/resourceGroups', format('rg-{0}', parameters('environmentName')))]",
         "[extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, format('rg-{0}', parameters('environmentName'))), 'Microsoft.Resources/deployments', format('sql-{0}', variables('resourceToken')))]",

@@ -1,12 +1,12 @@
 // B1 Linux App Service Plan + 2 sites (mapaq-web-*, mapaq-api-*).
 // Each site has SystemAssigned + UserAssigned identities; the UAMI is used for
-// Key Vault references (keyVaultReferenceIdentity) and Entra auth to App Insights / SQL.
+// Entra auth to App Insights and SQL (passwordless via Active Directory Default).
 // App settings inject:
 //   APPLICATIONINSIGHTS_CONNECTION_STRING        (workspace-based AI)
 //   APPLICATIONINSIGHTS_AUTHENTICATION_STRING    (Entra-only AI; uses UAMI client id)
 //   OTEL_RESOURCE_ATTRIBUTES                     (service.name + namespace)
 //   AZURE_CLIENT_ID                              (DefaultAzureCredential -> UAMI)
-//   ConnectionStrings__Mapaq                     (Key Vault reference to sql-conn secret)
+//   ConnectionStrings__MapaqSql                  (passwordless SQL conn string)
 
 param location string
 param resourceToken string
@@ -14,8 +14,7 @@ param tags object
 param uamiResourceId string
 param uamiClientId string
 param appInsightsConnectionString string
-param keyVaultName string
-param sqlSecretName string
+param sqlConnectionString string
 param workspaceId string
 param appIntegrationSubnetId string
 
@@ -34,8 +33,6 @@ resource plan 'Microsoft.Web/serverfarms@2023-12-01' = {
     reserved: true // REQUIRED for Linux plans
   }
 }
-
-var sqlConnRef = '@Microsoft.KeyVault(VaultName=${keyVaultName};SecretName=${sqlSecretName})'
 
 var commonAppSettings = [
   {
@@ -60,7 +57,7 @@ var commonAppSettings = [
   }
   {
     name: 'ConnectionStrings__MapaqSql'
-    value: sqlConnRef
+    value: sqlConnectionString
   }
 ]
 
@@ -80,7 +77,6 @@ resource webApp 'Microsoft.Web/sites@2023-12-01' = {
     httpsOnly: true
     virtualNetworkSubnetId: appIntegrationSubnetId
     vnetRouteAllEnabled: true
-    keyVaultReferenceIdentity: uamiResourceId
     siteConfig: {
       linuxFxVersion: 'DOTNETCORE|10.0'
       alwaysOn: false
@@ -123,7 +119,6 @@ resource apiApp 'Microsoft.Web/sites@2023-12-01' = {
     httpsOnly: true
     virtualNetworkSubnetId: appIntegrationSubnetId
     vnetRouteAllEnabled: true
-    keyVaultReferenceIdentity: uamiResourceId
     siteConfig: {
       linuxFxVersion: 'DOTNETCORE|10.0'
       alwaysOn: false

@@ -96,7 +96,6 @@ module sql 'modules/sql.bicep' = {
     tags: tags
     sqlAdminLogin: sqlAdminLogin
     sqlAdminPrincipalId: sqlAdminPrincipalId
-    keyVaultName: kv.outputs.name
   }
 }
 
@@ -110,7 +109,6 @@ module pe 'modules/privateEndpoints.bicep' = {
     vnetId: vnet.outputs.vnetId
     privateEndpointsSubnetId: vnet.outputs.privateEndpointsSubnetId
     sqlServerId: sql.outputs.serverId
-    keyVaultId: kv.outputs.id
   }
 }
 
@@ -124,8 +122,7 @@ module app 'modules/appservice.bicep' = {
     uamiResourceId: id.outputs.id
     uamiClientId: id.outputs.clientId
     appInsightsConnectionString: ai.outputs.connectionString
-    keyVaultName: kv.outputs.name
-    sqlSecretName: sql.outputs.connStringSecretName
+    sqlConnectionString: sql.outputs.connectionString
     workspaceId: law.outputs.workspaceId
     appIntegrationSubnetId: vnet.outputs.appIntegrationSubnetId
   }
