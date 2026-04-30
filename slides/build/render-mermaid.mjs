@@ -18,6 +18,10 @@ const ROOT = resolve(__dirname, '..', '..');
 const CONTENT_DIR = join(ROOT, 'slides', 'content');
 const OUT_DIR = join(ROOT, 'docs', 'decks', 'assets');
 const MERMAID_CONFIG = join(ROOT, 'slides', 'theme', 'mermaid-config.json');
+// Puppeteer launch flags. Required on Ubuntu 24.04 GitHub Actions runners
+// where AppArmor disables unprivileged user namespaces and Chromium's
+// sandbox cannot start. Safe in CI; never run on untrusted input.
+const PUPPETEER_CONFIG = join(__dirname, 'puppeteer-config.json');
 
 mkdirSync(OUT_DIR, { recursive: true });
 
@@ -48,6 +52,7 @@ function renderOne(mermaidSource, outPath) {
       '-b', 'transparent',
       '-t', 'dark',
       '-c', MERMAID_CONFIG,
+      '-p', PUPPETEER_CONFIG,
       '-w', '1600',
       '-H', '900',
     ];
