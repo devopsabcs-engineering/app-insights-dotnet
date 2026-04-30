@@ -8,9 +8,10 @@ on:
   workflow_dispatch:
     inputs:
       azureEnvName:
-        description: "azd env name (defaults to vars.AZURE_ENV_NAME)"
+        description: "azd env name (defaults to dev-001)"
         required: false
         type: string
+        default: dev-001
   push:
     branches: [main]
     paths:
@@ -34,8 +35,8 @@ jobs:
       AZURE_CLIENT_ID:       ${{ secrets.AZURE_CLIENT_ID }}
       AZURE_TENANT_ID:       ${{ secrets.AZURE_TENANT_ID }}
       AZURE_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
-      AZURE_LOCATION:        ${{ vars.AZURE_LOCATION }}
-      AZURE_ENV_NAME:        ${{ inputs.azureEnvName || vars.AZURE_ENV_NAME }}
+      AZURE_LOCATION:        ${{ vars.AZURE_LOCATION || 'canadaeast' }}
+      AZURE_ENV_NAME:        ${{ inputs.azureEnvName || vars.AZURE_ENV_NAME || 'dev-001' }}
     steps:
       - name: Checkout
         uses: actions/checkout@v5
