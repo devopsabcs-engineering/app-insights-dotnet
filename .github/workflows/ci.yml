@@ -52,6 +52,11 @@ jobs:
     environment: workshop-dev
     env:
       AZURE_LOCATION: canadacentral
+      # Placeholder GUID used only for what-if template validation in CI.
+      # Real values are supplied by azd at provision time via main.parameters.json.
+      WHATIF_SQL_ADMIN_OBJECT_ID: "00000000-0000-0000-0000-000000000000"
+      WHATIF_SQL_ADMIN_LOGIN: "ci-validation@example.com"
+      WHATIF_SQL_ADMIN_PRINCIPAL_TYPE: "Group"
     steps:
       - name: Checkout
         uses: actions/checkout@v5
@@ -73,10 +78,19 @@ jobs:
         with:
           azcliversion: latest
           inlineScript: |
+            # NOTE: We intentionally do NOT pass infra/main.parameters.json here.
+            # That file uses azd-style ${VAR=default} substitution which Azure CLI
+            # does not expand, causing template validation to fail. Inline
+            # parameters below are sufficient for what-if validation; azd uses
+            # the parameters file at provision time.
             az deployment sub what-if \
               --location "${AZURE_LOCATION}" \
               --template-file infra/main.bicep \
-              --parameters infra/main.parameters.json \
-              --parameters environmentName="${AZURE_ENV_NAME:-ci-whatif}"
+              --parameters \
+                  environmentName="${AZURE_ENV_NAME:-ci-whatif}" \
+                  location="${AZURE_LOCATION}" \
+                  sqlAdminPrincipalId="${WHATIF_SQL_ADMIN_OBJECT_ID}" \
+                  sqlAdminLogin="${WHATIF_SQL_ADMIN_LOGIN}" \
+                  sqlAdminPrincipalType="${WHATIF_SQL_ADMIN_PRINCIPAL_TYPE}"
         env:
           AZURE_ENV_NAME: ${{ vars.AZURE_ENV_NAME }}
