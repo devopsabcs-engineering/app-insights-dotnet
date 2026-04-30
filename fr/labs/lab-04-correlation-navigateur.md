@@ -2,6 +2,7 @@
 layout: default
 lang: fr
 nav_exclude: true
+parent: "Ateliers"
 title: "Atelier 04 : Corrélation navigateur ↔ serveur"
 nav_order: 4
 permalink: /fr/labs/lab-04-correlation-navigateur

@@ -2,6 +2,7 @@
 layout: default
 lang: fr
 nav_exclude: true
+parent: "Ateliers"
 title: "Atelier 06 : Démantèlement"
 nav_order: 6
 permalink: /fr/labs/lab-06-demantelement

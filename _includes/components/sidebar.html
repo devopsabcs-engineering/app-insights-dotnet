@@ -30,18 +30,52 @@
         FR pages carry `nav_exclude: true` so the just-the-docs default
         site_nav (used by the EN sidebar) does not list them. The custom
         FR sidebar already scopes by `lang: fr`, so we deliberately ignore
-        `nav_exclude` here to surface every French page.
+        `nav_exclude` here. Hierarchy mirrors the EN sidebar:
+          * top-level: FR pages with no `parent`, sorted by `nav_order`
+          * children: FR pages whose `parent` matches a top-level title
+        Pages with `has_children: true` get a collapsible group, so the
+        FR site reads "Accueil → Ateliers ▸ Atelier 00 … Atelier 06".
       {%- endcomment -%}
-      {%- assign fr_pages = site.pages
-            | where: "lang", "fr"
+      {%- assign fr_pages = site.pages | where: "lang", "fr" -%}
+      {%- assign fr_top   = fr_pages
+            | where_exp: "p", "p.parent == nil"
             | sort: "nav_order" -%}
-      {%- for p in fr_pages -%}
+      {%- for p in fr_top -%}
+        {%- assign is_active = false -%}
+        {%- if page.url == p.url -%}{%- assign is_active = true -%}{%- endif -%}
+
+        {%- if p.has_children -%}
+          {%- assign children = fr_pages
+                | where: "parent", p.title
+                | sort: "nav_order" -%}
+          {%- assign group_active = is_active -%}
+          {%- for c in children -%}
+            {%- if page.url == c.url -%}{%- assign group_active = true -%}{%- endif -%}
+          {%- endfor -%}
+      <li class="nav-list-item{% if group_active %} active{% endif %}">
+        <a href="{{ p.url | prepend: site.baseurl }}"
+           class="nav-list-link{% if is_active %} active{% endif %}">
+          {{ p.title }}
+        </a>
+        <ul class="nav-list">
+          {%- for c in children -%}
+          <li class="nav-list-item">
+            <a href="{{ c.url | prepend: site.baseurl }}"
+               class="nav-list-link{% if page.url == c.url %} active{% endif %}">
+              {{ c.title }}
+            </a>
+          </li>
+          {%- endfor -%}
+        </ul>
+      </li>
+        {%- else -%}
       <li class="nav-list-item">
         <a href="{{ p.url | prepend: site.baseurl }}"
-           class="nav-list-link{% if page.url == p.url %} active{% endif %}">
+           class="nav-list-link{% if is_active %} active{% endif %}">
           {{ p.title }}
         </a>
       </li>
+        {%- endif -%}
       {%- endfor -%}
     </ul>
   </nav>

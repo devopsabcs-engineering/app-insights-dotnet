@@ -2,6 +2,7 @@
 layout: default
 lang: fr
 nav_exclude: true
+parent: "Ateliers"
 title: "Atelier 02 : Instrumentation de la couche web"
 nav_order: 2
 permalink: /fr/labs/lab-02-instrumentation-web

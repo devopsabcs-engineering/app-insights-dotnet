@@ -2,6 +2,7 @@
 layout: default
 lang: fr
 nav_exclude: true
+parent: "Ateliers"
 title: "Atelier 01 : Provisionnement Azure"
 nav_order: 1
 permalink: /fr/labs/lab-01-provisionnement

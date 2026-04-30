@@ -4,6 +4,7 @@ lang: fr
 title: "Ateliers"
 nav_order: 2
 nav_exclude: true
+has_children: true
 permalink: /fr/labs/
 ---
 

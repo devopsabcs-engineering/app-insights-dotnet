@@ -2,6 +2,7 @@
 layout: default
 lang: fr
 nav_exclude: true
+parent: "Ateliers"
 title: "Atelier 03 : Instrumentation API + SQL"
 nav_order: 3
 permalink: /fr/labs/lab-03-instrumentation-api-sql

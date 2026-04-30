@@ -2,6 +2,7 @@
 layout: default
 lang: fr
 nav_exclude: true
+parent: "Ateliers"
 title: "Atelier 00 : Installation"
 nav_order: 0
 permalink: /fr/labs/lab-00-installation

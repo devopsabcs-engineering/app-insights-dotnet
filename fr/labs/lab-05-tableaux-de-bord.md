@@ -2,6 +2,7 @@
 layout: default
 lang: fr
 nav_exclude: true
+parent: "Ateliers"
 title: "Atelier 05 : Tableaux de bord, KQL, alertes"
 nav_order: 5
 permalink: /fr/labs/lab-05-tableaux-de-bord
