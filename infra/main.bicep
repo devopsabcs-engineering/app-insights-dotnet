@@ -77,6 +77,16 @@ module kv 'modules/keyvault.bicep' = {
   }
 }
 
+module vnet 'modules/vnet.bicep' = {
+  name: 'vnet-${resourceToken}'
+  scope: rg
+  params: {
+    location: location
+    resourceToken: resourceToken
+    tags: tags
+  }
+}
+
 module sql 'modules/sql.bicep' = {
   name: 'sql-${resourceToken}'
   scope: rg
@@ -87,6 +97,20 @@ module sql 'modules/sql.bicep' = {
     sqlAdminLogin: sqlAdminLogin
     sqlAdminPrincipalId: sqlAdminPrincipalId
     keyVaultName: kv.outputs.name
+  }
+}
+
+module pe 'modules/privateEndpoints.bicep' = {
+  name: 'pe-${resourceToken}'
+  scope: rg
+  params: {
+    location: location
+    resourceToken: resourceToken
+    tags: tags
+    vnetId: vnet.outputs.vnetId
+    privateEndpointsSubnetId: vnet.outputs.privateEndpointsSubnetId
+    sqlServerId: sql.outputs.serverId
+    keyVaultId: kv.outputs.id
   }
 }
 
@@ -103,6 +127,7 @@ module app 'modules/appservice.bicep' = {
     keyVaultName: kv.outputs.name
     sqlSecretName: sql.outputs.connStringSecretName
     workspaceId: law.outputs.workspaceId
+    appIntegrationSubnetId: vnet.outputs.appIntegrationSubnetId
   }
 }
 

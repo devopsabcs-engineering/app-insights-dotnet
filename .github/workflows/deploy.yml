@@ -56,6 +56,7 @@ jobs:
       - name: azd provision + deploy
         id: azd
         run: |
+          chmod +x infra/scripts/*.sh
           azd env new "$AZURE_ENV_NAME" \
             --no-prompt \
             --location "$AZURE_LOCATION" \

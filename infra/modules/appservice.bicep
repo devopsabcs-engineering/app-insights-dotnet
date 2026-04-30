@@ -17,6 +17,7 @@ param appInsightsConnectionString string
 param keyVaultName string
 param sqlSecretName string
 param workspaceId string
+param appIntegrationSubnetId string
 
 // Plan name: 'asp-mapaq-' (10) + token (13) = 23 chars; well under 40-char limit.
 resource plan 'Microsoft.Web/serverfarms@2023-12-01' = {
@@ -71,6 +72,7 @@ resource webApp 'Microsoft.Web/sites@2023-12-01' = {
   properties: {
     serverFarmId: plan.id
     httpsOnly: true
+    virtualNetworkSubnetId: appIntegrationSubnetId
     keyVaultReferenceIdentity: uamiResourceId
     siteConfig: {
       linuxFxVersion: 'DOTNETCORE|10.0'
@@ -104,6 +106,7 @@ resource apiApp 'Microsoft.Web/sites@2023-12-01' = {
   properties: {
     serverFarmId: plan.id
     httpsOnly: true
+    virtualNetworkSubnetId: appIntegrationSubnetId
     keyVaultReferenceIdentity: uamiResourceId
     siteConfig: {
       linuxFxVersion: 'DOTNETCORE|10.0'

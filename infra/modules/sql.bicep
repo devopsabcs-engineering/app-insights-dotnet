@@ -8,6 +8,9 @@ param resourceToken string
 param tags object
 param sqlAdminLogin string
 param sqlAdminPrincipalId string
+@allowed(['User', 'Group'])
+@description('Entra principal type for the SQL admin (User or Group).')
+param sqlAdminPrincipalType string = 'Group'
 param keyVaultName string
 
 var serverName = 'sql${resourceToken}'
@@ -20,10 +23,10 @@ resource sqlServer 'Microsoft.Sql/servers@2023-08-01-preview' = {
   tags: tags
   properties: {
     minimalTlsVersion: '1.2'
-    publicNetworkAccess: 'Enabled'
+    publicNetworkAccess: 'Disabled'
     administrators: {
       administratorType: 'ActiveDirectory'
-      principalType: 'User'
+      principalType: sqlAdminPrincipalType
       login: sqlAdminLogin
       sid: sqlAdminPrincipalId
       tenantId: subscription().tenantId
@@ -38,16 +41,6 @@ resource entraOnly 'Microsoft.Sql/servers/azureADOnlyAuthentications@2023-08-01-
   name: 'Default'
   properties: {
     azureADOnlyAuthentication: true
-  }
-}
-
-// Allow Azure services (App Service outbound IPs) to reach the server.
-resource fwAzure 'Microsoft.Sql/servers/firewallRules@2023-08-01-preview' = {
-  parent: sqlServer
-  name: 'AllowAllWindowsAzureIps'
-  properties: {
-    startIpAddress: '0.0.0.0'
-    endIpAddress: '0.0.0.0'
   }
 }
 
@@ -85,6 +78,7 @@ resource secret 'Microsoft.KeyVault/vaults/secrets@2024-04-01-preview' = {
   }
 }
 
+output serverId string = sqlServer.id
 output serverName string = sqlServer.name
 output serverFqdn string = sqlServer.properties.fullyQualifiedDomainName
 output dbName string = dbName
