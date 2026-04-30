@@ -1,0 +1,738 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Application Insights pour .NET 10 — Atelier bilingue</title>
+  <meta name="description" content="Corrélation de bout en bout navigateur → web → API → SQL avec Azure Application Insights et OpenTelemetry">
+  <meta name="author" content="Microsoft Canada · Atelier MAPAQ">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+/* MAPAQ App Insights .NET 10 — bilingual deck theme.
+ * Palette: graphite / sky / leaf / orange on a deep night background.
+ * Shared by docs/app-insights-dotnet.html (EN) and docs/app-insights-dotnet-fr.html (FR).
+ */
+
+:root {
+  --graphite: #1F2A37;
+  --sky: #3B82F6;
+  --leaf: #16A34A;
+  --orange: #F97316;
+  --bg: #0B1220;
+  --fg: #E5E7EB;
+  --muted: #94A3B8;
+  --card-bg: #161B22;
+  --card-border: #232A34;
+  --accent-gradient: linear-gradient(135deg, var(--sky), var(--leaf));
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+  background-color: var(--bg);
+  color: var(--fg);
+  line-height: 1.7;
+  font-size: 16px;
+  padding-top: 80px;
+}
+
+a { color: var(--sky); text-decoration: none; }
+a:hover { text-decoration: underline; }
+
+.hero {
+  max-width: 1100px;
+  margin: 0 auto 32px;
+  padding: 48px 32px 24px;
+  text-align: center;
+  border-bottom: 1px solid var(--card-border);
+}
+
+.hero-badge {
+  display: inline-block;
+  padding: 4px 12px;
+  margin-bottom: 16px;
+  background: rgba(59, 130, 246, 0.15);
+  border: 1px solid var(--sky);
+  border-radius: 999px;
+  color: var(--sky);
+  font-size: 0.8rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.hero h1 {
+  font-size: 2.6rem;
+  font-weight: 800;
+  background: var(--accent-gradient);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  margin-bottom: 12px;
+}
+
+.hero .subtitle { font-size: 1.15rem; color: var(--muted); max-width: 780px; margin: 0 auto 16px; }
+.hero .hero-meta { color: var(--muted); font-size: 0.9rem; }
+.hero .hero-meta span { margin: 0 6px; }
+
+nav.toc {
+  position: sticky;
+  top: 60px;
+  z-index: 100;
+  background: rgba(11, 18, 32, 0.95);
+  backdrop-filter: blur(8px);
+  border-top: 1px solid var(--card-border);
+  border-bottom: 1px solid var(--card-border);
+  margin-bottom: 32px;
+}
+
+nav.toc .toc-inner {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 12px 32px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 20px;
+  font-size: 0.85rem;
+}
+
+nav.toc a {
+  color: var(--muted);
+  font-weight: 500;
+  padding: 4px 0;
+}
+
+nav.toc a:hover, nav.toc a.active {
+  color: var(--sky);
+  text-decoration: none;
+}
+
+.container {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 0 32px;
+}
+
+section {
+  padding: 48px 0;
+  border-bottom: 1px solid var(--card-border);
+  scroll-margin-top: 140px;
+}
+
+section:last-of-type { border-bottom: none; }
+
+h1 { font-size: 2.4rem; font-weight: 800; line-height: 1.2; }
+
+h2 {
+  font-size: 1.8rem;
+  font-weight: 700;
+  margin-bottom: 18px;
+  display: flex;
+  align-items: baseline;
+  gap: 14px;
+}
+
+h2 .section-num {
+  font-family: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 1rem;
+  color: var(--sky);
+  background: rgba(59, 130, 246, 0.12);
+  border: 1px solid var(--sky);
+  padding: 2px 10px;
+  border-radius: 6px;
+  font-weight: 600;
+}
+
+h3 { font-size: 1.3rem; font-weight: 600; margin: 24px 0 12px; }
+h4 { font-size: 1rem; font-weight: 600; margin: 8px 0; color: var(--fg); }
+
+p { margin: 12px 0; color: var(--fg); }
+.section-lead { color: var(--muted); font-size: 1.05rem; margin-bottom: 24px; }
+
+ul, ol { margin: 12px 0 12px 24px; }
+li { margin: 6px 0; color: var(--fg); }
+
+pre {
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: 8px;
+  padding: 16px 20px;
+  overflow-x: auto;
+  font-family: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.88rem;
+  line-height: 1.5;
+  color: var(--fg);
+  margin: 16px 0;
+}
+
+code {
+  font-family: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.88rem;
+  background: rgba(59, 130, 246, 0.08);
+  border: 1px solid var(--card-border);
+  padding: 1px 6px;
+  border-radius: 4px;
+  color: var(--sky);
+}
+
+pre code { background: transparent; border: none; padding: 0; color: inherit; }
+
+.card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 16px;
+  margin: 20px 0;
+}
+
+.card {
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: 10px;
+  padding: 18px;
+  transition: border-color 0.2s, transform 0.2s;
+}
+
+.card:hover { border-color: var(--sky); transform: translateY(-2px); }
+.card .card-icon { font-size: 1.6rem; display: block; margin-bottom: 8px; }
+.card p { color: var(--muted); font-size: 0.92rem; margin: 4px 0 0; }
+
+.mermaid-wrapper {
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: 10px;
+  padding: 24px;
+  margin: 24px 0;
+  overflow-x: auto;
+  text-align: center;
+}
+
+.mermaid-wrapper .mermaid { display: inline-block; }
+
+.notes {
+  margin-top: 16px;
+  padding: 12px 16px;
+  background: rgba(22, 163, 74, 0.08);
+  border-left: 3px solid var(--leaf);
+  border-radius: 4px;
+  color: var(--muted);
+  font-size: 0.92rem;
+  font-style: italic;
+}
+
+.lang-switcher {
+  position: fixed;
+  top: 16px;
+  right: 20px;
+  z-index: 200;
+  display: flex;
+  gap: 0;
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1px solid var(--card-border);
+  font-size: 0.8rem;
+  font-weight: 600;
+  background: var(--card-bg);
+}
+
+.lang-switcher a {
+  padding: 6px 14px;
+  color: var(--muted);
+  text-decoration: none;
+  background: var(--card-bg);
+  transition: all 0.2s;
+}
+
+.lang-switcher a:hover {
+  color: var(--fg);
+  background: rgba(59, 130, 246, 0.1);
+  text-decoration: none;
+}
+
+.lang-switcher a.active {
+  color: var(--bg);
+  background: var(--sky);
+  pointer-events: none;
+}
+
+.footer {
+  max-width: 1100px;
+  margin: 48px auto 24px;
+  padding: 24px 32px;
+  text-align: center;
+  color: var(--muted);
+  font-size: 0.9rem;
+  border-top: 1px solid var(--card-border);
+}
+
+@media (max-width: 720px) {
+  body { padding-top: 70px; }
+  .hero h1 { font-size: 1.8rem; }
+  h2 { font-size: 1.4rem; }
+  .container, .hero { padding-left: 16px; padding-right: 16px; }
+  nav.toc .toc-inner { padding: 10px 16px; gap: 6px 14px; }
+}
+
+@media print {
+  body { padding-top: 0; }
+  nav.toc, .lang-switcher { display: none; }
+  section { break-inside: avoid; padding: 24px 0; }
+  .mermaid-wrapper { break-inside: avoid; }
+  pre { white-space: pre-wrap; word-wrap: break-word; }
+}
+
+  </style>
+</head>
+<body>
+<div class="lang-switcher" role="navigation" aria-label="Language">
+    <a href="app-insights-dotnet.html" hreflang="en">EN</a>
+    <a href="app-insights-dotnet-fr.html" class="active" hreflang="fr">FR</a>
+  </div>
+<div class="hero">
+    <div class="hero-badge">Observabilité — .NET 10 sur Azure</div>
+    <h1>Application Insights pour .NET 10 — Atelier bilingue</h1>
+    <p class="subtitle">Corrélation de bout en bout navigateur → web → API → SQL avec Azure Application Insights et OpenTelemetry</p>
+    <p class="hero-meta">📅 2026<span> · </span>👤 Microsoft Canada<span> · </span>🏢 Atelier MAPAQ</p>
+  </div>
+<nav class="toc" aria-label="Sommaire">
+    <div class="toc-inner">
+      <a href="#sec1">Application Insights pour .NET 10</a>
+      <a href="#sec2">Ordre du jour — six modules</a>
+      <a href="#sec3">Objectifs d&#39;apprentissage</a>
+      <a href="#sec4">Module 0 — Prérequis</a>
+      <a href="#sec5">Architecture cible</a>
+      <a href="#sec6">Module 1 — Provisionnement (azd up)</a>
+      <a href="#sec7">Modules Bicep de l&#39;atelier</a>
+      <a href="#sec8">Module 2 — Auto-instrumentation Web</a>
+      <a href="#sec9">Ce que vous devriez voir en 60 secondes</a>
+      <a href="#sec10">Module 3 — Instrumentation API + SQL</a>
+      <a href="#sec11">W3C Trace Context — traceparent</a>
+      <a href="#sec12">Trace de bout en bout — la pièce maîtresse</a>
+      <a href="#sec13">Module 4 — Corrélation côté navigateur</a>
+      <a href="#sec14">SDK navigateur — configuration minimale</a>
+      <a href="#sec15">Module 5 — Application Map</a>
+      <a href="#sec16">KQL — une seule requête, un seul operation_Id</a>
+      <a href="#sec17">Requête KQL — copier / coller</a>
+      <a href="#sec18">Live Metrics — l&#39;effet whaouh</a>
+      <a href="#sec19">Workbook — synthèse SLO bilingue</a>
+      <a href="#sec20">Alertes intelligentes — anomalies de panne</a>
+      <a href="#sec21">Maîtrise des coûts — sans surprise</a>
+      <a href="#sec22">Liste de dépannage</a>
+      <a href="#sec23">Module 6 — Démantèlement</a>
+      <a href="#sec24">Références</a>
+      <a href="#sec25">Merci · Thank you</a>
+    </div>
+  </nav>
+<div class="container">
+
+<!-- ════════════════════════════════════════════════════════════════════════
+     SECTION 01 · cover · Application Insights pour .NET 10
+     ════════════════════════════════════════════════════════════════════════ -->
+<section id="sec1" data-key="cover">
+    <h2><span class="section-num">01</span> Application Insights pour .NET 10</h2>
+    <ul>
+      <li>Atelier pratique bilingue (FR / EN)</li>
+      <li>Navigateur → Web ASP.NET Core → API Web → Azure SQL</li>
+      <li>Un seul operation_Id, une seule cascade, une seule vérité</li>
+    </ul>
+    <p class="notes">Accueillez la salle dans les deux langues. Confirmez les règles bilingues avant de commencer.</p>
+  </section>
+
+<!-- ════════════════════════════════════════════════════════════════════════
+     SECTION 02 · agenda · Ordre du jour — six modules
+     ════════════════════════════════════════════════════════════════════════ -->
+<section id="sec2" data-key="agenda">
+    <h2><span class="section-num">02</span> Ordre du jour — six modules</h2>
+    <ul>
+      <li>Module 0 — Préparation et prérequis (15 min)</li>
+      <li>Module 1 — Provisionnement (azd up) (30 min)</li>
+      <li>Module 2 — Auto-instrumentation Web (30 min)</li>
+      <li>Module 3 — Instrumentation API + SQL (45 min)</li>
+      <li>Module 4 — Corrélation côté navigateur (30 min)</li>
+      <li>Module 5 — Tableaux de bord et KQL (30 min)</li>
+      <li>Module 6 — Démantèlement (azd down --purge --force) (10 min)</li>
+    </ul>
+    <p class="notes">~3 h au total avec pauses. Modules à respecter strictement; le cœur est Module 4 + Module 5.</p>
+  </section>
+
+<!-- ════════════════════════════════════════════════════════════════════════
+     SECTION 03 · learning-objectives · Objectifs d'apprentissage
+     ════════════════════════════════════════════════════════════════════════ -->
+<section id="sec3" data-key="learning-objectives">
+    <h2><span class="section-num">03</span> Objectifs d&#39;apprentissage</h2>
+    <ul>
+      <li>Provisionner Application Insights avec Bicep + azd en une seule commande</li>
+      <li>Auto-instrumenter une application Web ASP.NET Core 10 sans une ligne de code</li>
+      <li>Corréler pageView navigateur → requête serveur → dépendance SQL sur un même operation_Id</li>
+      <li>Écrire une requête KQL qui joint requests, dependencies et pageViews de bout en bout</li>
+      <li>Démanteler proprement toutes les ressources avec azd down --purge --force</li>
+    </ul>
+    <p class="notes">Ancrez les attentes. Chaque objectif est renforcé par un atelier pratique.</p>
+  </section>
+
+<!-- ════════════════════════════════════════════════════════════════════════
+     SECTION 04 · prereqs · Module 0 — Prérequis
+     ════════════════════════════════════════════════════════════════════════ -->
+<section id="sec4" data-key="prereqs">
+    <h2><span class="section-num">04</span> Module 0 — Prérequis</h2>
+    <ul>
+      <li>.NET SDK 10.0.100 (préversion ou RTM)</li>
+      <li>Azure Developer CLI (azd) 1.10+</li>
+      <li>Azure CLI (az) 2.65+</li>
+      <li>VS Code avec les extensions C# Dev Kit et Bicep</li>
+      <li>Abonnement Azure actif avec rôle Owner ou Contributor + UAA sur un groupe de ressources</li>
+      <li>Compte GitHub (pour le carnet ensemencé et les flux CI)</li>
+    </ul>
+    <p class="notes">Si quelqu&#39;un n&#39;a pas le SDK, dirigez-le vers le devcontainer (lab-00).</p>
+  </section>
+
+<!-- ════════════════════════════════════════════════════════════════════════
+     SECTION 05 · architecture · Architecture cible
+     ════════════════════════════════════════════════════════════════════════ -->
+<section id="sec5" data-key="architecture">
+    <h2><span class="section-num">05</span> Architecture cible</h2>
+    <div class="mermaid-wrapper">
+      <pre class="mermaid">
+graph LR
+  Browser["🌐 Navigateur<br/>SDK JS pageView"] --> Web["🛠️ Mapaq.Web<br/>ASP.NET Core 10"]
+  Web --> Api["📡 Mapaq.Api<br/>API Web"]
+  Api --> Sql["🗄️ Azure SQL<br/>EF Core"]
+  Web -.-> AI["📊 Application Insights<br/>basé sur l'espace de travail"]
+  Api -.-> AI
+  Browser -.-> AI
+      </pre>
+    </div>
+    <p class="notes">Quatre nœuds, une seule ressource AI basée sur un workspace, un seul Log Analytics derrière.</p>
+  </section>
+
+<!-- ════════════════════════════════════════════════════════════════════════
+     SECTION 06 · provision-azd-up · Module 1 — Provisionnement (azd up)
+     ════════════════════════════════════════════════════════════════════════ -->
+<section id="sec6" data-key="provision-azd-up">
+    <h2><span class="section-num">06</span> Module 1 — Provisionnement (azd up)</h2>
+    <ul>
+      <li>azd init -t . (utilisez le modèle de l&#39;atelier)</li>
+      <li>azd env new mapaq-dev</li>
+      <li>azd up (Bicep déploie RG, AI, Log Analytics, App Service, SQL)</li>
+      <li>Vérifiez les sorties : APPLICATIONINSIGHTS_CONNECTION_STRING est câblé sur les deux apps</li>
+    </ul>
+    <p class="notes">Comptez ~6 min pour le premier déploiement. La chaîne de connexion est un App Setting, jamais en dur dans le code.</p>
+  </section>
+
+<!-- ════════════════════════════════════════════════════════════════════════
+     SECTION 07 · bicep-modules · Modules Bicep de l'atelier
+     ════════════════════════════════════════════════════════════════════════ -->
+<section id="sec7" data-key="bicep-modules">
+    <h2><span class="section-num">07</span> Modules Bicep de l&#39;atelier</h2>
+    <ul>
+      <li>infra/main.bicep — compose les modules</li>
+      <li>infra/modules/log-analytics.bicep — fondation workspace</li>
+      <li>infra/modules/app-insights.bicep — composant basé sur le workspace</li>
+      <li>infra/modules/app-service.bicep — Web + Api avec identité managée système</li>
+      <li>infra/modules/sql.bicep — Azure SQL avec authentification Entra uniquement</li>
+      <li>Passez la chaîne de connexion via un App Setting, jamais en dur</li>
+    </ul>
+    <p class="notes">Insistez : AI est désormais basé sur un workspace par défaut; AI classique est déprécié.</p>
+  </section>
+
+<!-- ════════════════════════════════════════════════════════════════════════
+     SECTION 08 · web-instrumentation · Module 2 — Auto-instrumentation Web
+     ════════════════════════════════════════════════════════════════════════ -->
+<section id="sec8" data-key="web-instrumentation">
+    <h2><span class="section-num">08</span> Module 2 — Auto-instrumentation Web</h2>
+    <ul>
+      <li>dotnet add package Microsoft.ApplicationInsights.AspNetCore</li>
+      <li>builder.Services.AddApplicationInsightsTelemetry();</li>
+      <li>Lit APPLICATIONINSIGHTS_CONNECTION_STRING depuis la configuration automatiquement</li>
+      <li>Génère requests, dependencies, exceptions et traces sans code supplémentaire</li>
+    </ul>
+    <p class="notes">C&#39;est volontairement ennuyeux. La magie arrive au prochain module — la propagation.</p>
+  </section>
+
+<!-- ════════════════════════════════════════════════════════════════════════
+     SECTION 09 · web-snapshot · Ce que vous devriez voir en 60 secondes
+     ════════════════════════════════════════════════════════════════════════ -->
+<section id="sec9" data-key="web-snapshot">
+    <h2><span class="section-num">09</span> Ce que vous devriez voir en 60 secondes</h2>
+    <ul>
+      <li>Live Metrics affiche les requêtes entrantes en temps réel</li>
+      <li>Transaction Search liste chaque requête avec son operation_Id</li>
+      <li>La vue transaction de bout en bout regroupe les dépendances sous leur requête parente</li>
+      <li>Le tableau Failures s&#39;allume dès qu&#39;un 5xx remonte de l&#39;API</li>
+    </ul>
+    <p class="notes">Gardez Live Metrics ouvert pendant la démo; rien ne convainc plus vite que les points qui apparaissent.</p>
+  </section>
+
+<!-- ════════════════════════════════════════════════════════════════════════
+     SECTION 10 · api-instrumentation · Module 3 — Instrumentation API + SQL
+     ════════════════════════════════════════════════════════════════════════ -->
+<section id="sec10" data-key="api-instrumentation">
+    <h2><span class="section-num">10</span> Module 3 — Instrumentation API + SQL</h2>
+    <ul>
+      <li>Même paquet Microsoft.ApplicationInsights.AspNetCore sur l&#39;API</li>
+      <li>Les appels SQL EF Core 10 sont suivis automatiquement comme dépendances SqlClient</li>
+      <li>HttpClientFactory propage le traceparent vers les appels en aval automatiquement</li>
+      <li>Dimensions personnalisées : TelemetryClient.TrackEvent(&quot;OrderPlaced&quot;, new { OrderId, CustomerId })</li>
+    </ul>
+    <p class="notes">L&#39;instrumentation EF Core ⇒ SqlClient ne demande aucun paquet supplémentaire — elle est livrée avec le SDK AI.</p>
+  </section>
+
+<!-- ════════════════════════════════════════════════════════════════════════
+     SECTION 11 · traceparent · W3C Trace Context — traceparent
+     ════════════════════════════════════════════════════════════════════════ -->
+<section id="sec11" data-key="traceparent">
+    <h2><span class="section-num">11</span> W3C Trace Context — traceparent</h2>
+    <ul>
+      <li>00-{trace-id}-{parent-id}-{trace-flags}</li>
+      <li>Le SDK navigateur démarre la trace et émet l&#39;en-tête sur chaque fetch/XHR</li>
+      <li>ASP.NET Core l&#39;honore et le transmet sans configuration</li>
+      <li>Résultat : un seul operation_Id relie les 4 spans ensemble</li>
+    </ul>
+    <p class="notes">Montrez l&#39;en-tête réel dans l&#39;onglet Réseau des DevTools du navigateur pendant la démo.</p>
+  </section>
+
+<!-- ════════════════════════════════════════════════════════════════════════
+     SECTION 12 · e2e-trace · Trace de bout en bout — la pièce maîtresse
+     ════════════════════════════════════════════════════════════════════════ -->
+<section id="sec12" data-key="e2e-trace">
+    <h2><span class="section-num">12</span> Trace de bout en bout — la pièce maîtresse</h2>
+    <div class="mermaid-wrapper">
+      <pre class="mermaid">
+sequenceDiagram
+  autonumber
+  participant Browser as "Browser"
+  participant Web as "Mapaq.Web"
+  participant Api as "Mapaq.Api"
+  participant Sql as "Azure SQL"
+  Browser->>Web: GET /orders<br/>traceparent: 00-abc-01-01
+  Web->>Api: GET /api/orders<br/>traceparent: 00-abc-02-01
+  Api->>Sql: SELECT * FROM Orders<br/>traceparent: 00-abc-03-01
+  Sql-->>Api: lignes
+  Api-->>Web: 200 OK
+  Web-->>Browser: 200 OK
+  Note over Browser,Sql: Un seul operation_Id = abc<br/>Une seule cascade dans Application Insights
+      </pre>
+    </div>
+    <p class="notes">DR-10 — livrable obligatoire. Ce diagramme à lui seul est le pivot visuel de tout l&#39;atelier.</p>
+  </section>
+
+<!-- ════════════════════════════════════════════════════════════════════════
+     SECTION 13 · browser-snippet · Module 4 — Corrélation côté navigateur
+     ════════════════════════════════════════════════════════════════════════ -->
+<section id="sec13" data-key="browser-snippet">
+    <h2><span class="section-num">13</span> Module 4 — Corrélation côté navigateur</h2>
+    <ul>
+      <li>Ajoutez le snippet du SDK JavaScript Application Insights à _Layout.cshtml</li>
+      <li>Passez la chaîne de connexion via un ViewData côté serveur (jamais en dur)</li>
+      <li>Activez enableCorsCorrelation: true et enableRequestHeaderTracking: true</li>
+      <li>Passez distributedTracingMode: AI_AND_W3C pour émettre traceparent</li>
+    </ul>
+    <p class="notes">Le snippet doit venir avant tout autre script qui émet fetch/XHR.</p>
+  </section>
+
+<!-- ════════════════════════════════════════════════════════════════════════
+     SECTION 14 · browser-config · SDK navigateur — configuration minimale
+     ════════════════════════════════════════════════════════════════════════ -->
+<section id="sec14" data-key="browser-config">
+    <h2><span class="section-num">14</span> SDK navigateur — configuration minimale</h2>
+    <ul>
+      <li>instrumentationKey est obsolète — utilisez connectionString</li>
+      <li>enableAutoRouteTracking: true (pour les changements de page SPA)</li>
+      <li>correlationHeaderExcludedDomains: [&#39;*.googleapis.com&#39;, &#39;*.bing.com&#39;]</li>
+      <li>samplingPercentage: 100 en dev, plus bas en prod</li>
+    </ul>
+    <p class="notes">L&#39;échantillonnage est par app, fixé sur l&#39;objet d&#39;options du SDK — pas dans le portail.</p>
+  </section>
+
+<!-- ════════════════════════════════════════════════════════════════════════
+     SECTION 15 · app-map · Module 5 — Application Map
+     ════════════════════════════════════════════════════════════════════════ -->
+<section id="sec15" data-key="app-map">
+    <h2><span class="section-num">15</span> Module 5 — Application Map</h2>
+    <div class="mermaid-wrapper">
+      <pre class="mermaid">
+graph LR
+  B["🌐 Navigateur"] --> W["Mapaq.Web<br/>p95 110ms · 0.0% éch"]
+  W --> A["Mapaq.Api<br/>p95 80ms · 0.1% éch"]
+  A --> S["Azure SQL<br/>p95 45ms · 0.0% éch"]
+  style B fill:#3B82F6,stroke:#1F2A37,color:#fff
+  style W fill:#16A34A,stroke:#1F2A37,color:#fff
+  style A fill:#16A34A,stroke:#1F2A37,color:#fff
+  style S fill:#F97316,stroke:#1F2A37,color:#fff
+      </pre>
+    </div>
+    <p class="notes">L&#39;Application Map découvre automatiquement la topologie depuis la télémétrie — aucune configuration manuelle.</p>
+  </section>
+
+<!-- ════════════════════════════════════════════════════════════════════════
+     SECTION 16 · kql-end-to-end · KQL — une seule requête, un seul operation_Id
+     ════════════════════════════════════════════════════════════════════════ -->
+<section id="sec16" data-key="kql-end-to-end">
+    <h2><span class="section-num">16</span> KQL — une seule requête, un seul operation_Id</h2>
+    <ul>
+      <li>Ouvrez le panneau Logs sur la ressource AI</li>
+      <li>Exécutez la requête union ci-dessous</li>
+      <li>Triez par timestamp asc pour voir la cascade dans l&#39;ordre temporel</li>
+    </ul>
+    <div class="mermaid-wrapper">
+      <pre class="mermaid">
+flowchart LR
+  Q["union requests, dependencies, pageViews<br/>| where operation_Id == 'abc'<br/>| project timestamp, itemType, name, duration, success<br/>| order by timestamp asc"]
+  Q --> R["📊 Résultat cascade<br/>4 lignes · 1 operation_Id"]
+      </pre>
+    </div>
+    <p class="notes">Décortiquez chaque ligne. L&#39;union sur 3 tables est l&#39;astuce que la plupart des nouveaux ratent.</p>
+  </section>
+
+<!-- ════════════════════════════════════════════════════════════════════════
+     SECTION 17 · kql-query-text · Requête KQL — copier / coller
+     ════════════════════════════════════════════════════════════════════════ -->
+<section id="sec17" data-key="kql-query-text">
+    <h2><span class="section-num">17</span> Requête KQL — copier / coller</h2>
+    <ul>
+      <li>union requests, dependencies, pageViews</li>
+      <li>| where operation_Id == &#39;abc-trace-id-ici&#39;</li>
+      <li>| project timestamp, itemType, name, duration, success, target</li>
+      <li>| order by timestamp asc</li>
+    </ul>
+    <p class="notes">Remplacez &#39;abc-trace-id-ici&#39; par l&#39;operation_Id récupéré dans l&#39;en-tête traceparent des DevTools.</p>
+  </section>
+
+<!-- ════════════════════════════════════════════════════════════════════════
+     SECTION 18 · live-metrics · Live Metrics — l'effet whaouh
+     ════════════════════════════════════════════════════════════════════════ -->
+<section id="sec18" data-key="live-metrics">
+    <h2><span class="section-num">18</span> Live Metrics — l&#39;effet whaouh</h2>
+    <ul>
+      <li>Latence inférieure à la seconde entre l&#39;app et le portail</li>
+      <li>Aucune donnée n&#39;est persistée dans le flux du portail — l&#39;échantillonnage ne s&#39;applique pas</li>
+      <li>Filtrez par nom de rôle (cloud_RoleName) pour isoler Mapaq.Api</li>
+      <li>Génial pour la démo; ne remplace pas de vraies alertes</li>
+    </ul>
+    <p class="notes">Ouvrez Live Metrics, puis demandez à la salle de charger la page — dopamine garantie.</p>
+  </section>
+
+<!-- ════════════════════════════════════════════════════════════════════════
+     SECTION 19 · workbook · Workbook — synthèse SLO bilingue
+     ════════════════════════════════════════════════════════════════════════ -->
+<section id="sec19" data-key="workbook">
+    <h2><span class="section-num">19</span> Workbook — synthèse SLO bilingue</h2>
+    <ul>
+      <li>Workbook prêt à l&#39;emploi dans workshop-content/workbooks/</li>
+      <li>Affiche le volume de requêtes 24h, p95 de latence, % d&#39;échec, top-5 dépendances</li>
+      <li>Paramétré par nom de rôle et plage de temps</li>
+      <li>Importable via JSON, sans Power BI</li>
+    </ul>
+    <p class="notes">Le JSON du workbook vit dans le dépôt; importez via la galerie de la ressource AI.</p>
+  </section>
+
+<!-- ════════════════════════════════════════════════════════════════════════
+     SECTION 20 · alerts · Alertes intelligentes — anomalies de panne
+     ════════════════════════════════════════════════════════════════════════ -->
+<section id="sec20" data-key="alerts">
+    <h2><span class="section-num">20</span> Alertes intelligentes — anomalies de panne</h2>
+    <ul>
+      <li>Smart Detection s&#39;exécute en continu sur le workspace</li>
+      <li>Détecte automatiquement les anomalies de taux d&#39;échec, de chargement de page lent et de dégradation de trace</li>
+      <li>Configurez l&#39;e-mail + un Action Group pour un webhook Teams</li>
+    </ul>
+    <p class="notes">Smart Detection est actif par défaut — montrez comment ajouter des destinataires.</p>
+  </section>
+
+<!-- ════════════════════════════════════════════════════════════════════════
+     SECTION 21 · cost-controls · Maîtrise des coûts — sans surprise
+     ════════════════════════════════════════════════════════════════════════ -->
+<section id="sec21" data-key="cost-controls">
+    <h2><span class="section-num">21</span> Maîtrise des coûts — sans surprise</h2>
+    <ul>
+      <li>Plafond quotidien sur la ressource AI (50 Mo/jour pour l&#39;atelier)</li>
+      <li>Échantillonnage : 100 % en dev, 10–25 % typique en prod</li>
+      <li>AI basé sur le workspace utilise les paliers d&#39;engagement Log Analytics</li>
+      <li>Étiquetez tout avec Workshop=Mapaq pour la facturation</li>
+    </ul>
+    <p class="notes">Le plafond quotidien protège l&#39;abonnement de l&#39;atelier d&#39;un débordement de logs.</p>
+  </section>
+
+<!-- ════════════════════════════════════════════════════════════════════════
+     SECTION 22 · troubleshooting · Liste de dépannage
+     ════════════════════════════════════════════════════════════════════════ -->
+<section id="sec22" data-key="troubleshooting">
+    <h2><span class="section-num">22</span> Liste de dépannage</h2>
+    <ul>
+      <li>Pas de télémétrie ? Vérifiez APPLICATIONINSIGHTS_CONNECTION_STRING dans les App Settings</li>
+      <li>PageViews manquants ? Confirmez que le snippet est avant les autres scripts</li>
+      <li>operation_Id différent ? Vérifiez enableCorsCorrelation sur le SDK JS</li>
+      <li>Dépendances SQL absentes ? EF Core a besoin du SDK AI — le paquet seul ne suffit pas</li>
+    </ul>
+    <p class="notes">Gardez cette diapo visible pendant le lab; la plupart des questions tombent dans une de ces 4 lignes.</p>
+  </section>
+
+<!-- ════════════════════════════════════════════════════════════════════════
+     SECTION 23 · teardown · Module 6 — Démantèlement
+     ════════════════════════════════════════════════════════════════════════ -->
+<section id="sec23" data-key="teardown">
+    <h2><span class="section-num">23</span> Module 6 — Démantèlement</h2>
+    <ul>
+      <li>azd down --purge --force</li>
+      <li>--purge supprime les Key Vaults et ressources AI en suppression douce</li>
+      <li>--force saute la confirmation interactive</li>
+      <li>Vérifiez dans le portail Azure que le groupe de ressources est bien parti</li>
+    </ul>
+    <p class="notes">Démontrez toujours le démantèlement en direct. Un atelier sans démantèlement est une bombe à retardement de facturation.</p>
+  </section>
+
+<!-- ════════════════════════════════════════════════════════════════════════
+     SECTION 24 · references · Références
+     ════════════════════════════════════════════════════════════════════════ -->
+<section id="sec24" data-key="references">
+    <h2><span class="section-num">24</span> Références</h2>
+    <ul>
+      <li>learn.microsoft.com/fr-ca/azure/azure-monitor/app/app-insights-overview</li>
+      <li>learn.microsoft.com/fr-ca/azure/azure-monitor/app/asp-net-core</li>
+      <li>learn.microsoft.com/fr-ca/azure/azure-monitor/app/javascript</li>
+      <li>github.com/Azure/azure-dev (modèles azd)</li>
+      <li>github.com/microsoft/ApplicationInsights-dotnet</li>
+    </ul>
+    <p class="notes">Les quatre pages MS Learn ont le sélecteur EN/FR en haut à droite.</p>
+  </section>
+
+<!-- ════════════════════════════════════════════════════════════════════════
+     SECTION 25 · closing · Merci · Thank you
+     ════════════════════════════════════════════════════════════════════════ -->
+<section id="sec25" data-key="closing">
+    <h2><span class="section-num">25</span> Merci · Thank you</h2>
+    <ul>
+      <li>Diapos + labs : github.com/devopsabcs-engineering/app-insights-dotnet</li>
+      <li>Bilingue publié sur GitHub Pages : /app-insights-dotnet/ et /app-insights-dotnet/fr/</li>
+      <li>Issues + carte ADO ensemencées — ouvrez-en une avec vos retours</li>
+      <li>Bonne observabilité! · Happy observing!</li>
+    </ul>
+    <p class="notes">Concluez dans les deux langues. Cédez la parole aux questions.</p>
+  </section>
+</div>
+<div class="footer"><p>Application Insights pour .NET 10 — atelier bilingue · Microsoft Canada</p></div>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
+<script>
+  mermaid.initialize({
+    startOnLoad: true,
+    theme: 'dark',
+    themeVariables: {
+      darkMode: true,
+      background: '#0B1220',
+      primaryColor: '#3B82F6',
+      primaryBorderColor: '#1F2A37',
+      primaryTextColor: '#E5E7EB',
+      secondaryColor: '#16A34A',
+      tertiaryColor: '#F97316',
+      lineColor: '#94A3B8',
+      fontFamily: 'Inter, -apple-system, sans-serif',
+      fontSize: '14px'
+    },
+    flowchart: { htmlLabels: true, curve: 'basis', padding: 15, nodeSpacing: 50, rankSpacing: 50 },
+    sequence: { useMaxWidth: true, showSequenceNumbers: true }
+  });
+</script>
+</body>
+</html>
