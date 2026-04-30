@@ -1,0 +1,231 @@
+# Playwright UI tests against the deployed Mapaq.Web App Service.
+#
+# GitHub Actions equivalent of .azuredevops/pipelines/ui-tests.yml. Defaults
+# to the workshop-dev environment (rg-dev-001) and discovers the public Web
+# URL at run time. Override `webUrl` (or `azureEnvName`) at dispatch time to
+# retarget.
+#
+# Outputs:
+#   * Checks tab     - Playwright JUnit, one row per test (dorny/test-reporter).
+#   * Workflow run   - artifact `ui-test-report` (playwright-report/ + screenshots
+#                       + raw test-results).
+#   * GitHub wiki    - page `UI-Tests-Latest.md` updated with the freshly captured
+#                       PNGs (when publishToWiki=true). Requires repo secret
+#                       `WIKI_PAT` - a PAT with `repo` (classic) or
+#                       `Contents: Read and write` (fine-grained, scoped to this
+#                       repo's wiki). The default GITHUB_TOKEN cannot push to the
+#                       wiki, so a PAT is mandatory; the step is skipped with a
+#                       warning when the secret is absent. The wiki must already
+#                       be initialized (Wiki tab -> Create the first page).
+name: ui-tests
+
+on:
+  workflow_dispatch:
+    inputs:
+      azureEnvName:
+        description: "azd environment name (resource group rg-<name>)"
+        required: false
+        type: string
+        default: dev-001
+      webUrl:
+        description: 'Web base URL (use "auto" to discover from rg-<azureEnvName>)'
+        required: false
+        type: string
+        default: auto
+      publishToWiki:
+        description: "Publish screenshots to the GitHub wiki (UI-Tests-Latest)"
+        required: false
+        type: boolean
+        default: true
+      failOnTestErrors:
+        description: "Fail the workflow when any UI test fails"
+        required: false
+        type: boolean
+        default: true
+
+permissions:
+  id-token: write
+  contents: read
+  checks: write
+  pull-requests: write
+
+jobs:
+  ui-tests:
+    name: Playwright UI tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    environment: workshop-dev
+    env:
+      NODE_VERSION: "20.x"
+      PYTHON_VERSION: "3.12"
+      REPORT_DIR: ${{ github.workspace }}/ui-test-report
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Setup Node ${{ env.NODE_VERSION }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: tests/ui/package-lock.json
+
+      - name: Setup Python ${{ env.PYTHON_VERSION }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Azure login (OIDC)
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Resolve Web URL from rg-${{ inputs.azureEnvName }}
+        env:
+          AZURE_ENV_NAME: ${{ inputs.azureEnvName }}
+          WEB_URL_PARAM: ${{ inputs.webUrl }}
+        run: |
+          set -euo pipefail
+
+          RG="rg-${AZURE_ENV_NAME}"
+
+          if [[ -n "$WEB_URL_PARAM" && "$WEB_URL_PARAM" != "auto" ]]; then
+            RESOLVED_WEB="$WEB_URL_PARAM"
+          else
+            HOSTNAME="$(az webapp list \
+                --resource-group "$RG" \
+                --query "[?starts_with(name, 'mapaq-web-')].defaultHostName | [0]" \
+                -o tsv)"
+            if [[ -z "$HOSTNAME" ]]; then
+              echo "::error::Could not resolve Web URL from $RG. Pass webUrl explicitly."
+              exit 1
+            fi
+            RESOLVED_WEB="https://${HOSTNAME}"
+          fi
+
+          echo "Resolved Web -> $RESOLVED_WEB"
+          {
+            echo "MAPAQ_WEB_URL=$RESOLVED_WEB"
+            echo "TARGET_ENV_LABEL=$AZURE_ENV_NAME"
+          } >> "$GITHUB_ENV"
+
+      - name: npm ci (Playwright project)
+        working-directory: tests/ui
+        run: npm ci --no-audit --no-fund
+
+      - name: Install Playwright browsers (Chromium)
+        working-directory: tests/ui
+        # --with-deps installs the OS libs Playwright needs on Ubuntu runners.
+        run: npx --no-install playwright install --with-deps chromium
+
+      - name: Run Playwright
+        working-directory: tests/ui
+        env:
+          CI: "true"
+        run: |
+          set -uo pipefail
+
+          # Pre-flight: warn if the home page does not respond, but let
+          # Playwright drive the actual pass/fail signal.
+          if curl -fsS --max-time 10 "$MAPAQ_WEB_URL/" -o /dev/null; then
+            echo "Web tier reachable at $MAPAQ_WEB_URL"
+          else
+            echo "::warning::Pre-flight curl to $MAPAQ_WEB_URL/ failed."
+          fi
+
+          npx --no-install playwright test
+          PLAYWRIGHT_EXIT=$?
+
+          # Always publish the report bundle, regardless of pass/fail.
+          mkdir -p "$REPORT_DIR"
+          cp -r playwright-report  "$REPORT_DIR/" 2>/dev/null || true
+          cp -r test-results       "$REPORT_DIR/" 2>/dev/null || true
+          cp -r screenshots        "$REPORT_DIR/" 2>/dev/null || true
+
+          echo "Playwright exit code: $PLAYWRIGHT_EXIT (per-test pass/fail decided by the JUnit publish step)"
+          exit 0
+
+      - name: Publish Playwright JUnit results to Checks tab
+        if: always()
+        uses: dorny/test-reporter@v2
+        with:
+          name: Mapaq UI Tests (${{ inputs.azureEnvName }})
+          path: tests/ui/test-results/junit.xml
+          reporter: java-junit
+          fail-on-error: ${{ inputs.failOnTestErrors }}
+          fail-on-empty: true
+
+      - name: Upload HTML + screenshots bundle
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ui-test-report
+          path: ${{ env.REPORT_DIR }}
+          if-no-files-found: warn
+          retention-days: 30
+
+      - name: Publish screenshots to GitHub wiki
+        # Skip on PRs (no secrets available) and when the user opted out.
+        if: always() && inputs.publishToWiki
+        env:
+          WIKI_PAT: ${{ secrets.WIKI_PAT }}
+          BUILD_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          BUILD_NUMBER: ${{ github.run_number }}
+          BUILD_ID: ${{ github.run_id }}
+          TARGET_ENV_LABEL: ${{ env.TARGET_ENV_LABEL }}
+        run: |
+          set -uo pipefail
+
+          SCREENSHOT_DIR="tests/ui/screenshots"
+          if [ ! -d "$SCREENSHOT_DIR" ] || [ -z "$(ls -A "$SCREENSHOT_DIR" 2>/dev/null)" ]; then
+            echo "No screenshots produced; skipping wiki publish."
+            exit 0
+          fi
+
+          if [ -z "${WIKI_PAT:-}" ]; then
+            echo "::warning::Repository secret 'WIKI_PAT' is not set; skipping wiki publish."
+            echo "Resolution: create a PAT (classic with 'repo' scope, or fine-grained scoped"
+            echo "to this repo with 'Contents: Read and write') and add it as a repo secret"
+            echo "named 'WIKI_PAT'. The wiki must also be initialized (Wiki tab -> create the"
+            echo "first page) before this step can push to it."
+            exit 0
+          fi
+
+          # GitHub wiki repos live alongside the source repo at <slug>.wiki.git.
+          # Detect the default branch (older wikis use 'master', newer ones 'main').
+          WIKI_REPO_URL="https://x-access-token:${WIKI_PAT}@github.com/${GITHUB_REPOSITORY}.wiki.git"
+          WIKI_BRANCH="$(git ls-remote --symref "$WIKI_REPO_URL" HEAD 2>/dev/null \
+            | awk '/^ref:/ {sub("refs/heads/", "", $2); print $2; exit}')"
+          if [ -z "$WIKI_BRANCH" ]; then
+            echo "::warning::GitHub wiki repo not reachable at github.com/${GITHUB_REPOSITORY}/wiki."
+            echo "Resolution checklist:"
+            echo "  1. Open the repo's Wiki tab and create the first page (the wiki repo only"
+            echo "     exists once at least one page has been published)."
+            echo "  2. Verify the WIKI_PAT secret has push access to the wiki repo."
+            exit 0
+          fi
+          echo "Wiki default branch detected: $WIKI_BRANCH"
+
+          # Reuse tests/ui/publish_screenshots_to_wiki.py: it is pure-stdlib,
+          # accepts any Git URL and any branch, and the .attachments/... path
+          # plus leading-slash image refs it generates render correctly on
+          # GitHub wikis (paths resolve from the wiki root).
+          python tests/ui/publish_screenshots_to_wiki.py \
+            --wiki-repo-url "$WIKI_REPO_URL" \
+            --branch         "$WIKI_BRANCH" \
+            --screenshots-dir "$SCREENSHOT_DIR" \
+            --build-id     "$BUILD_ID" \
+            --build-number "$BUILD_NUMBER" \
+            --build-url    "$BUILD_URL" \
+            --target-env   "$TARGET_ENV_LABEL" \
+            --git-user     "Mapaq UI Pipeline" \
+            --git-email    "pipeline@mapaq.local"
+          SCRIPT_EXIT=$?
+          if [ $SCRIPT_EXIT -ne 0 ]; then
+            echo "::warning::Wiki publish script exited $SCRIPT_EXIT."
+          fi
+          # Never fail the workflow on wiki-publish issues - the test outcome
+          # is the source of truth for build status.
+          exit 0
