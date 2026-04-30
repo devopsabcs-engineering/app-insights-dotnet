@@ -53,8 +53,12 @@ async function expandOperation(op: Locator): Promise<void> {
  * Fill the operation's parameter inputs **in declared (DOM) order**, mapping
  * one supplied value per `<input>` produced by Swagger UI.
  *
- * Swagger UI shows each parameter on its own row of `table.parameters`; we
- * scope to that table so we never touch the request-body editor's textarea.
+ * Swagger UI 5.x renders each parameter on its own `<tr>` of `table.parameters`,
+ * but the row itself does NOT carry the `parameters` class — only the table
+ * does. The actual `<input>` lives in `td.parameters-col_description`, so we
+ * scope there to skip the read-only `parameters-col_name` cells and to avoid
+ * matching the request-body editor's textarea elsewhere on the page.
+ *
  * Values are filled in the same sequence as the OpenAPI document declares
  * them, which is also the visual top-to-bottom order on the page.
  */
@@ -62,7 +66,7 @@ async function fillParameters(op: Locator, values: string[]): Promise<void> {
   if (values.length === 0) {
     return;
   }
-  const inputs = op.locator('table.parameters tbody tr.parameters input');
+  const inputs = op.locator('table.parameters tbody td.parameters-col_description input');
   // Sanity-check there are enough input slots. A mismatch usually means the
   // Swagger doc changed shape and the spec needs updating.
   await expect(inputs).toHaveCount(values.length);
