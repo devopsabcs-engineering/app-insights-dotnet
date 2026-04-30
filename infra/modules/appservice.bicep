@@ -79,6 +79,7 @@ resource webApp 'Microsoft.Web/sites@2023-12-01' = {
     serverFarmId: plan.id
     httpsOnly: true
     virtualNetworkSubnetId: appIntegrationSubnetId
+    vnetRouteAllEnabled: true
     keyVaultReferenceIdentity: uamiResourceId
     siteConfig: {
       linuxFxVersion: 'DOTNETCORE|10.0'
@@ -96,6 +97,10 @@ resource webApp 'Microsoft.Web/sites@2023-12-01' = {
         {
           name: 'MapaqApi__BaseAddress'
           value: 'https://mapaq-api-${resourceToken}.azurewebsites.net/'
+        }
+        {
+          name: 'WEBSITE_DNS_SERVER'
+          value: '168.63.129.16'
         }
       ])
     }
@@ -117,6 +122,7 @@ resource apiApp 'Microsoft.Web/sites@2023-12-01' = {
     serverFarmId: plan.id
     httpsOnly: true
     virtualNetworkSubnetId: appIntegrationSubnetId
+    vnetRouteAllEnabled: true
     keyVaultReferenceIdentity: uamiResourceId
     siteConfig: {
       linuxFxVersion: 'DOTNETCORE|10.0'
@@ -134,6 +140,10 @@ resource apiApp 'Microsoft.Web/sites@2023-12-01' = {
         {
           name: 'WebOrigin'
           value: 'https://mapaq-web-${resourceToken}.azurewebsites.net'
+        }
+        {
+          name: 'WEBSITE_DNS_SERVER'
+          value: '168.63.129.16'
         }
       ])
     }

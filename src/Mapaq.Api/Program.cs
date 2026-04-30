@@ -70,22 +70,46 @@ builder.Services.AddHttpClient<CkanSyncService>(client =>
 
 var app = builder.Build();
 
-// Seed the demo dataset on startup. For SQL, EnsureCreated() creates tables
-// if they don't exist (no migration required for the workshop scaffold).
-// For in-memory, it works as before. MapaqDemoSeeder populates both paths.
+// Seed the demo dataset on startup. For in-memory, seed synchronously.
+// For SQL, seed via a background task so the app responds to health probes
+// while waiting for the DB connection (private endpoint may need a moment).
 using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<MapaqDbContext>();
     if (db.Database.IsInMemory())
     {
         db.Database.EnsureCreated();
+        MapaqDemoSeeder.SeedIfEmpty(db);
     }
-    else
+}
+
+// Background DB initializer for SQL — non-blocking so the container passes
+// the App Service warmup probe within the 230-second timeout.
+if (!string.IsNullOrWhiteSpace(builder.Configuration.GetConnectionString("MapaqSql")))
+{
+    _ = Task.Run(async () =>
     {
-        // Create tables from the model if they don't exist (idempotent).
-        db.Database.EnsureCreated();
-    }
-    MapaqDemoSeeder.SeedIfEmpty(db);
+        using var scope = app.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<MapaqDbContext>();
+        var logger = scope.ServiceProvider.GetRequiredService<ILoggerFactory>().CreateLogger("DbInit");
+        for (var attempt = 1; attempt <= 5; attempt++)
+        {
+            try
+            {
+                logger.LogInformation("DB init attempt {Attempt}: EnsureCreated + seed", attempt);
+                await db.Database.EnsureCreatedAsync();
+                MapaqDemoSeeder.SeedIfEmpty(db);
+                logger.LogInformation("DB init succeeded on attempt {Attempt}", attempt);
+                return;
+            }
+            catch (Exception ex)
+            {
+                logger.LogWarning(ex, "DB init attempt {Attempt} failed, retrying in 10s", attempt);
+                await Task.Delay(TimeSpan.FromSeconds(10));
+            }
+        }
+        logger.LogError("DB init failed after 5 attempts — data will be empty until next restart");
+    });
 }
 
 app.UseCors("default");

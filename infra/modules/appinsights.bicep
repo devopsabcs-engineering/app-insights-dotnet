@@ -1,4 +1,7 @@
-// Application Insights (workspace-based) - DisableLocalAuth: true (Entra only).
+// Application Insights (workspace-based).
+// DisableLocalAuth is false so the browser JS SDK can send telemetry via
+// connection string. Server-side apps still use Entra auth (UAMI) via
+// APPLICATIONINSIGHTS_AUTHENTICATION_STRING.
 
 param location string
 param resourceToken string
@@ -14,7 +17,7 @@ resource ai 'Microsoft.Insights/components@2020-02-02' = {
     Application_Type: 'web'
     WorkspaceResourceId: workspaceResourceId
     IngestionMode: 'LogAnalytics'
-    DisableLocalAuth: true
+    DisableLocalAuth: false
     publicNetworkAccessForIngestion: 'Enabled'
     publicNetworkAccessForQuery: 'Enabled'
   }

@@ -5,7 +5,7 @@
     "_generator": {
       "name": "bicep",
       "version": "0.42.1.51946",
-      "templateHash": "9107338821479796383"
+      "templateHash": "119557785307876270"
     }
   },
   "parameters": {
@@ -164,7 +164,7 @@
             "_generator": {
               "name": "bicep",
               "version": "0.42.1.51946",
-              "templateHash": "9204418351304485918"
+              "templateHash": "14998578891468526822"
             }
           },
           "parameters": {
@@ -193,7 +193,7 @@
                 "Application_Type": "web",
                 "WorkspaceResourceId": "[parameters('workspaceResourceId')]",
                 "IngestionMode": "LogAnalytics",
-                "DisableLocalAuth": true,
+                "DisableLocalAuth": false,
                 "publicNetworkAccessForIngestion": "Enabled",
                 "publicNetworkAccessForQuery": "Enabled"
               }
@@ -939,7 +939,7 @@
             "_generator": {
               "name": "bicep",
               "version": "0.42.1.51946",
-              "templateHash": "13523943793096391103"
+              "templateHash": "11008843469331352516"
             }
           },
           "parameters": {
@@ -1033,6 +1033,7 @@
                 "serverFarmId": "[resourceId('Microsoft.Web/serverfarms', format('asp-mapaq-{0}', parameters('resourceToken')))]",
                 "httpsOnly": true,
                 "virtualNetworkSubnetId": "[parameters('appIntegrationSubnetId')]",
+                "vnetRouteAllEnabled": true,
                 "keyVaultReferenceIdentity": "[parameters('uamiResourceId')]",
                 "siteConfig": {
                   "linuxFxVersion": "DOTNETCORE|10.0",
@@ -1044,7 +1045,7 @@
                       "*"
                     ]
                   },
-                  "appSettings": "[union(variables('commonAppSettings'), createArray(createObject('name', 'OTEL_RESOURCE_ATTRIBUTES', 'value', 'service.name=mapaq-web,service.namespace=mapaq,service.version=1.0.0'), createObject('name', 'MapaqApi__BaseAddress', 'value', format('https://mapaq-api-{0}.azurewebsites.net/', parameters('resourceToken')))))]"
+                  "appSettings": "[union(variables('commonAppSettings'), createArray(createObject('name', 'OTEL_RESOURCE_ATTRIBUTES', 'value', 'service.name=mapaq-web,service.namespace=mapaq,service.version=1.0.0'), createObject('name', 'MapaqApi__BaseAddress', 'value', format('https://mapaq-api-{0}.azurewebsites.net/', parameters('resourceToken'))), createObject('name', 'WEBSITE_DNS_SERVER', 'value', '168.63.129.16')))]"
                 }
               },
               "dependsOn": [
@@ -1068,6 +1069,7 @@
                 "serverFarmId": "[resourceId('Microsoft.Web/serverfarms', format('asp-mapaq-{0}', parameters('resourceToken')))]",
                 "httpsOnly": true,
                 "virtualNetworkSubnetId": "[parameters('appIntegrationSubnetId')]",
+                "vnetRouteAllEnabled": true,
                 "keyVaultReferenceIdentity": "[parameters('uamiResourceId')]",
                 "siteConfig": {
                   "linuxFxVersion": "DOTNETCORE|10.0",
@@ -1079,7 +1081,7 @@
                       "*"
                     ]
                   },
-                  "appSettings": "[union(variables('commonAppSettings'), createArray(createObject('name', 'OTEL_RESOURCE_ATTRIBUTES', 'value', 'service.name=mapaq-api,service.namespace=mapaq,service.version=1.0.0'), createObject('name', 'WebOrigin', 'value', format('https://mapaq-web-{0}.azurewebsites.net', parameters('resourceToken')))))]"
+                  "appSettings": "[union(variables('commonAppSettings'), createArray(createObject('name', 'OTEL_RESOURCE_ATTRIBUTES', 'value', 'service.name=mapaq-api,service.namespace=mapaq,service.version=1.0.0'), createObject('name', 'WebOrigin', 'value', format('https://mapaq-web-{0}.azurewebsites.net', parameters('resourceToken'))), createObject('name', 'WEBSITE_DNS_SERVER', 'value', '168.63.129.16')))]"
                 }
               },
               "dependsOn": [
