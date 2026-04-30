@@ -169,6 +169,14 @@ jobs:
       - name: Publish screenshots to GitHub wiki
         # Skip on PRs (no secrets available) and when the user opted out.
         if: always() && inputs.publishToWiki
+        # Default GitHub Actions bash invocation is `bash -e -o pipefail`, which
+        # would terminate the step the moment `git ls-remote` returns non-zero
+        # (e.g. transient network blip, expired PAT, missing wiki). That bypasses
+        # our own `exit 0` safety net and turns a recoverable warning into a
+        # red X. Re-invoke bash without `-e` so the step's own conditional
+        # error handling (the `::warning::` + `exit 0` pattern below) controls
+        # the outcome.
+        shell: bash --noprofile --norc -uo pipefail {0}
         env:
           WIKI_PAT: ${{ secrets.WIKI_PAT }}
           BUILD_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
@@ -176,8 +184,6 @@ jobs:
           BUILD_ID: ${{ github.run_id }}
           TARGET_ENV_LABEL: ${{ env.TARGET_ENV_LABEL }}
         run: |
-          set -uo pipefail
-
           SCREENSHOT_DIR="tests/ui/screenshots"
           if [ ! -d "$SCREENSHOT_DIR" ] || [ -z "$(ls -A "$SCREENSHOT_DIR" 2>/dev/null)" ]; then
             echo "No screenshots produced; skipping wiki publish."
@@ -193,19 +199,35 @@ jobs:
             exit 0
           fi
 
+          # Strip any stray whitespace / newlines that may have hitched along
+          # when the secret was created (some terminals append a trailing CR).
+          # Embedding a CR in the URL's userinfo section makes git ls-remote
+          # fail with "fatal: unable to access ..." and a 128 exit code.
+          WIKI_PAT="$(printf '%s' "$WIKI_PAT" | tr -d '\r\n\t ')"
+
           # GitHub wiki repos live alongside the source repo at <slug>.wiki.git.
           # Detect the default branch (older wikis use 'master', newer ones 'main').
           WIKI_REPO_URL="https://x-access-token:${WIKI_PAT}@github.com/${GITHUB_REPOSITORY}.wiki.git"
-          WIKI_BRANCH="$(git ls-remote --symref "$WIKI_REPO_URL" HEAD 2>/dev/null \
-            | awk '/^ref:/ {sub("refs/heads/", "", $2); print $2; exit}')"
+          # Capture stderr to a temp file so we can surface the actual git
+          # error if ls-remote fails (otherwise we just see "exit 128" with no
+          # explanation).
+          GIT_STDERR="$(mktemp)"
+          WIKI_BRANCH="$(git ls-remote --symref "$WIKI_REPO_URL" HEAD 2>"$GIT_STDERR" \
+            | awk '/^ref:/ {sub("refs/heads/", "", $2); print $2; exit}')" || true
           if [ -z "$WIKI_BRANCH" ]; then
             echo "::warning::GitHub wiki repo not reachable at github.com/${GITHUB_REPOSITORY}/wiki."
+            echo "Underlying git error:"
+            sed 's/^/  /' "$GIT_STDERR" || true
             echo "Resolution checklist:"
             echo "  1. Open the repo's Wiki tab and create the first page (the wiki repo only"
             echo "     exists once at least one page has been published)."
-            echo "  2. Verify the WIKI_PAT secret has push access to the wiki repo."
+            echo "  2. Verify the WIKI_PAT secret has push access to the wiki repo (classic"
+            echo "     PAT: 'repo' scope; fine-grained: 'Contents: Read and write' scoped to"
+            echo "     this repo)."
+            rm -f "$GIT_STDERR"
             exit 0
           fi
+          rm -f "$GIT_STDERR"
           echo "Wiki default branch detected: $WIKI_BRANCH"
 
           # Reuse tests/ui/publish_screenshots_to_wiki.py: it is pure-stdlib
