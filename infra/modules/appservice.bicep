@@ -53,7 +53,7 @@ var commonAppSettings = [
     value: uamiClientId
   }
   {
-    name: 'ConnectionStrings__Mapaq'
+    name: 'ConnectionStrings__MapaqSql'
     value: sqlConnRef
   }
 ]
@@ -86,6 +86,10 @@ resource webApp 'Microsoft.Web/sites@2023-12-01' = {
         {
           name: 'OTEL_RESOURCE_ATTRIBUTES'
           value: 'service.name=mapaq-web,service.namespace=mapaq,service.version=1.0.0'
+        }
+        {
+          name: 'MapaqApi__BaseAddress'
+          value: 'https://mapaq-api-${resourceToken}.azurewebsites.net/'
         }
       ])
     }
@@ -120,6 +124,10 @@ resource apiApp 'Microsoft.Web/sites@2023-12-01' = {
         {
           name: 'OTEL_RESOURCE_ATTRIBUTES'
           value: 'service.name=mapaq-api,service.namespace=mapaq,service.version=1.0.0'
+        }
+        {
+          name: 'WebOrigin'
+          value: 'https://mapaq-web-${resourceToken}.azurewebsites.net'
         }
       ])
     }
