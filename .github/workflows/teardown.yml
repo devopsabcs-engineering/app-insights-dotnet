@@ -1,7 +1,13 @@
-# Tears down a workshop azd environment with azd down --purge --force.
-# Manual dispatch only — each attendee passes their own env name. Gated on the
-# workshop-teardown GitHub Environment (configure required reviewers in repo
-# settings, see boards/README.md and labs/lab-00-setup.md).
+# Tears down a workshop environment by deleting its resource group and purging
+# soft-deleted resources (Key Vault, Log Analytics) so the same env name can be
+# re-provisioned without collisions. Manual dispatch only — each attendee passes
+# their own env name. Gated on the workshop-teardown GitHub Environment.
+#
+# Note: azd is intentionally NOT used here. azd persists deployment state under
+# .azure/<env>/ on the machine that ran `azd up`, which never exists on a fresh
+# GitHub runner. `azd down` therefore exits 1 with "deployment not found" even
+# when the resource group is full. We work directly with Azure CLI for a
+# deterministic, idempotent teardown.
 name: teardown
 
 on:
@@ -18,7 +24,7 @@ permissions:
 
 jobs:
   teardown:
-    name: azd down
+    name: teardown rg-${{ inputs.azureEnvName }}
     runs-on: ubuntu-latest
     environment:
       name: workshop-teardown
@@ -31,27 +37,103 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v5
 
-      - name: Install azd
-        uses: Azure/setup-azd@v2
-
-      - name: azd auth login (OIDC)
+      # Fail fast with a clear message if the workshop-teardown GitHub
+      # Environment is missing the OIDC secrets. Without these, the OIDC token
+      # exchange fails with a misleading error.
+      - name: Validate OIDC secrets
         run: |
-          azd auth login \
-            --client-id "$AZURE_CLIENT_ID" \
-            --tenant-id "$AZURE_TENANT_ID" \
-            --federated-credential-provider github
+          missing=0
+          for var in AZURE_CLIENT_ID AZURE_TENANT_ID AZURE_SUBSCRIPTION_ID; do
+            if [ -z "${!var}" ]; then
+              echo "::error::Required secret '$var' is empty. Add it to the 'workshop-teardown' GitHub Environment (Settings → Environments → workshop-teardown → Secrets)."
+              missing=1
+            fi
+          done
+          if [ "$missing" = "1" ]; then
+            exit 1
+          fi
 
-      - name: azd env select
+      - name: Log in to Azure CLI (OIDC)
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      # Capture names of resources that need explicit purge (soft-delete is on
+      # by default for KV and Log Analytics) BEFORE the RG is deleted.
+      - name: Discover resource group contents
+        id: rg
         run: |
-          azd env select "$AZURE_ENV_NAME" || \
-            azd env new "$AZURE_ENV_NAME" \
-              --no-prompt \
-              --subscription "$AZURE_SUBSCRIPTION_ID"
+          rg="rg-${AZURE_ENV_NAME}"
+          echo "rg=$rg" >> "$GITHUB_OUTPUT"
 
-      - name: azd down --purge --force
-        run: azd down --environment "$AZURE_ENV_NAME" --purge --force --no-prompt
+          if ! az group show --name "$rg" --output none 2>/dev/null; then
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::Resource group '$rg' does not exist. Nothing to do."
+            exit 0
+          fi
+          echo "exists=true" >> "$GITHUB_OUTPUT"
 
-      # Belt-and-braces fallback if azd state was missing or partial.
-      - name: Force RG delete (no-op if already gone)
+          rg_location=$(az group show --name "$rg" --query location -o tsv)
+          echo "location=$rg_location" >> "$GITHUB_OUTPUT"
+
+          # Comma-separated to keep multi-line outputs simple.
+          kvs=$(az keyvault list --resource-group "$rg" --query "[].name" -o tsv | paste -sd, -)
+          laws=$(az monitor log-analytics workspace list --resource-group "$rg" --query "[].name" -o tsv | paste -sd, -)
+          echo "kvs=$kvs" >> "$GITHUB_OUTPUT"
+          echo "laws=$laws" >> "$GITHUB_OUTPUT"
+
+          echo "Resource group:        $rg ($rg_location)"
+          echo "Key Vaults:            ${kvs:-<none>}"
+          echo "Log Analytics:         ${laws:-<none>}"
+
+      # Force-delete LAWs so the workspace is permanently gone (avoids the
+      # 14-day soft-delete window blocking redeploy with the same name).
+      - name: Force-delete Log Analytics workspaces
+        if: steps.rg.outputs.exists == 'true' && steps.rg.outputs.laws != ''
+        run: |
+          IFS=',' read -ra laws <<< "${{ steps.rg.outputs.laws }}"
+          for law in "${laws[@]}"; do
+            [ -z "$law" ] && continue
+            echo "Deleting LAW: $law (force, no recovery)"
+            az monitor log-analytics workspace delete \
+              --resource-group "${{ steps.rg.outputs.rg }}" \
+              --workspace-name "$law" \
+              --force true --yes
+          done
+
+      # Synchronous so the step's exit reflects the real outcome.
+      - name: Delete resource group
+        if: steps.rg.outputs.exists == 'true'
+        run: az group delete --name "${{ steps.rg.outputs.rg }}" --yes
+
+      # Soft-deleted Key Vaults block recreation under the same name. Purge
+      # them after the RG is gone so attendees can immediately reuse the env
+      # name. The vault module (infra/modules/keyvault.bicep, AB#2227) sets
+      # softDeleteRetentionInDays=7 with no purge protection, so even if this
+      # step is skipped the vault is gone within a week. Best-effort: warn but
+      # do not fail if the SP cannot purge (e.g. KV in another tenant).
+      - name: Purge soft-deleted Key Vaults
+        if: steps.rg.outputs.exists == 'true' && steps.rg.outputs.kvs != ''
+        run: |
+          IFS=',' read -ra kvs <<< "${{ steps.rg.outputs.kvs }}"
+          for kv in "${kvs[@]}"; do
+            [ -z "$kv" ] && continue
+            echo "Purging soft-deleted Key Vault: $kv"
+            az keyvault purge --name "$kv" --location "${{ steps.rg.outputs.location }}" \
+              || echo "::warning::Could not purge KV '$kv' (already purged, or SP missing 'Microsoft.KeyVault/locations/deletedVaults/purge/action')."
+          done
+
+      - name: Summary
         if: always()
-        run: az group delete --name "rg-$AZURE_ENV_NAME" --yes --no-wait || true
+        run: |
+          echo "## Teardown summary" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Item | Value |" >> "$GITHUB_STEP_SUMMARY"
+          echo "|------|-------|" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Env name | \`${AZURE_ENV_NAME}\` |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Resource group | \`${{ steps.rg.outputs.rg }}\` |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Existed before run | ${{ steps.rg.outputs.exists }} |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Key Vaults purged | ${{ steps.rg.outputs.kvs }} |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Log Analytics force-deleted | ${{ steps.rg.outputs.laws }} |" >> "$GITHUB_STEP_SUMMARY"
