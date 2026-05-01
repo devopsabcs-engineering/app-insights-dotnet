@@ -121,18 +121,23 @@ async function exerciseEndpoint(
   // case fall back to a brief settle delay so we still capture a meaningful
   // screenshot of the request form, and emit a workflow warning so the
   // regression is visible without breaking the build (AB#2226).
+  // ``timeoutMs`` must be comfortably less than the global test timeout
+  // (currently 30s in playwright.config.ts) so the catch branch and the
+  // follow-up settle delay + screenshot still fit within the test budget on
+  // the rollup endpoint, where the wait always burns the full timeout.
+  const responsePanelTimeoutMs = 15_000;
   try {
     await op
       .locator('.responses-wrapper .live-responses-table .response-col_status')
       .first()
-      .waitFor({ state: 'visible', timeout: 30_000 });
+      .waitFor({ state: 'visible', timeout: responsePanelTimeoutMs });
   } catch (err) {
     const message = err instanceof Error ? err.message.split('\n')[0] : String(err);
     // GitHub Actions surfaces `::warning::` lines as warnings on the run
     // summary; locally it's just a console message.
     console.warn(
       `::warning::Swagger UI response panel did not appear for ${method.toUpperCase()} ${path} ` +
-        `within 30s (${message}). Capturing the request-form screenshot only.`,
+        `within ${responsePanelTimeoutMs}ms (${message}). Capturing the request-form screenshot only.`,
     );
     // Give Swagger UI a moment to render whatever it can (loading spinner,
     // partially-rendered payload, etc.) before we screenshot.
