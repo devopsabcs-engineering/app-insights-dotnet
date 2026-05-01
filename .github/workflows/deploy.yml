@@ -76,16 +76,56 @@ jobs:
           echo "endpoint=$endpoint" >> "$GITHUB_OUTPUT"
 
       - name: Grant UAMI SQL access via Entra group
+        id: grant_sql
         run: |
-          # Retrieve the UAMI principal ID from azd env outputs
+          set -euo pipefail
+          # Retrieve the UAMI principal ID from azd env outputs (falls back to Azure CLI lookup).
           uami_principal_id=$(azd env get-value UAMI_PRINCIPAL_ID 2>/dev/null || \
             az identity show \
               --name "$(azd env get-value UAMI_NAME)" \
               --resource-group "$(azd env get-value AZURE_RESOURCE_GROUP)" \
               --query principalId -o tsv)
+          echo "Adding UAMI principal $uami_principal_id to Entra group $SQL_ADMIN_GROUP_ID"
 
-          # Add UAMI to the SQL admin Entra group (idempotent — ignores if already member)
-          az ad group member add \
-            --group "$SQL_ADMIN_GROUP_ID" \
-            --member-id "$uami_principal_id" 2>/dev/null \
-            || echo "UAMI already a member of SQL admin group (or insufficient permissions — verify manually)"
+          # Add UAMI to the SQL admin Entra group. The CLI returns non-zero with stderr
+          # 'One or more added object references already exist' when the principal is
+          # already a member; treat that as success. Any other error is fatal so the
+          # workflow does not silently leave the API broken (AB#2228).
+          if err=$(az ad group member add \
+                    --group "$SQL_ADMIN_GROUP_ID" \
+                    --member-id "$uami_principal_id" 2>&1); then
+            echo "OK: UAMI added to group."
+          elif echo "$err" | grep -qiE 'already exist|One or more added object references'; then
+            echo "OK: UAMI is already a member of group."
+          else
+            echo "::error::Failed to add UAMI to SQL admin Entra group: $err"
+            exit 1
+          fi
+          echo "uami_principal_id=$uami_principal_id" >> "$GITHUB_OUTPUT"
+
+      # Restart the App Services so their SqlClient connection pools drop the
+      # cached failed-auth tokens captured before the UAMI was added to the
+      # SQL admin Entra group. Without this, /api/establishments returns 500
+      # until something else triggers a restart (AB#2228).
+      - name: Restart App Services to refresh SQL token (AB#2228)
+        run: |
+          set -euo pipefail
+          rg="$(azd env get-value AZURE_RESOURCE_GROUP)"
+          mapfile -t apps < <(az resource list \
+            --resource-group "$rg" \
+            --resource-type Microsoft.Web/sites \
+            --query "[?starts_with(name, 'mapaq-')].name" -o tsv)
+          if [[ ${#apps[@]} -eq 0 ]]; then
+            echo "::warning::No mapaq-* App Services found in $rg; nothing to restart."
+            exit 0
+          fi
+          for app in "${apps[@]}"; do
+            echo ">> Restarting $app"
+            az webapp restart --resource-group "$rg" --name "$app"
+          done
+          {
+            echo "### App Service restarts (AB#2228)"
+            echo ""
+            echo "Restarted ${#apps[@]} App Service(s) in \`$rg\` to refresh the SQL access token after adding the UAMI to the SQL admin Entra group:"
+            for app in "${apps[@]}"; do echo "- \`$app\`"; done
+          } >> "$GITHUB_STEP_SUMMARY"
