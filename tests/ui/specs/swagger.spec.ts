@@ -112,10 +112,32 @@ async function exerciseEndpoint(
   // response row has class `live-responses-table` once the call completes.
   // Wait for a status code cell so we screenshot a populated response (any
   // 2xx/4xx/5xx is fine — the goal is documenting what each call looks like).
-  await op
-    .locator('.responses-wrapper .live-responses-table .response-col_status')
-    .first()
-    .waitFor({ state: 'visible', timeout: 30_000 });
+  //
+  // Some endpoints with OpenAPI 3.1 union-type query params (e.g. `year` on
+  // `/api/inspections/rollup`, declared as `type: ["integer", "string"]` by
+  // .NET 10's built-in OpenAPI generator for required value-type query
+  // parameters) cause Swagger UI 5.x to render Execute without producing the
+  // live-response DOM, even though the underlying API call succeeds. In that
+  // case fall back to a brief settle delay so we still capture a meaningful
+  // screenshot of the request form, and emit a workflow warning so the
+  // regression is visible without breaking the build (AB#2226).
+  try {
+    await op
+      .locator('.responses-wrapper .live-responses-table .response-col_status')
+      .first()
+      .waitFor({ state: 'visible', timeout: 30_000 });
+  } catch (err) {
+    const message = err instanceof Error ? err.message.split('\n')[0] : String(err);
+    // GitHub Actions surfaces `::warning::` lines as warnings on the run
+    // summary; locally it's just a console message.
+    console.warn(
+      `::warning::Swagger UI response panel did not appear for ${method.toUpperCase()} ${path} ` +
+        `within 30s (${message}). Capturing the request-form screenshot only.`,
+    );
+    // Give Swagger UI a moment to render whatever it can (loading spinner,
+    // partially-rendered payload, etc.) before we screenshot.
+    await page.waitForTimeout(2_000);
+  }
 
   // Scroll the operation into view so the screenshot frames it nicely on
   // pages where multiple endpoints have been expanded by prior runs.
