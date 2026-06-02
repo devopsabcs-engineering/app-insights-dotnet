@@ -426,6 +426,13 @@ h3 { font-size: 1.18rem; margin: 0 0 .35rem; }
     border-top: 4px solid var(--qc-accent);
 }
 .site-footer a { color: #FFFFFF; }
+.site-footer__version {
+    display: block;
+    margin-top: .5rem;
+    opacity: .7;
+    font-size: .78rem;
+    letter-spacing: .02em;
+}
 
 /* =========================================================================
    Utilities

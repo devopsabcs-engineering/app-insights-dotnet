@@ -1,255 +1,579 @@
-title: "Application Insights pour .NET 10 — Atelier bilingue"
-subtitle: "Corrélation de bout en bout navigateur → web → API → SQL avec Azure Application Insights et OpenTelemetry"
-author: "Microsoft Canada · Atelier MAPAQ"
+title: "Moderniser les applications d'entreprise avec les plateformes applicatives"
+subtitle: "Atelier pratique d'une journée — App Service, conteneurs, low-code + IA, agent de modernisation .NET GitHub Copilot et observabilité avec Application Insights"
+author: "Microsoft Canada · Atelier de modernisation MAPAQ"
 slides:
 
+  # ───────────────────────── PARTIE A — Cadrage et montée en compétences ─────────────────────────
+
   - key: cover
-    title: "Application Insights pour .NET 10"
+    title: "Moderniser les applications d'entreprise avec les plateformes applicatives"
     bullets:
-      - "Atelier pratique bilingue (FR / EN)"
-      - "Navigateur → Web ASP.NET Core → API Web → Azure SQL"
-      - "Un seul operation_Id, une seule cascade, une seule vérité"
-    notes: "Accueillez la salle dans les deux langues. Confirmez les règles bilingues avant de commencer."
+      - "Guide de livraison — atelier pratique d'une journée (FR / EN)"
+      - "Du .NET hérité à une application cloud moderne et observable sur Azure App Service"
+      - "Accélération low-code + IA · GitHub Copilot · Application Insights"
+    notes: "Accueillez la salle dans les deux langues. Cette présentation pilote toutes les démonstrations d'aujourd'hui. Vérifiez que les prérequis du Lab 00 sont en place avant le Module 1."
 
   - key: agenda
-    title: "Ordre du jour — six modules"
+    title: "Ordre du jour — une journée, huit blocs"
     bullets:
-      - "Module 0 — Préparation et prérequis (15 min)"
-      - "Module 1 — Provisionnement (azd up) (30 min)"
-      - "Module 2 — Auto-instrumentation Web (30 min)"
-      - "Module 3 — Instrumentation API + SQL (45 min)"
-      - "Module 4 — Corrélation côté navigateur (30 min)"
-      - "Module 5 — Tableaux de bord et KQL (30 min)"
-      - "Module 6 — Démantèlement (azd down --purge --force) (10 min)"
-    notes: "~3 h au total avec pauses. Modules à respecter strictement; le cœur est Module 4 + Module 5."
+      - "0 · Accueil, objectifs et personas (30 min)"
+      - "1 · Compréhension commune de la modernisation (45 min)"
+      - "2 · Stratégie et décisions de modernisation (45 min)"
+      - "3 · Accélérer avec le low-code + l'IA · agent .NET Copilot (60 min)"
+      - "4 · Provisionnement et exploration du panneau App Service (75 min)"
+      - "5 · Instrumentation : navigateur → web → API → SQL (60 min)"
+      - "6 · Application Insights — l'heure d'approfondissement (60 min)"
+      - "7 · Coûts, alertes, démantèlement et prochaines étapes (45 min)"
+    notes: "Environ 8 heures avec pauses et dîner. Les modules 4 et 6 sont les pièces maîtresses — protégez leur temps. Chaque module associe des diapositives à une démo ou un atelier."
 
-  - key: learning-objectives
-    title: "Objectifs d'apprentissage"
+  - key: workshop-objectives
+    title: "Ce que vous saurez faire"
     bullets:
-      - "Provisionner Application Insights avec Bicep + azd en une seule commande"
-      - "Auto-instrumenter une application Web ASP.NET Core 10 sans une ligne de code"
-      - "Corréler pageView navigateur → requête serveur → dépendance SQL sur un même operation_Id"
-      - "Écrire une requête KQL qui joint requests, dependencies et pageViews de bout en bout"
-      - "Démanteler proprement toutes les ressources avec azd down --purge --force"
-    notes: "Ancrez les attentes. Chaque objectif est renforcé par un atelier pratique."
+      - "Identifier et définir les compétences numériques nécessaires à la transformation"
+      - "Bâtir un plan de montée en compétences par persona client"
+      - "Habiliter les rôles clés à relever les Défis Cloud par de nouvelles façons de travailler"
+      - "Partager un langage commun de la modernisation applicative"
+      - "Prendre une décision de stratégie de modernisation éclairée"
+      - "Accélérer la livraison grâce au low-code et à l'IA"
+    notes: "Ces six objectifs forment la colonne vertébrale de la journée. Relisez-les à chaque transition de module pour montrer le fil conducteur."
 
-  - key: prereqs
-    title: "Module 0 — Prérequis"
+  - key: who-is-in-the-room
+    title: "Qui est dans la salle"
     bullets:
-      - ".NET SDK 10.0.100 (préversion ou RTM)"
-      - "Azure Developer CLI (azd) 1.10+"
-      - "Azure CLI (az) 2.65+"
-      - "VS Code avec les extensions C# Dev Kit et Bicep"
-      - "Abonnement Azure actif avec rôle Owner ou Contributor + UAA sur un groupe de ressources"
-      - "Compte GitHub (pour le carnet ensemencé et les flux CI)"
-    notes: "Si quelqu'un n'a pas le SDK, dirigez-le vers le devcontainer (lab-00)."
+      - "Décideurs métier et TI — financent et priorisent"
+      - "Architectes d'entreprise et de solutions — choisissent la plateforme cible"
+      - "Développeurs et ingénieurs DevOps — construisent et livrent"
+      - "Exploitation et SRE — opèrent et observent"
+      - "Responsables du changement — développent les compétences"
+    notes: "Demandez un vote à main levée par persona. Adaptez l'accent : les architectes aiment la stratégie, les développeurs Copilot et l'instrumentation, l'exploitation la mise à l'échelle et Application Insights."
 
-  - key: architecture
-    title: "Architecture cible"
+  - key: digital-skills
+    title: "Les compétences numériques de la transformation"
+    bullets:
+      - "Maîtrise du cloud — IaaS vs PaaS vs conteneurs vs serverless"
+      - ".NET moderne — ASP.NET Core, EF Core, API minimales"
+      - "Observabilité — télémétrie, traçage, KQL, tableaux de bord"
+      - "Automatisation — IaC (Bicep), CI/CD, azd"
+      - "Ingénierie assistée par IA — Copilot, agents de modernisation"
+    notes: "Présentez les compétences comme des capacités, pas des certifications. Chaque capacité correspond à une activité pratique de la journée."
+
+  - key: skilling-plan-personas
+    title: "Un plan de montée en compétences par persona"
+    bullets:
+      - "Décideurs → valeur, TCO, risque et conformité"
+      - "Architectes → choix de plateforme, les 5 R, architectures de référence"
+      - "Développeurs → .NET moderne, agent Copilot, instrumentation"
+      - "Exploitation / SRE → opérations App Service, mise à l'échelle, App Insights, alertes"
+      - "Habilitation → ateliers, présentations, communauté de pratique interne"
+    notes: "C'est le livrable que beaucoup de commanditaires attendent. Invitez les participants à repartir avec un brouillon pour leur propre organisation."
+
+  - key: enable-roles-cloud-challenges
+    title: "Habiliter les rôles pour les Défis Cloud"
+    bullets:
+      - "Défi Cloud = sprint de compétences chronométré sur une charge réelle"
+      - "Associez chaque rôle à un livrable concret de l'application du jour"
+      - "Les architectes possèdent la cible; les développeurs un module migré"
+      - "L'exploitation possède un tableau de bord et une alerte; on apprend en faisant"
+      - "Célébrez l'achèvement — l'élan se cumule"
+    notes: "Positionnez l'atelier lui-même comme un Défi Cloud : en fin de journée, chaque persona repart avec quelque chose qu'il a construit."
+
+  - key: ways-of-working
+    title: "De nouvelles façons de travailler"
+    bullets:
+      - "Infrastructure as code — environnements reproductibles (azd up / azd down)"
+      - "Trunk-based, petites PR, vérifications automatisées"
+      - "Développement piloté par l'observabilité — instrumenter d'abord, optimiser avec les données"
+      - "L'IA dans la boucle — Copilot pour le code, l'agent pour les mises à niveau"
+      - "You build it, you run it — dev et exploitation partagent le tableau de bord"
+    notes: "Contrastez avec le modèle hérité de tickets et de transferts. Tout ce que nous faisons aujourd'hui est reproductible et observable."
+
+  # ───────────────────── PARTIE B — Compréhension commune ─────────────────────
+
+  - key: what-is-modernization
+    title: "Ce que « modernisation » signifie vraiment"
+    bullets:
+      - "Pas une réécriture par défaut — un éventail d'options"
+      - "Déplacer la charge vers une plateforme qui élimine le travail sans valeur ajoutée"
+      - "Adopter des services gérés pour l'identité, les données et l'observabilité"
+      - "Améliorer la vélocité, la fiabilité, la sécurité et le coût"
+      - "Le résultat avant le livrable — mesurer l'impact métier"
+    notes: "Désamorcez la peur que modernisation = réécriture complète. L'essentiel de la valeur vient du rehost/replatform plus des refactorisations ciblées."
+
+  - key: modernization-drivers
+    title: "Pourquoi moderniser maintenant"
+    bullets:
+      - "Runtimes et OS en fin de support — risque de sécurité et de conformité"
+      - "Livraisons lentes et manuelles — long délai au changement"
+      - "Difficultés de mise à l'échelle — verticale seulement, capacité fixe"
+      - "Observabilité limitée — délai de détection en heures, pas en secondes"
+      - "Coût — payer pour des VM surdimensionnées et inactives"
+    notes: "Faites nommer par la salle le facteur le plus criant. Vous le relierez à une capacité App Service ou App Insights."
+
+  - key: app-platforms-landscape
+    title: "Le paysage des plateformes applicatives Azure"
+    bullets:
+      - "App Service — applications web et API gérées, voie la plus rapide pour .NET"
+      - "Azure Container Apps — conteneurs serverless, mise à l'échelle à zéro, microservices"
+      - "AKS — Kubernetes complet pour un contrôle maximal"
+      - "Azure Functions — serverless événementiel à la consommation"
+      - "Cible du jour : App Service exécutant des conteneurs .NET depuis ACR"
+    notes: "Dimensionnez la plateforme selon l'équipe. Nous avons choisi App Service pour MAPAQ : simplicité PaaS, souplesse des conteneurs, mise à l'échelle et diagnostics intégrés."
+
+  - key: modernization-strategy-5rs
+    title: "La stratégie de modernisation — les 5 R"
+    mermaid: |
+      graph TD
+        Start["Application .NET héritée"] --> Rehost["Rehost<br/>lift &amp; shift vers App Service"]
+        Start --> Replatform["Replatform<br/>conteneuriser + SQL géré"]
+        Start --> Refactor["Refactor<br/>ASP.NET Core, EF Core, DI"]
+        Start --> Rearchitect["Rearchitect<br/>découper, asynchrone"]
+        Start --> Rebuild["Rebuild / Replace<br/>cloud-native ou SaaS"]
+    notes: "MAPAQ aujourd'hui = Replatform + Refactor ciblé : .NET 10 conteneurisé sur App Service, SQL Entra-only, instrumentation moderne. De gauche à droite : l'effort et la valeur augmentent."
+
+  - key: informed-strategy-decisions
+    title: "Prendre une décision éclairée"
+    bullets:
+      - "Évaluer : version du runtime, dépendances, état, gravité des données"
+      - "Noter chaque app : valeur métier × risque technique"
+      - "Choisir le R le moins coûteux qui débloque le résultat métier"
+      - "Le prouver de bout en bout sur une app avant de généraliser"
+      - "Outils : .NET Upgrade Assistant + agent de modernisation GitHub Copilot"
+    notes: "La décision est itérative et non linéaire : on peut rehoster d'abord, refactoriser ensuite. Aujourd'hui MAPAQ est notre application de preuve."
+
+  - key: reference-architecture
+    title: "MAPAQ — notre architecture de référence"
     mermaid: |
       graph LR
-        Browser["🌐 Navigateur<br/>SDK JS pageView"] --> Web["🛠️ Mapaq.Web<br/>ASP.NET Core 10"]
-        Web --> Api["📡 Mapaq.Api<br/>API Web"]
-        Api --> Sql["🗄️ Azure SQL<br/>EF Core"]
-        Web -.-> AI["📊 Application Insights<br/>basé sur l'espace de travail"]
+        Browser["Navigateur<br/>pageView SDK JS"] --> Web["Mapaq.Web<br/>ASP.NET Core 10 · conteneur"]
+        Web --> Api["Mapaq.Api<br/>Web API · conteneur"]
+        Api --> Sql["Azure SQL<br/>EF Core · point de terminaison privé"]
+        Web -.-> AI["Application Insights<br/>basé sur espace de travail"]
         Api -.-> AI
         Browser -.-> AI
-    notes: "Quatre nœuds, une seule ressource AI basée sur un workspace, un seul Log Analytics derrière."
+    notes: "C'est exactement ce qui est déployé dans rg-dev-001 : deux conteneurs .NET sur App Service (P1v3), Azure SQL Entra-only derrière un point de terminaison privé, une ressource Application Insights basée sur un espace de travail."
+
+  # ───────────────────── PARTIE C — Low-code + IA ─────────────────────
+
+  - key: low-code-and-ai
+    title: "Accélérer avec le low-code + l'IA"
+    bullets:
+      - "Low-code (Power Platform) pour les apps périphériques, portails et flux"
+      - "Le codage assisté par IA déplace l'effort de la frappe vers la revue"
+      - "Copilot pour le code, les tests et la documentation au quotidien"
+      - "Agents spécialisés pour les mises à niveau et migrations complètes"
+      - "L'humain garde le contrôle — réviser chaque changement"
+    notes: "Positionnez l'IA comme un multiplicateur de force, pas un remplacement. L'agent de modernisation montré ensuite fait le travail lourd et répétitif."
+
+  - key: github-copilot-overview
+    title: "GitHub Copilot dans VS Code"
+    bullets:
+      - "Complétions en ligne et chat ancrés dans votre code"
+      - "Mode agent — tâches multi-étapes avec utilisation d'outils"
+      - "Compétences et outils MCP étendent les capacités de Copilot"
+      - "Fonctionne avec votre dépôt, le terminal, les tests et l'outillage Azure"
+      - "Déjà installé dans l'environnement de cet atelier"
+    notes: "Ouvrez VS Code et montrez le panneau de chat Copilot. Confirmez la présence de C# Dev Kit et de l'extension de modernisation."
+
+  - key: copilot-dotnet-modernization-agent
+    title: "Modernisation d'applications .NET avec GitHub Copilot"
+    bullets:
+      - "Installée comme extension VS Code dans cet atelier"
+      - "Évalue la solution et propose un plan de mise à niveau"
+      - "Automatise les mises à niveau de framework cible et de paquets"
+      - "Corrige les changements cassants et explique chaque modification"
+      - "Suit la progression via un tableau de bord avec tâches"
+    notes: "C'est l'outillage GitHub Copilot app modernization - upgrade pour .NET. Il pilote la mise à niveau de bout en bout pendant que vous révisez. Il travaille tâche par tâche, pas d'un seul bloc risqué."
+
+  - key: copilot-agent-workflow
+    title: "Comment fonctionne l'agent de modernisation"
+    mermaid: |
+      graph LR
+        A["Évaluer la solution"] --> B["Générer le plan"]
+        B --> C["Découper en tâches"]
+        C --> D["Appliquer code &amp; paquets"]
+        D --> E["Compiler &amp; tester"]
+        E --> F{"Au vert?"}
+        F -->|Non| D
+        F -->|Oui| G["Tâche suivante / fini"]
+    notes: "Insistez sur la boucle : appliquer → compiler → tester → corriger. L'agent itère jusqu'à ce que le projet compile et que les tests passent, puis passe au projet suivant dans l'ordre topologique."
+
+  - key: copilot-agent-demo-walkthrough
+    title: "Démo — exécuter l'agent de modernisation .NET"
+    bullets:
+      - "1 · Ouvrir la solution; démarrer l'agent de modernisation"
+      - "2 · Réviser l'évaluation et les options de mise à niveau"
+      - "3 · Confirmer les options; laisser l'agent créer les tâches"
+      - "4 · Observer la mise à niveau d'un projet, la compilation et les tests"
+      - "5 · Réviser le diff, accepter et committer"
+    notes: "DÉMO. Exécutez l'agent sur un projet hérité. Narrez chaque tâche. Arrêtez-vous sur une correction de changement cassant et son explication. Gardez le tableau de bord visible."
+
+  # ───────────────────── PARTIE D — Provisionnement + App Service ─────────────────────
 
   - key: provision-azd-up
-    title: "Module 1 — Provisionnement (azd up)"
+    title: "Module 4 — Provisionnement (azd up)"
     bullets:
-      - "azd init -t . (utilisez le modèle de l'atelier)"
       - "azd env new mapaq-dev"
-      - "azd up (Bicep déploie RG, AI, Log Analytics, App Service, SQL)"
-      - "Vérifiez les sorties : APPLICATIONINSIGHTS_CONNECTION_STRING est câblé sur les deux apps"
-    notes: "Comptez ~6 min pour le premier déploiement. La chaîne de connexion est un App Setting, jamais en dur dans le code."
+      - "azd up — Bicep déploie RG, Log Analytics, App Insights, App Service, SQL, ACR, VNet"
+      - "Deux conteneurs .NET sont construits, poussés vers ACR et déployés"
+      - "Chaînes de connexion et identité câblées en App Settings — jamais dans le code"
+    notes: "L'environnement rg-dev-001 a été déployé ainsi depuis le pipeline. Premier run ~6–8 min. Les sorties incluent la chaîne de connexion App Insights."
 
   - key: bicep-modules
-    title: "Modules Bicep de l'atelier"
+    title: "Infrastructure as code — modules Bicep"
     bullets:
-      - "infra/main.bicep — compose les modules"
-      - "infra/modules/log-analytics.bicep — fondation workspace"
-      - "infra/modules/app-insights.bicep — composant basé sur le workspace"
-      - "infra/modules/app-service.bicep — Web + Api avec identité managée système"
-      - "infra/modules/sql.bicep — Azure SQL avec authentification Entra uniquement"
-      - "Passez la chaîne de connexion via un App Setting, jamais en dur"
-    notes: "Insistez : AI est désormais basé sur un workspace par défaut; AI classique est déprécié."
+      - "infra/main.bicep — compose le tout"
+      - "modules/loganalytics.bicep · appinsights.bicep — fondation d'observabilité"
+      - "modules/appservice.bicep — Web + API avec identité gérée, conteneurs"
+      - "modules/sql.bicep — Azure SQL, auth Entra-only, point de terminaison privé"
+      - "modules/vnet.bicep · privateEndpoints.bicep · keyvault.bicep · identity.bicep"
+    notes: "Ouvrez infra/ dans VS Code. Rappelez : chaque ressource de rg-dev-001 vient de ces fichiers — reproductible et révisable."
+
+  - key: live-architecture
+    title: "Ce qui est réellement déployé — rg-dev-001"
+    bullets:
+      - "Plan App Service : P1v3 (PremiumV3, Linux) — compatible mise à l'échelle auto"
+      - "mapaq-web et mapaq-api — conteneurs Linux tirés depuis Azure Container Registry"
+      - "Azure SQL — point de terminaison privé, authentification Entra-only"
+      - "Application Insights — basé sur espace de travail, adossé à Log Analytics"
+      - "Identité gérée, Key Vault, VNet avec sous-réseaux app et point de terminaison privé"
+    notes: "Ce sont les vraies ressources. Utilisez le script PowerShell paramétré (scripts/open-monitoring-dashboard.ps1) pour sauter directement au tableau de bord en direct."
+
+  - key: app-service-blade-overview
+    title: "Le panneau App Service — une carte"
+    bullets:
+      - "Vue d'ensemble — URL, état, plan, région, contrôle d'intégrité"
+      - "Déploiement — Centre de déploiement, emplacements, paramètres de conteneur"
+      - "Paramètres — Configuration, variables d'environnement, Identité, Réseau"
+      - "Surveillance — Flux de journaux, Métriques, App Insights, Diagnostiquer"
+      - "Mise à l'échelle — verticale (plan) et horizontale (instances / auto)"
+    notes: "Ouvrez l'app mapaq-web dans le portail. Donnez une orientation de 60 secondes avant de plonger dans chaque section."
+
+  - key: app-service-settings
+    title: "App Service — les paramètres qui comptent"
+    bullets:
+      - "Always On = activé — garde l'app au chaud (réglé sur MAPAQ)"
+      - "Chemin de contrôle d'intégrité = /healthz — les instances malsaines sont retirées"
+      - "HTTPS uniquement, TLS minimum = 1.2, FTP = désactivé"
+      - "Pile/runtime — ici un conteneur personnalisé, pas une pile intégrée"
+      - "Identité gérée — l'app s'authentifie auprès de SQL, ACR et App Insights"
+    notes: "Ce sont les vrais paramètres de production de mapaq-web. Expliquez chaque choix de durcissement."
+
+  - key: app-service-configuration
+    title: "Configuration et variables d'environnement"
+    bullets:
+      - "Les App Settings injectent la configuration comme variables d'environnement"
+      - "Clés réelles : APPLICATIONINSIGHTS_CONNECTION_STRING, ApplicationInsights__ConnectionString"
+      - "Ingestion par identité : APPLICATIONINSIGHTS_AUTHENTICATION_STRING + AZURE_CLIENT_ID"
+      - "ConnectionStrings__MapaqSql, MapaqApi__BaseAddress, WebOrigin"
+      - "Conteneur : DOCKER_REGISTRY_SERVER_URL, WEBSITES_PORT, OTEL_RESOURCE_ATTRIBUTES"
+    notes: "POINT DE RÉCONCILIATION IMPORTANT : l'app en direct utilise l'IDENTITÉ GÉRÉE pour l'ingestion App Insights (la paire AUTHENTICATION_STRING + AZURE_CLIENT_ID), et les clés à double souligné mappent vers les sections de config .NET. Les espaces réservés du appsettings.json du dépôt sont vides à dessein — les vraies valeurs sont injectées ici par le pipeline. Montrez l'onglet Variables d'environnement en direct."
+
+  - key: app-service-environments-slots
+    title: "Environnements et emplacements de déploiement"
+    bullets:
+      - "Environnements App Service séparés par étape : dev / test / prod"
+      - "Emplacements de déploiement = copies de préproduction sur le même plan"
+      - "Préchauffer un emplacement puis le permuter avec quasi-zéro interruption"
+      - "Les paramètres collants à l'emplacement restent en place lors d'une permutation"
+      - "Modèle : déployer en préproduction → test de fumée → permuter en production"
+    notes: "rg-dev-001 est l'environnement dev. Expliquez comment les mêmes Bicep + azd promeuvent vers test/prod en changeant l'environnement. Mentionnez la permutation d'emplacement pour des livraisons sûres."
+
+  - key: app-service-containers
+    title: "Exécuter .NET en conteneurs sur App Service"
+    bullets:
+      - "Source de l'image : Azure Container Registry (acr…azurecr.io/mapaq-web:<sha>)"
+      - "Déploiement continu depuis ACR à chaque nouvelle image"
+      - "WEBSITES_PORT indique à App Service le port du conteneur"
+      - "Tirage authentifié via l'identité gérée de l'app (aucun identifiant admin)"
+      - "La même image tourne en local, en CI et dans Azure — parité"
+    notes: "Ouvrez Centre de déploiement → paramètres de conteneur. Montrez que l'étiquette d'image est un SHA git. Voilà l'histoire « avec conteneurs » : construire une fois, promouvoir l'artefact."
+
+  - key: app-service-log-stream
+    title: "Flux de journaux — journaux d'application en direct"
+    bullets:
+      - "Surveillance → Flux de journaux affiche stdout/stderr en temps réel"
+      - "Activer les journaux App Service (système de fichiers) pour déboguer vite"
+      - "Les journaux de conteneur montrent démarrage, contrôle d'intégrité et requêtes"
+      - "Idéal pour les moments « est-ce que ça démarre seulement ? » lors d'un déploiement"
+      - "Pour une analyse durable, envoyez vers Log Analytics / App Insights"
+    notes: "DÉMO. Ouvrez le Flux de journaux, puis frappez l'URL de l'app et regardez défiler les requêtes. Contrastez le flux éphémère avec la télémétrie durable dans App Insights."
+
+  - key: app-service-scale-up
+    title: "Mise à l'échelle verticale (instances plus grandes)"
+    bullets:
+      - "Scale up = changer le niveau/la taille du plan App Service"
+      - "Plus de CPU, de mémoire et de fonctionnalités par instance"
+      - "Plan actuel : P1v3 — possibilité de passer à P2v3 / P3v3"
+      - "Les niveaux Premium débloquent l'intégration VNet, plus d'emplacements, l'auto-scale"
+      - "Montez en gamme quand une requête est gourmande en ressources"
+    notes: "Ouvrez Scale up (plan App Service). Montrez la grille de niveaux. Insistez : monter en gamme change la taille de chaque instance — c'est au niveau du plan et affecte toutes les apps du plan."
+
+  - key: app-service-scale-out
+    title: "Mise à l'échelle horizontale (plus d'instances)"
+    bullets:
+      - "Scale out = exécuter plus de copies de l'app derrière l'équilibreur"
+      - "Manuel : fixer un nombre d'instances"
+      - "Automatique : auto-scale basé sur des règles (plans Premium)"
+      - "Montez en nombre pour le débit et la résilience"
+      - "Les apps sans état montent proprement — gardez l'état de session externe"
+    notes: "Ouvrez Scale out. Montrez d'abord le nombre manuel, puis basculez vers Auto-scale personnalisé pour la diapositive suivante. Les apps MAPAQ sont sans état, donc elles montent en toute sécurité."
+
+  - key: app-service-autoscale-rules
+    title: "Règles d'auto-scale — augmenter et réduire"
+    mermaid: |
+      graph LR
+        M["Métrique<br/>CPU% / requêtes / mémoire"] --> R{"Seuil?"}
+        R -->|"&gt; 70% sur 10 min"| Out["Augmenter<br/>+1 instance"]
+        R -->|"&lt; 30% sur 10 min"| In["Réduire<br/>-1 instance"]
+        Out --> L["Min 1 · Max 5<br/>refroidissement 5 min"]
+        In --> L
+    notes: "DÉMO. Créez une règle d'augmentation (CPU > 70 % → +1) et une règle de réduction (CPU < 30 % → -1). Fixez min/max d'instances et un délai de refroidissement. Les limites par défaut protègent le coût et la stabilité. Optionnel : lancez le script de test de charge pour déclencher la règle."
+
+  - key: app-service-demo-walkthrough
+    title: "Démo — tour du panneau App Service"
+    bullets:
+      - "1 · Vue d'ensemble et URL — confirmer que l'app tourne"
+      - "2 · Variables d'environnement — montrer les vrais paramètres injectés"
+      - "3 · Centre de déploiement — image conteneur depuis ACR"
+      - "4 · Flux de journaux — regarder les requêtes en direct"
+      - "5 · Verticale vs horizontale — puis ajouter une règle d'auto-scale"
+    notes: "Liste de contrôle DÉMO. Exécutez scripts/start-local.ps1 au préalable si vous voulez comparer en local. Puis parcourez le portail de haut en bas dans cet ordre."
+
+  # ───────────────────── PARTIE E — Instrumentation ─────────────────────
 
   - key: web-instrumentation
-    title: "Module 2 — Auto-instrumentation Web"
+    title: "Module 5 — auto-instrumentation Web"
     bullets:
       - "dotnet add package Microsoft.ApplicationInsights.AspNetCore"
       - "builder.Services.AddApplicationInsightsTelemetry();"
-      - "Lit APPLICATIONINSIGHTS_CONNECTION_STRING depuis la configuration automatiquement"
-      - "Génère requests, dependencies, exceptions et traces sans code supplémentaire"
-    notes: "C'est volontairement ennuyeux. La magie arrive au prochain module — la propagation."
+      - "Lit APPLICATIONINSIGHTS_CONNECTION_STRING depuis la configuration"
+      - "Requêtes, dépendances, exceptions et traces — sans code additionnel"
+    notes: "Montrez Program.cs dans Mapaq.Web. La magie est la propagation, deux diapositives plus loin."
 
-  - key: web-snapshot
-    title: "Ce que vous devriez voir en 60 secondes"
+  - key: api-sql-instrumentation
+    title: "Instrumentation API + SQL"
     bullets:
-      - "Live Metrics affiche les requêtes entrantes en temps réel"
-      - "Transaction Search liste chaque requête avec son operation_Id"
-      - "La vue transaction de bout en bout regroupe les dépendances sous leur requête parente"
-      - "Le tableau Failures s'allume dès qu'un 5xx remonte de l'API"
-    notes: "Gardez Live Metrics ouvert pendant la démo; rien ne convainc plus vite que les points qui apparaissent."
-
-  - key: api-instrumentation
-    title: "Module 3 — Instrumentation API + SQL"
-    bullets:
-      - "Même paquet Microsoft.ApplicationInsights.AspNetCore sur l'API"
-      - "Les appels SQL EF Core 10 sont suivis automatiquement comme dépendances SqlClient"
-      - "HttpClientFactory propage le traceparent vers les appels en aval automatiquement"
-      - "Dimensions personnalisées : TelemetryClient.TrackEvent(\"OrderPlaced\", new { OrderId, CustomerId })"
-    notes: "L'instrumentation EF Core ⇒ SqlClient ne demande aucun paquet supplémentaire — elle est livrée avec le SDK AI."
+      - "Le même SDK AI sur Mapaq.Api"
+      - "Les appels SQL EF Core 10 sont suivis comme dépendances SqlClient"
+      - "HttpClientFactory propage traceparent vers les appels en aval"
+      - "Événements personnalisés : TelemetryClient.TrackEvent avec dimensions personnalisées"
+    notes: "L'instrumentation EF Core → SqlClient est livrée avec le SDK; aucun paquet additionnel. Voilà comment le span SQL apparaît dans la cascade."
 
   - key: traceparent
     title: "W3C Trace Context — traceparent"
     bullets:
-      - "00-{trace-id}-{parent-id}-{trace-flags}"
+      - "Format : 00-{trace-id}-{parent-id}-{flags}"
       - "Le SDK navigateur démarre la trace et émet l'en-tête sur chaque fetch/XHR"
-      - "ASP.NET Core l'honore et le transmet sans configuration"
-      - "Résultat : un seul operation_Id relie les 4 spans ensemble"
-    notes: "Montrez l'en-tête réel dans l'onglet Réseau des DevTools du navigateur pendant la démo."
+      - "ASP.NET Core l'honore et le transmet automatiquement"
+      - "Résultat : un seul operation_Id relie les quatre spans"
+    notes: "Ouvrez les outils de dev → Réseau → une requête → En-têtes, et montrez le vrai traceparent. C'est le fil qui relie toute l'histoire."
 
   - key: e2e-trace
     title: "Trace de bout en bout — la pièce maîtresse"
     mermaid: |
       sequenceDiagram
         autonumber
-        participant Browser as "Browser"
+        participant Browser as "Navigateur"
         participant Web as "Mapaq.Web"
         participant Api as "Mapaq.Api"
         participant Sql as "Azure SQL"
-        Browser->>Web: GET /orders<br/>traceparent: 00-abc-01-01
-        Web->>Api: GET /api/orders<br/>traceparent: 00-abc-02-01
-        Api->>Sql: SELECT * FROM Orders<br/>traceparent: 00-abc-03-01
+        Browser->>Web: GET /establishments<br/>traceparent 00-abc-01
+        Web->>Api: GET /api/establishments<br/>traceparent 00-abc-02
+        Api->>Sql: SELECT ... EF Core<br/>traceparent 00-abc-03
         Sql-->>Api: lignes
         Api-->>Web: 200 OK
         Web-->>Browser: 200 OK
         Note over Browser,Sql: Un seul operation_Id = abc<br/>Une seule cascade dans Application Insights
-    notes: "DR-10 — livrable obligatoire. Ce diagramme à lui seul est le pivot visuel de tout l'atelier."
+    notes: "L'ancre visuelle de l'atelier. Un operation_Id à travers quatre niveaux devient une seule transaction dans App Insights."
 
-  - key: browser-snippet
-    title: "Module 4 — Corrélation côté navigateur"
+  - key: browser-correlation
+    title: "Corrélation navigateur"
     bullets:
-      - "Ajoutez le snippet du SDK JavaScript Application Insights à _Layout.cshtml"
-      - "Passez la chaîne de connexion via un ViewData côté serveur (jamais en dur)"
-      - "Activez enableCorsCorrelation: true et enableRequestHeaderTracking: true"
-      - "Passez distributedTracingMode: AI_AND_W3C pour émettre traceparent"
-    notes: "Le snippet doit venir avant tout autre script qui émet fetch/XHR."
+      - "Ajouter le SDK JavaScript Application Insights à _Layout.cshtml"
+      - "Passer la chaîne de connexion via ViewData côté serveur — jamais en dur"
+      - "enableCorsCorrelation: true et enableRequestHeaderTracking: true"
+      - "distributedTracingMode: AI_AND_W3C pour émettre traceparent"
+    notes: "Le snippet doit se charger avant tout script qui émet fetch/XHR, sinon les premières pages vues sont perdues."
 
   - key: browser-config
     title: "SDK navigateur — configuration minimale"
     bullets:
-      - "instrumentationKey est obsolète — utilisez connectionString"
-      - "enableAutoRouteTracking: true (pour les changements de page SPA)"
-      - "correlationHeaderExcludedDomains: ['*.googleapis.com', '*.bing.com']"
+      - "Utiliser connectionString (instrumentationKey est déprécié)"
+      - "enableAutoRouteTracking: true pour la navigation type SPA"
+      - "correlationHeaderExcludedDomains pour les hôtes tiers"
       - "samplingPercentage: 100 en dev, plus bas en prod"
-    notes: "L'échantillonnage est par app, fixé sur l'objet d'options du SDK — pas dans le portail."
+    notes: "L'échantillonnage se règle sur l'objet d'options du SDK, par app — pas dans le portail."
 
-  - key: app-map
-    title: "Module 5 — Application Map"
-    mermaid: |
-      graph LR
-        B["🌐 Navigateur"] --> W["Mapaq.Web<br/>p95 110ms · 0.0% éch"]
-        W --> A["Mapaq.Api<br/>p95 80ms · 0.1% éch"]
-        A --> S["Azure SQL<br/>p95 45ms · 0.0% éch"]
-        style B fill:#3B82F6,stroke:#1F2A37,color:#fff
-        style W fill:#16A34A,stroke:#1F2A37,color:#fff
-        style A fill:#16A34A,stroke:#1F2A37,color:#fff
-        style S fill:#F97316,stroke:#1F2A37,color:#fff
-    notes: "L'Application Map découvre automatiquement la topologie depuis la télémétrie — aucune configuration manuelle."
+  # ───────────────────── PARTIE F — Approfondissement App Insights ─────────────────────
 
-  - key: kql-end-to-end
-    title: "KQL — une seule requête, un seul operation_Id"
+  - key: app-insights-deep-dive-agenda
+    title: "Module 6 — Application Insights, l'heure d'approfondissement"
     bullets:
-      - "Ouvrez le panneau Logs sur la ressource AI"
-      - "Exécutez la requête union ci-dessous"
-      - "Triez par timestamp asc pour voir la cascade dans l'ordre temporel"
-    mermaid: |
-      flowchart LR
-        Q["union requests, dependencies, pageViews<br/>| where operation_Id == 'abc'<br/>| project timestamp, itemType, name, duration, success<br/>| order by timestamp asc"]
-        Q --> R["📊 Résultat cascade<br/>4 lignes · 1 operation_Id"]
-    notes: "Décortiquez chaque ligne. L'union sur 3 tables est l'astuce que la plupart des nouveaux ratent."
-
-  - key: kql-query-text
-    title: "Requête KQL — copier / coller"
-    bullets:
-      - "union requests, dependencies, pageViews"
-      - "| where operation_Id == 'abc-trace-id-ici'"
-      - "| project timestamp, itemType, name, duration, success, target"
-      - "| order by timestamp asc"
-    notes: "Remplacez 'abc-trace-id-ici' par l'operation_Id récupéré dans l'en-tête traceparent des DevTools."
+      - "Live Metrics — le pouls en temps réel"
+      - "Recherche de transactions et vue de transaction de bout en bout"
+      - "Carte d'application — topologie auto-découverte"
+      - "Échecs et Performance — triage par symptôme"
+      - "Journaux (KQL) · Classeurs · Éléments de travail · Journalisation locale + distante · Alertes"
+    notes: "C'est une heure complète. Gardez l'app en direct générant du trafic pour que chaque panneau ait des données. Utilisez le script d'ouverture du tableau de bord pour naviguer vite."
 
   - key: live-metrics
-    title: "Live Metrics — l'effet whaouh"
+    title: "Live Metrics — qui plaît à la salle"
     bullets:
-      - "Latence inférieure à la seconde entre l'app et le portail"
-      - "Aucune donnée n'est persistée dans le flux du portail — l'échantillonnage ne s'applique pas"
-      - "Filtrez par nom de rôle (cloud_RoleName) pour isoler Mapaq.Api"
-      - "Génial pour la démo; ne remplace pas de vraies alertes"
-    notes: "Ouvrez Live Metrics, puis demandez à la salle de charger la page — dopamine garantie."
+      - "Latence sous la seconde de l'app au portail"
+      - "Le flux n'est pas persisté — l'échantillonnage ne s'applique pas"
+      - "Filtrer par cloud_RoleName pour isoler Mapaq.Api"
+      - "Idéal pour les démos et le suivi de déploiement; ne remplace pas les alertes"
+    notes: "DÉMO. Ouvrez Live Metrics et demandez à la salle de charger la page. Regardez les taux de requêtes et dépendances bondir. Filtrez sur le rôle API."
 
-  - key: workbook
-    title: "Workbook — synthèse SLO bilingue"
+  - key: transaction-search
+    title: "Recherche de transactions et vue de bout en bout"
     bullets:
-      - "Workbook prêt à l'emploi dans workshop-content/workbooks/"
-      - "Affiche le volume de requêtes 24h, p95 de latence, % d'échec, top-5 dépendances"
+      - "Rechercher chaque requête, dépendance, exception, trace et pageView"
+      - "Cliquer une requête pour ouvrir la transaction de bout en bout"
+      - "Voir la cascade : navigateur → web → API → SQL sous un seul operation_Id"
+      - "Plonger dans une dépendance SQL pour voir la commande et la durée"
+    notes: "DÉMO. Trouvez une requête récente, ouvrez la transaction et parcourez la cascade de haut en bas. C'est ici que l'histoire de traceparent paie visuellement."
+
+  - key: application-map
+    title: "Carte d'application"
+    mermaid: |
+      graph LR
+        B["Navigateur"] --> W["Mapaq.Web<br/>p95 110ms · 0.0% échec"]
+        W --> A["Mapaq.Api<br/>p95 80ms · 0.1% échec"]
+        A --> S["Azure SQL<br/>p95 45ms · 0.0% échec"]
+    notes: "DÉMO. La carte d'application découvre la topologie depuis la télémétrie — sans config. Cliquez un nœud pour voir performance et échecs de ce composant."
+
+  - key: failures-performance
+    title: "Panneaux Échecs et Performance"
+    bullets:
+      - "Échecs — opérations en échec, codes de réponse, types d'exception"
+      - "Performance — opérations les plus lentes, durée des dépendances, p50/p95/p99"
+      - "Passer d'un agrégat directement aux transactions échantillons"
+      - "Trier par impact utilisateur d'abord, puis par cause"
+    notes: "DÉMO. Si possible, forcez un 5xx (arrêtez l'API ou frappez une mauvaise route) et regardez Échecs s'allumer, puis plongez dans l'exception."
+
+  - key: kql-end-to-end
+    title: "Journaux (KQL) — une requête, un operation_Id"
+    bullets:
+      - "Ouvrir le panneau Journaux sur la ressource App Insights"
+      - "union requests, dependencies, pageViews"
+      - "Filtrer par operation_Id, projeter les colonnes clés, trier par temps"
+      - "Le résultat est la même cascade, en données qu'on peut grapher et exporter"
+    notes: "DÉMO. Exécutez la requête de la diapositive suivante. L'union entre tables est l'astuce que les débutants manquent."
+
+  - key: kql-query-text
+    title: "Requête KQL — à copier / coller"
+    bullets:
+      - "union requests, dependencies, pageViews"
+      - "| where operation_Id == 'COLLER-OPERATION-ID'"
+      - "| project timestamp, itemType, name, duration, success, target"
+      - "| order by timestamp asc"
+    notes: "Récupérez l'operation_Id depuis le traceparent dans les outils de dev ou la Recherche de transactions, collez-le et exécutez. Sauvegardez la requête dans le classeur."
+
+  - key: workbooks
+    title: "Classeurs — tableaux de bord partageables"
+    bullets:
+      - "Classeur pré-construit : volume 24 h, latence p95, % d'échec, top dépendances"
       - "Paramétré par nom de rôle et plage de temps"
-      - "Importable via JSON, sans Power BI"
-    notes: "Le JSON du workbook vit dans le dépôt; importez via la galerie de la ressource AI."
+      - "Mélange KQL, métriques, texte et paramètres dans un document"
+      - "Importable en JSON — pas besoin de Power BI"
+    notes: "DÉMO. Ouvrez le classeur, changez la plage de temps et le paramètre de rôle, et montrez la mise à jour des visuels. Mentionnez qu'ils sont versionnables en JSON."
 
-  - key: alerts
-    title: "Alertes intelligentes — anomalies de panne"
+  - key: work-item-creation
+    title: "Créer des éléments de travail depuis Application Insights"
     bullets:
-      - "Smart Detection s'exécute en continu sur le workspace"
-      - "Détecte automatiquement les anomalies de taux d'échec, de chargement de page lent et de dégradation de trace"
-      - "Configurez l'e-mail + un Action Group pour un webhook Teams"
-    notes: "Smart Detection est actif par défaut — montrez comment ajouter des destinataires."
+      - "Configurer une intégration d'éléments de travail (Azure DevOps / GitHub)"
+      - "Depuis un échec ou une transaction, cliquer « Créer un élément de travail »"
+      - "Le contexte de télémétrie (operation_Id, pile, version) est joint"
+      - "Boucle complète : détecter → déclarer → corriger → vérifier"
+      - "Notre flux ADO : Epic → Feature → User Story/Bug, étiquette « Agentic AI »"
+    notes: "DÉMO. Montrez l'intégration d'éléments de travail sur la ressource App Insights, puis créez un bug depuis un vrai échec. Soulignez comment le contexte de télémétrie arrive sur l'élément pour qu'un développeur le reproduise."
+
+  - key: local-remote-logging
+    title: "Journalisation locale vs distante"
+    bullets:
+      - "Locale : console ILogger + Flux de journaux App Service pour un retour rapide"
+      - "Distante : ILogger → Application Insights en traces (durable, interrogeable)"
+      - "Journalisation structurée — les propriétés deviennent des dimensions en KQL"
+      - "Corrélation : les journaux portent le même operation_Id que la requête"
+      - "Régler les niveaux via appsettings + le LoggerProvider ApplicationInsights"
+    notes: "DÉMO. Émettez un journal structuré en local et observez-le dans la console, puis retrouvez la même entrée dans les traces App Insights filtrées par operation_Id. Voilà l'histoire de la journalisation locale et distante."
+
+  - key: smart-alerts
+    title: "Alertes et détection intelligentes"
+    bullets:
+      - "Smart Detection trouve automatiquement les anomalies de taux d'échec et de latence"
+      - "Alertes de métrique sur disponibilité, temps de réponse, requêtes en échec"
+      - "Groupes d'actions → courriel, SMS, Teams/webhook ou automatisation"
+      - "Alerter sur les symptômes (impact utilisateur), pas seulement les causes"
+    notes: "DÉMO. Montrez les paramètres de Smart Detection et créez une alerte de métrique (ex. requêtes en échec > N sur 5 min) reliée à un groupe d'actions."
+
+  - key: app-insights-demo-walkthrough
+    title: "Démo — App Insights, quoi montrer"
+    bullets:
+      - "1 · Live Metrics pendant que la salle charge l'app"
+      - "2 · Recherche de transactions → cascade de bout en bout"
+      - "3 · Carte d'application → cliquer le nœud SQL"
+      - "4 · Échecs → plonger dans une exception → créer un élément de travail"
+      - "5 · Journaux (KQL) → classeur → une alerte"
+    notes: "Liste de contrôle maîtresse pour l'heure. Gardez le trafic actif tout du long. Utilisez scripts/open-monitoring-dashboard.ps1 pour sauter à la ressource."
+
+  # ───────────────────── PARTIE G — Exploitation, coûts, démantèlement, clôture ─────────────────────
 
   - key: cost-controls
-    title: "Maîtrise des coûts — sans surprise"
+    title: "Contrôle des coûts — pas de surprises"
     bullets:
-      - "Plafond quotidien sur la ressource AI (50 Mo/jour pour l'atelier)"
+      - "Plafond quotidien sur la ressource App Insights pour l'atelier"
       - "Échantillonnage : 100 % en dev, 10–25 % typique en prod"
-      - "AI basé sur le workspace utilise les paliers d'engagement Log Analytics"
-      - "Étiquetez tout avec Workshop=Mapaq pour la facturation"
-    notes: "Le plafond quotidien protège l'abonnement de l'atelier d'un débordement de logs."
+      - "L'AI basé sur espace de travail utilise les niveaux d'engagement Log Analytics"
+      - "Bien dimensionner le plan App Service; réduire quand inactif"
+      - "Étiqueter tout pour découper la facturation"
+    notes: "Reliez le coût aux leviers de mise à l'échelle et d'échantillonnage vus plus tôt. Le plafond quotidien protège l'abonnement."
 
   - key: troubleshooting
     title: "Liste de dépannage"
     bullets:
-      - "Pas de télémétrie ? Vérifiez APPLICATIONINSIGHTS_CONNECTION_STRING dans les App Settings"
-      - "PageViews manquants ? Confirmez que le snippet est avant les autres scripts"
-      - "operation_Id différent ? Vérifiez enableCorsCorrelation sur le SDK JS"
-      - "Dépendances SQL absentes ? EF Core a besoin du SDK AI — le paquet seul ne suffit pas"
-    notes: "Gardez cette diapo visible pendant le lab; la plupart des questions tombent dans une de ces 4 lignes."
+      - "Pas de télémétrie ? Vérifier APPLICATIONINSIGHTS_CONNECTION_STRING dans App settings"
+      - "Ingestion par identité en échec ? Vérifier AZURE_CLIENT_ID + AUTHENTICATION_STRING + attribution de rôle"
+      - "Conteneur ne démarre pas ? Confirmer WEBSITES_PORT et l'étiquette d'image dans le Centre de déploiement"
+      - "PageViews manquantes ? Le snippet doit se charger avant les autres scripts"
+      - "Dépendances SQL manquantes ? EF Core a besoin du SDK AI — le paquet seul ne suffit pas"
+    notes: "Gardez cette diapositive visible pendant les ateliers. La plupart des questions correspondent à une de ces lignes. La ligne identité est spécifique à la configuration de rg-dev-001."
 
   - key: teardown
-    title: "Module 6 — Démantèlement"
+    title: "Démantèlement"
     bullets:
       - "azd down --purge --force"
-      - "--purge supprime les Key Vaults et ressources AI en suppression douce"
+      - "--purge retire les Key Vault et ressources AI supprimés en douceur"
       - "--force saute la confirmation interactive"
-      - "Vérifiez dans le portail Azure que le groupe de ressources est bien parti"
-    notes: "Démontrez toujours le démantèlement en direct. Un atelier sans démantèlement est une bombe à retardement de facturation."
+      - "Vérifier que le groupe de ressources a disparu dans le portail"
+    notes: "Démontrez toujours le démantèlement en direct. Un atelier sans démantèlement est une bombe de facturation. (À sauter sur rg-dev-001 partagé s'il doit persister.)"
+
+  - key: next-steps
+    title: "Prochaines étapes et votre plan de compétences"
+    bullets:
+      - "Choisir une vraie app et exécuter l'agent de modernisation .NET Copilot"
+      - "Monter App Service + App Insights avec azd dans votre propre abonnement"
+      - "Rédiger votre plan de compétences par persona du Module 0"
+      - "Lancer un sprint Défi Cloud avec votre équipe"
+      - "Adopter le développement piloté par l'observabilité par défaut"
+    notes: "Renvoyez la salle avec un engagement concret chacun. Offrez les ateliers et le wiki comme chemin de suite."
 
   - key: references
     title: "Références"
     bullets:
-      - "learn.microsoft.com/fr-ca/azure/azure-monitor/app/app-insights-overview"
-      - "learn.microsoft.com/fr-ca/azure/azure-monitor/app/asp-net-core"
-      - "learn.microsoft.com/fr-ca/azure/azure-monitor/app/javascript"
-      - "github.com/Azure/azure-dev (modèles azd)"
-      - "github.com/microsoft/ApplicationInsights-dotnet"
-    notes: "Les quatre pages MS Learn ont le sélecteur EN/FR en haut à droite."
+      - "learn.microsoft.com/azure/app-service/"
+      - "learn.microsoft.com/azure/azure-monitor/app/app-insights-overview"
+      - "learn.microsoft.com/dotnet/core/porting/ (mise à niveau et modernisation)"
+      - "github.com/Azure/azure-dev (azd)"
+      - "GitHub Copilot app modernization pour .NET — Marketplace VS Code"
+    notes: "Toutes les pages MS Learn ont le sélecteur de langue FR/EN en haut à droite."
 
   - key: closing
-    title: "Merci · Thank you"
+    title: "Thank you · Merci"
     bullets:
-      - "Diapos + labs : github.com/devopsabcs-engineering/app-insights-dotnet"
-      - "Bilingue publié sur GitHub Pages : /app-insights-dotnet/ et /app-insights-dotnet/fr/"
-      - "Issues + carte ADO ensemencées — ouvrez-en une avec vos retours"
-      - "Bonne observabilité! · Happy observing!"
-    notes: "Concluez dans les deux langues. Cédez la parole aux questions."
+      - "Diapositives, ateliers et wiki : ce dépôt"
+      - "Présentations bilingues : docs/decks/ (FR et EN)"
+      - "Raccourci de surveillance : scripts/open-monitoring-dashboard.ps1"
+      - "Happy modernizing! · Bonne modernisation!"
+    notes: "Clôturez dans les deux langues. Renvoyez la salle aux questions et au wiki pour le guide de livraison complet."

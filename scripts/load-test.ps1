@@ -55,7 +55,7 @@ function Test-MapaqUp {
 if (-not $SkipAutoStart -and -not (Test-MapaqUp)) {
     if (Test-Path $StartLocal) {
         Write-Host "Mapaq.Api not detected on $ApiUrl. Starting local apps..." -ForegroundColor Yellow
-        & $StartLocal -NoBrowser
+        & $StartLocal -NoContainer -NoBrowser
         # start-local.ps1 already polls until the web tier is online, but the
         # API itself may take an extra moment after that — short retry here.
         $deadline = (Get-Date).AddSeconds(30)

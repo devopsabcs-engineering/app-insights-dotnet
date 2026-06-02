@@ -45,22 +45,41 @@ public sealed class IndexModel : PageModel
 
     public async Task OnGetAsync(CancellationToken ct)
     {
+        const string page = "/Etablissements/Index";
+        using var activity = WebTelemetry.Source.StartActivity("Page.Etablissements.Index");
+        activity?.SetTag("mapaq.page", page);
+        activity?.SetTag("mapaq.filter.city", City);
+        activity?.SetTag("mapaq.filter.region", Region);
+        WebTelemetry.PageViews.Add(1, new KeyValuePair<string, object?>("page", page));
+
         if (string.IsNullOrWhiteSpace(City) && string.IsNullOrWhiteSpace(Region))
         {
+            activity?.SetTag("mapaq.search.issued", false);
             return;
         }
+
+        WebTelemetry.Searches.Add(1, new KeyValuePair<string, object?>("page", page));
+        activity?.SetTag("mapaq.search.issued", true);
 
         var client = _httpClientFactory.CreateClient("MapaqApi");
         var url = $"api/establishments?city={Uri.EscapeDataString(City ?? string.Empty)}"
                   + $"&region={Uri.EscapeDataString(Region ?? string.Empty)}";
+        var sw = Stopwatch.StartNew();
         try
         {
             var rows = await client.GetFromJsonAsync<List<EstablishmentRow>>(url, ct);
             Results = rows ?? new List<EstablishmentRow>();
+            activity?.SetTag("mapaq.result.count", Results.Count);
         }
-        catch (HttpRequestException)
+        catch (Exception ex)
         {
+            WebTelemetry.RecordApiError(activity, page, ex);
             Results = Array.Empty<EstablishmentRow>();
+        }
+        finally
+        {
+            WebTelemetry.ApiCallDurationMs.Record(sw.Elapsed.TotalMilliseconds,
+                new KeyValuePair<string, object?>("page", page));
         }
     }
 

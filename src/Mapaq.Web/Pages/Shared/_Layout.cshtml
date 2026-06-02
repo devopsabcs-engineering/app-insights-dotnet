@@ -1,10 +1,20 @@
 @using System.Globalization
+@using System.Reflection
 @using Microsoft.AspNetCore.Mvc.Localization
 @inject Microsoft.ApplicationInsights.AspNetCore.JavaScriptSnippet JavaScriptSnippet
 @inject IHtmlLocalizer<Mapaq.Web.SharedResource> L
 @{
     var culture = CultureInfo.CurrentUICulture;
     var isFr = culture.TwoLetterISOLanguageName == "fr";
+
+    // Full SemVer stamped by GitVersion into AssemblyInformationalVersion (e.g. 1.0.3);
+    // strip the +metadata suffix, then fall back to the assembly version / default.
+    var appVersion =
+        typeof(Program).Assembly
+            .GetCustomAttribute<AssemblyInformationalVersionAttribute>()?
+            .InformationalVersion?.Split('+')[0]
+        ?? typeof(Program).Assembly.GetName().Version?.ToString()
+        ?? "1.0.0";
     var returnUrl = (Context.Request.Path + Context.Request.QueryString).ToString();
     string SetLang(string c) => $"/setlang?culture={c}&returnUrl={Uri.EscapeDataString(returnUrl)}";
 
@@ -31,6 +41,13 @@
           window.appInsights.config.enableRequestHeaderTracking  = true;
           window.appInsights.config.enableResponseHeaderTracking = true;
           window.appInsights.config.distributedTracingMode = 2;
+          // Richer browser monitoring: capture unhandled errors/rejections,
+          // AJAX timing, and keep more dependency calls per page view.
+          window.appInsights.config.enableUnhandledPromiseRejectionTracking = true;
+          window.appInsights.config.disableExceptionTracking    = false;
+          window.appInsights.config.disableFetchTracking        = false;
+          window.appInsights.config.enableAjaxPerfTracking      = true;
+          window.appInsights.config.maxAjaxCallsPerView         = 500;
           window.appInsights.config.correlationHeaderExcludedDomains = [
             "*.queue.core.windows.net",
             "*.blob.core.windows.net",
@@ -102,6 +119,7 @@
 
     <footer class="site-footer">
         <small>@L["Footer.Disclaimer"]</small>
+        <small class="site-footer__version">v@(appVersion)</small>
     </footer>
 </body>
 </html>

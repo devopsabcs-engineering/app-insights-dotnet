@@ -31,19 +31,57 @@ stages:
       - job: build_test
         displayName: dotnet build + test
         steps:
+          - checkout: self
+            # GitVersion needs full git history (and tags) to compute the SemVer.
+            fetchDepth: 0
+
           - task: UseDotNet@2
             displayName: Install .NET SDK $(DOTNET_VERSION)
             inputs:
               packageType: sdk
               version: $(DOTNET_VERSION)
 
-          - script: dotnet restore
+          # Compute the semantic version from git history (GitVersion.yml at repo
+          # root → 1.0.0, then patch+1 per commit on main). The setup task installs
+          # the dotnet-gitversion CLI; we invoke it directly instead of using
+          # gitversion/execute@3 because that task double-writes each output
+          # variable, which the Azure Pipelines agent now rejects as "Overwriting
+          # readonly variable" (GitTools/actions#1400), failing the whole job.
+          - task: gitversion/setup@3
+            displayName: Install GitVersion
+            inputs:
+              versionSpec: '6.x'
+
+          - script: |
+              set -euo pipefail
+              gv="$(dotnet-gitversion /output json)"
+              echo "$gv"
+              semVer="$(echo "$gv" | jq -r '.SemVer')"
+              fullSemVer="$(echo "$gv" | jq -r '.FullSemVer')"
+              # Publish only the variables we consume, each set exactly once so the
+              # agent never sees a readonly re-write. $(GitVersion.SemVer) /
+              # $(GitVersion.FullSemVer) stay available to later steps as before.
+              echo "##vso[task.setvariable variable=GitVersion.SemVer]$semVer"
+              echo "##vso[task.setvariable variable=GitVersion.FullSemVer]$fullSemVer"
+              echo "##vso[build.updatebuildnumber]$fullSemVer"
+            displayName: Determine version
+
+          - script: dotnet restore Mapaq.sln
             displayName: dotnet restore
 
-          - script: dotnet build --configuration Release --no-restore /warnaserror
+          - script: >-
+              dotnet build Mapaq.sln --configuration Release --no-restore /warnaserror
+              -p:Version=$(GitVersion.SemVer)
+              -p:InformationalVersion=$(GitVersion.FullSemVer)
             displayName: dotnet build (warnaserror)
 
-          - script: dotnet test --configuration Release --no-build --logger trx --collect "XPlat Code Coverage"
+          - script: |
+              set -euo pipefail
+              mkdir -p "$(Agent.TempDirectory)/coverage"
+              dotnet test Mapaq.sln --configuration Release --no-build \
+                --logger trx \
+                --collect "XPlat Code Coverage" \
+                --results-directory "$(Agent.TempDirectory)/coverage"
             displayName: dotnet test (with coverage)
 
           - task: PublishTestResults@2
@@ -51,14 +89,43 @@ stages:
             condition: succeededOrFailed()
             inputs:
               testResultsFormat: VSTest
-              testResultsFiles: '**/*.trx'
+              testResultsFiles: '$(Agent.TempDirectory)/coverage/**/*.trx'
               failTaskOnFailedTests: true
+
+          # Merge per-project Cobertura reports into a single Cobertura + HTML
+          # bundle. PublishCodeCoverageResults@2 only accepts ONE merged file,
+          # and ReportGenerator's HTML output gives a browsable artifact.
+          # Cobertura output requires the `coverlet.collector` package to be
+          # referenced by every test project (see Directory.Packages.props);
+          # without it `--collect "XPlat Code Coverage"` resolves to the
+          # Microsoft.CodeCoverage `.coverage` binary format and the glob
+          # below finds nothing.
+          - script: |
+              set -euo pipefail
+              echo "Coverage tree (for triage):"
+              find "$(Agent.TempDirectory)/coverage" -maxdepth 4 -type f \( -name '*.cobertura.xml' -o -name '*.coverage' -o -name '*.trx' \) -printf '  %p\n' || true
+              dotnet tool install --tool-path "$(Agent.TempDirectory)/tools" dotnet-reportgenerator-globaltool
+              "$(Agent.TempDirectory)/tools/reportgenerator" \
+                "-reports:$(Agent.TempDirectory)/coverage/**/coverage.cobertura.xml" \
+                "-targetdir:$(Agent.TempDirectory)/coverage/report" \
+                "-reporttypes:Cobertura;HtmlInline_AzurePipelines;MarkdownSummaryGithub"
+            displayName: Merge coverage with ReportGenerator
+            condition: succeededOrFailed()
 
           - task: PublishCodeCoverageResults@2
             displayName: Publish code coverage
             condition: succeededOrFailed()
             inputs:
-              summaryFileLocation: '**/coverage.cobertura.xml'
+              summaryFileLocation: '$(Agent.TempDirectory)/coverage/report/Cobertura.xml'
+              pathToSources: '$(Build.SourcesDirectory)/src'
+
+          - task: PublishPipelineArtifact@1
+            displayName: Publish coverage HTML report
+            condition: succeededOrFailed()
+            inputs:
+              targetPath: '$(Agent.TempDirectory)/coverage/report'
+              artifact: code-coverage-report
+              publishLocation: pipeline
 
   - stage: Bicep
     displayName: Bicep build + what-if
@@ -84,12 +151,21 @@ stages:
                 # main.parameters.json uses azd's ${VAR=default} substitution syntax which the
                 # plain 'az deployment sub what-if' command does not expand. Override every
                 # constrained / required parameter on the command line with workshop-default
-                # values so what-if validates against a representative parameter set.
+                # values so what-if validates against a representative parameter set. The
+                # later --parameters wins, so these CLI values replace the unexpanded
+                # ${...} tokens from the parameters file. acrSku and sqlAdminPrincipalType
+                # are @allowed-constrained, so a literal token there fails template
+                # validation outright; location/apiImageTag/webImageTag are also overridden
+                # so no ${...} placeholder reaches ARM.
                 az deployment sub what-if \
                   --location $(AZURE_LOCATION) \
                   --template-file infra/main.bicep \
                   --parameters infra/main.parameters.json \
                   --parameters environmentName=$(AZURE_ENV_NAME) \
+                  --parameters location=$(AZURE_LOCATION) \
                   --parameters sqlAdminLogin=azureSqlDBAdmins \
                   --parameters sqlAdminPrincipalId=b817fa2d-6c4b-473b-b82c-1f405f5ef2d8 \
-                  --parameters sqlAdminPrincipalType=Group
+                  --parameters sqlAdminPrincipalType=Group \
+                  --parameters apiImageTag=latest \
+                  --parameters webImageTag=latest \
+                  --parameters acrSku=Basic

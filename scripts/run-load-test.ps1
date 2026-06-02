@@ -19,9 +19,9 @@
         exceptions.csv     — Python exceptions raised in the test
 
 .PARAMETER TargetUrl
-    Base URL to load test. Defaults to https://localhost:7020 (Mapaq.Api).
-    Pass https://localhost:7010 to drive the Razor pages instead, or an
-    https://*.azurewebsites.net URL to load test the deployed app.
+    Base URL to load test. Defaults to http://localhost:5020 (Mapaq.Api running
+    as a container). Pass http://localhost:5010 to drive the Razor pages instead,
+    or an https://*.azurewebsites.net URL to load test the deployed app.
 
     The two Locust user classes still each pin to their own tier (see
     -ApiUrl / -WebUrl) so a single run exercises both /api/... and the
@@ -29,11 +29,11 @@
 
 .PARAMETER ApiUrl
     Base URL the MapaqApiUser Locust class will hit. Defaults to
-    https://localhost:7020. Override when load testing a deployed API.
+    http://localhost:5020. Override when load testing a deployed API.
 
 .PARAMETER WebUrl
     Base URL the MapaqWebUser Locust class will hit. Defaults to
-    https://localhost:7010. Override when load testing a deployed Web.
+    http://localhost:5010. Override when load testing a deployed Web.
 
 .PARAMETER Users
     Peak number of concurrent virtual users (Locust --users). Default: 25.
@@ -62,15 +62,18 @@
 
 .PARAMETER SkipAutoStart
     When the target is a localhost URL, this script automatically launches
-    Mapaq.Api / Mapaq.Web via scripts/start-local.ps1 if /healthz is not
-    reachable. Pass -SkipAutoStart to disable that behaviour.
+    Mapaq.Api / Mapaq.Web as containers via scripts/start-local.ps1 if /healthz
+    is not reachable. start-local.ps1 resolves the Application Insights
+    connection string from the azd environment, so the containers emit
+    telemetry to the real Azure App Insights resource during the run. Pass
+    -SkipAutoStart to disable that behaviour.
 
 .EXAMPLE
     pwsh ./scripts/run-load-test.ps1
-    # 25 users, 2 minutes, headless, against https://localhost:7020
+    # 25 users, 2 minutes, headless, against http://localhost:5020 (containers)
 
 .EXAMPLE
-    pwsh ./scripts/run-load-test.ps1 -TargetUrl https://localhost:7010 -Users 50 -Duration 5m
+    pwsh ./scripts/run-load-test.ps1 -TargetUrl http://localhost:5010 -Users 50 -Duration 5m
     # Drive the Razor pages tier with 50 users for 5 minutes
 
 .EXAMPLE
@@ -79,9 +82,9 @@
 #>
 [CmdletBinding()]
 param(
-    [string]$TargetUrl    = 'https://localhost:7020',
-    [string]$ApiUrl       = 'https://localhost:7020',
-    [string]$WebUrl       = 'https://localhost:7010',
+    [string]$TargetUrl    = 'http://localhost:5020',
+    [string]$ApiUrl       = 'http://localhost:5020',
+    [string]$WebUrl       = 'http://localhost:5010',
     [int]   $Users        = 25,
     [int]   $SpawnRate    = 5,
     [string]$Duration     = '2m',
@@ -205,9 +208,9 @@ if ($targetUp) {
 } elseif ($isLocalhost -and -not $SkipAutoStart) {
     $startScript = Join-Path $PSScriptRoot 'start-local.ps1'
     if (Test-Path $startScript) {
-        Write-Host "Target $TargetUrl not responding. Starting Mapaq.Api / Mapaq.Web via start-local.ps1..." -ForegroundColor Yellow
+        Write-Host "Target $TargetUrl not responding. Starting Mapaq.Api / Mapaq.Web as containers via start-local.ps1..." -ForegroundColor Yellow
         & $startScript -NoBrowser
-        $deadline = (Get-Date).AddSeconds(60)
+        $deadline = (Get-Date).AddSeconds(120)
         while ((Get-Date) -lt $deadline -and -not (Test-TargetUp -Url $TargetUrl)) {
             Start-Sleep -Seconds 2
         }
@@ -291,10 +294,25 @@ $exit = $LASTEXITCODE
 
 Write-Host ""
 if ($exit -eq 0) {
-    Write-Host "Load test complete. Open the HTML report:" -ForegroundColor Green
+    Write-Host "Load test complete. Opening the HTML report:" -ForegroundColor Green
     Write-Host "  $htmlReport" -ForegroundColor Cyan
 } else {
     Write-Warning "Locust exited with code $exit. Inspect $ReportDir for details."
+}
+
+# Open the HTML report in the default browser if it was produced.
+if (Test-Path $htmlReport) {
+    try {
+        if ($IsWindows -or $env:OS -eq 'Windows_NT') {
+            Start-Process $htmlReport
+        } elseif ($IsMacOS) {
+            & open $htmlReport
+        } else {
+            & xdg-open $htmlReport
+        }
+    } catch {
+        Write-Warning "Could not auto-open the report. Open it manually: $htmlReport"
+    }
 }
 
 exit $exit

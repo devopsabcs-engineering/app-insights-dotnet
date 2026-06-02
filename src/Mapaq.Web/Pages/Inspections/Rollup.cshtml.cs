@@ -62,8 +62,18 @@ public sealed class RollupModel : PageModel
 
     public async Task OnGetAsync(CancellationToken ct)
     {
+        const string page = "/Inspections/Rollup";
+        using var activity = WebTelemetry.Source.StartActivity("Page.Inspections.Rollup");
+        activity?.SetTag("mapaq.page", page);
+        activity?.SetTag("mapaq.filter.region", Region);
+        activity?.SetTag("mapaq.filter.year", Year);
+        activity?.SetTag("mapaq.filter.indicator", Indicator);
+        WebTelemetry.PageViews.Add(1, new KeyValuePair<string, object?>("page", page));
+        WebTelemetry.Searches.Add(1, new KeyValuePair<string, object?>("page", page));
+
         var client = _httpClientFactory.CreateClient("MapaqApi");
         var url = $"api/inspections/rollup?region={Uri.EscapeDataString(Region)}&year={Year}";
+        var sw = Stopwatch.StartNew();
         try
         {
             var rows = await client.GetFromJsonAsync<List<RollupRow>>(url, ct);
@@ -71,10 +81,17 @@ public sealed class RollupModel : PageModel
             Rows = string.IsNullOrWhiteSpace(Indicator)
                 ? all
                 : all.Where(r => r.IndicatorCode == Indicator).ToList();
+            activity?.SetTag("mapaq.result.count", Rows.Count);
         }
-        catch (HttpRequestException)
+        catch (Exception ex)
         {
+            WebTelemetry.RecordApiError(activity, page, ex);
             Rows = Array.Empty<RollupRow>();
+        }
+        finally
+        {
+            WebTelemetry.ApiCallDurationMs.Record(sw.Elapsed.TotalMilliseconds,
+                new KeyValuePair<string, object?>("page", page));
         }
     }
 

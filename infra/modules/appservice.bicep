@@ -1,8 +1,6 @@
 // B1 Linux App Service Plan + 2 sites (mapaq-web-*, mapaq-api-*).
 // Each site has SystemAssigned + UserAssigned identities; the UAMI is used for
-// Entra auth to App Insights and SQL. The SQL connection string uses
-// `Authentication=Active Directory Managed Identity` with an explicit
-// `User Id={uamiClientId}` so the SqlClient picks the UAMI (not the SAMI).
+// Entra auth to App Insights and SQL (passwordless via Active Directory Default).
 // App settings inject:
 //   APPLICATIONINSIGHTS_CONNECTION_STRING        (workspace-based AI)
 //   APPLICATIONINSIGHTS_AUTHENTICATION_STRING    (Entra-only AI; uses UAMI client id)
@@ -19,6 +17,9 @@ param appInsightsConnectionString string
 param sqlConnectionString string
 param workspaceId string
 param appIntegrationSubnetId string
+param acrLoginServer string
+param apiImageTag string
+param webImageTag string
 
 // Plan name: 'asp-mapaq-' (10) + token (13) = 23 chars; well under 40-char limit.
 resource plan 'Microsoft.Web/serverfarms@2023-12-01' = {
@@ -80,7 +81,9 @@ resource webApp 'Microsoft.Web/sites@2023-12-01' = {
     virtualNetworkSubnetId: appIntegrationSubnetId
     vnetRouteAllEnabled: true
     siteConfig: {
-      linuxFxVersion: 'DOTNETCORE|10.0'
+      linuxFxVersion: 'DOCKER|${acrLoginServer}/mapaq-web:${webImageTag}'
+      acrUseManagedIdentityCreds: true
+      acrUserManagedIdentityID: uamiClientId
       alwaysOn: true
       ftpsState: 'Disabled'
       minTlsVersion: '1.2'
@@ -100,6 +103,14 @@ resource webApp 'Microsoft.Web/sites@2023-12-01' = {
         {
           name: 'WEBSITE_DNS_SERVER'
           value: '168.63.129.16'
+        }
+        {
+          name: 'DOCKER_REGISTRY_SERVER_URL'
+          value: 'https://${acrLoginServer}'
+        }
+        {
+          name: 'WEBSITES_PORT'
+          value: '8080'
         }
       ])
     }
@@ -123,7 +134,9 @@ resource apiApp 'Microsoft.Web/sites@2023-12-01' = {
     virtualNetworkSubnetId: appIntegrationSubnetId
     vnetRouteAllEnabled: true
     siteConfig: {
-      linuxFxVersion: 'DOTNETCORE|10.0'
+      linuxFxVersion: 'DOCKER|${acrLoginServer}/mapaq-api:${apiImageTag}'
+      acrUseManagedIdentityCreds: true
+      acrUserManagedIdentityID: uamiClientId
       alwaysOn: true
       ftpsState: 'Disabled'
       minTlsVersion: '1.2'
@@ -143,6 +156,14 @@ resource apiApp 'Microsoft.Web/sites@2023-12-01' = {
         {
           name: 'WEBSITE_DNS_SERVER'
           value: '168.63.129.16'
+        }
+        {
+          name: 'DOCKER_REGISTRY_SERVER_URL'
+          value: 'https://${acrLoginServer}'
+        }
+        {
+          name: 'WEBSITES_PORT'
+          value: '8080'
         }
       ])
     }

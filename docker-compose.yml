@@ -1,0 +1,14 @@
+services:
+  mapaq.web:
+    image: ${DOCKER_REGISTRY-}mapaqweb
+    build:
+      context: .
+      dockerfile: src/Mapaq.Web/Dockerfile
+    depends_on:
+      - mapaq.api
+
+  mapaq.api:
+    image: ${DOCKER_REGISTRY-}mapaqapi
+    build:
+      context: .
+      dockerfile: src/Mapaq.Api/Dockerfile

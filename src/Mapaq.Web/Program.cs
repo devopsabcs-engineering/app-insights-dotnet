@@ -1,7 +1,11 @@
 using System.Globalization;
+using System.Reflection;
 using Azure.Monitor.OpenTelemetry.AspNetCore;
+using Mapaq.Web.Telemetry;
 using Microsoft.AspNetCore.Localization;
 using Microsoft.Extensions.Options;
+using OpenTelemetry.Instrumentation.AspNetCore;
+using OpenTelemetry.Instrumentation.Http;
 using OpenTelemetry.Resources;
 using OpenTelemetry.Trace;
 using OpenTelemetry.Metrics;
@@ -9,11 +13,25 @@ using OpenTelemetry.Metrics;
 var builder = WebApplication.CreateBuilder(args);
 
 // ---- Resource attributes drive cloud_RoleName / cloud_RoleInstance ----
+// service.version surfaces as application_Version in Application Insights;
+// deployment.environment lets attendees split Dev/Prod telemetry.
+// Prefer the full SemVer stamped by GitVersion into AssemblyInformationalVersion
+// (e.g. 1.0.3); fall back to the assembly version, then a hard-coded default.
+var serviceVersion  =
+    typeof(Program).Assembly
+        .GetCustomAttribute<AssemblyInformationalVersionAttribute>()?
+        .InformationalVersion?.Split('+')[0]
+    ?? typeof(Program).Assembly.GetName().Version?.ToString()
+    ?? "1.0.0";
+var environmentName = builder.Environment.EnvironmentName;
+
 var resourceAttributes = new Dictionary<string, object>
 {
-    ["service.name"]        = "Mapaq.Web",
-    ["service.namespace"]   = "Mapaq",
-    ["service.instance.id"] = Environment.MachineName
+    ["service.name"]           = "Mapaq.Web",
+    ["service.namespace"]      = "Mapaq",
+    ["service.version"]        = serviceVersion,
+    ["service.instance.id"]    = Environment.MachineName,
+    ["deployment.environment"] = environmentName
 };
 
 // ---- Azure Monitor OpenTelemetry Distro ----
@@ -33,9 +51,55 @@ builder.Services.AddOpenTelemetry()
     })
     .ConfigureResource(rb => rb.AddAttributes(resourceAttributes));
 
+// ---- Enrich the vendored ASP.NET Core (incoming request) instrumentation ----
+// Drop health-probe noise and decorate request spans with client detail.
+builder.Services.Configure<AspNetCoreTraceInstrumentationOptions>(options =>
+{
+    options.RecordException = true;
+    options.Filter = httpContext =>
+        !httpContext.Request.Path.StartsWithSegments("/healthz");
+    options.EnrichWithHttpRequest = (activity, request) =>
+    {
+        activity.SetTag("http.request.host", request.Host.Value);
+        activity.SetTag("mapaq.client.ip", request.HttpContext.Connection.RemoteIpAddress?.ToString());
+        activity.SetTag("mapaq.culture", CultureInfo.CurrentUICulture.Name);
+    };
+    options.EnrichWithHttpResponse = (activity, response) =>
+        activity.SetTag("http.response.status_code", response.StatusCode);
+    options.EnrichWithException = (activity, exception) =>
+        activity.SetTag("exception.type", exception.GetType().FullName);
+});
+
+// ---- Enrich the vendored HttpClient (outbound dependency) instrumentation ----
+// Makes the Web -> Mapaq.Api edge richer in the Application Map.
+builder.Services.Configure<HttpClientTraceInstrumentationOptions>(options =>
+{
+    options.RecordException = true;
+    options.EnrichWithHttpRequestMessage = (activity, request) =>
+    {
+        if (request.RequestUri is not null)
+        {
+            activity.SetTag("peer.service", request.RequestUri.Host);
+            activity.SetTag("http.request.uri", request.RequestUri.AbsoluteUri);
+        }
+    };
+    options.EnrichWithHttpResponseMessage = (activity, response) =>
+        activity.SetTag("http.response.status_code", (int)response.StatusCode);
+});
+
 // Custom ActivitySource and Meter for the Web tier.
-builder.Services.ConfigureOpenTelemetryTracerProvider((sp, b) => b.AddSource("Mapaq.Web"));
-builder.Services.ConfigureOpenTelemetryMeterProvider((sp, b) => b.AddMeter("Mapaq.Web"));
+builder.Services.ConfigureOpenTelemetryTracerProvider((sp, b) => b
+    .AddSource("Mapaq.Web")
+    .AddProcessor(new TelemetryEnrichmentProcessor(environmentName, serviceVersion)));
+
+// Explicit histogram buckets make the Web -> API latency distribution readable
+// in Metrics Explorer instead of defaulting to a single bucket.
+builder.Services.ConfigureOpenTelemetryMeterProvider((sp, b) => b
+    .AddMeter("Mapaq.Web")
+    .AddView("mapaq.web.api_call_duration_ms", new ExplicitBucketHistogramConfiguration
+    {
+        Boundaries = new double[] { 5, 10, 25, 50, 100, 250, 500, 1000, 2500, 5000 }
+    }));
 
 // ---- Razor Pages + localization (FR primary, EN secondary) ----
 // NOTE: ResourcesPath is intentionally NOT set. The SDK embeds

@@ -1,21 +1,38 @@
 using System.Diagnostics;
+using System.Reflection;
 using Azure.Monitor.OpenTelemetry.AspNetCore;
 using Mapaq.Api.Sync;
 using Mapaq.Api.Telemetry;
 using Mapaq.Domain;
 using Mapaq.Infrastructure;
 using Microsoft.EntityFrameworkCore;
+using OpenTelemetry.Instrumentation.AspNetCore;
+using OpenTelemetry.Instrumentation.Http;
 using OpenTelemetry.Resources;
 using OpenTelemetry.Trace;
 using OpenTelemetry.Metrics;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// service.version surfaces as application_Version in Application Insights;
+// deployment.environment lets attendees split Dev/Prod telemetry.
+// Prefer the full SemVer stamped by GitVersion into AssemblyInformationalVersion
+// (e.g. 1.0.3); fall back to the assembly version, then a hard-coded default.
+var serviceVersion  =
+    typeof(Program).Assembly
+        .GetCustomAttribute<AssemblyInformationalVersionAttribute>()?
+        .InformationalVersion?.Split('+')[0]
+    ?? typeof(Program).Assembly.GetName().Version?.ToString()
+    ?? "1.0.0";
+var environmentName = builder.Environment.EnvironmentName;
+
 var resourceAttributes = new Dictionary<string, object>
 {
-    ["service.name"]        = "Mapaq.Api",
-    ["service.namespace"]   = "Mapaq",
-    ["service.instance.id"] = Environment.MachineName
+    ["service.name"]           = "Mapaq.Api",
+    ["service.namespace"]      = "Mapaq",
+    ["service.version"]        = serviceVersion,
+    ["service.instance.id"]    = Environment.MachineName,
+    ["deployment.environment"] = environmentName
 };
 
 // Azure Monitor OpenTelemetry Distro.
@@ -33,8 +50,58 @@ builder.Services.AddOpenTelemetry()
     })
     .ConfigureResource(rb => rb.AddAttributes(resourceAttributes));
 
-builder.Services.ConfigureOpenTelemetryTracerProvider((sp, b) => b.AddSource("Mapaq.Api"));
-builder.Services.ConfigureOpenTelemetryMeterProvider((sp, b) => b.AddMeter("Mapaq.Api"));
+// ---- Enrich the vendored ASP.NET Core (incoming request) instrumentation ----
+// The Distro reads these options from DI. We drop health-probe noise from the
+// trace stream and decorate request spans with client/route detail + exceptions.
+builder.Services.Configure<AspNetCoreTraceInstrumentationOptions>(options =>
+{
+    options.RecordException = true;
+    options.Filter = httpContext =>
+        !httpContext.Request.Path.StartsWithSegments("/healthz");
+    options.EnrichWithHttpRequest = (activity, request) =>
+    {
+        activity.SetTag("http.request.host", request.Host.Value);
+        activity.SetTag("mapaq.client.ip", request.HttpContext.Connection.RemoteIpAddress?.ToString());
+        if (request.Headers.UserAgent.Count > 0)
+        {
+            activity.SetTag("http.user_agent", request.Headers.UserAgent.ToString());
+        }
+    };
+    options.EnrichWithHttpResponse = (activity, response) =>
+        activity.SetTag("http.response.status_code", response.StatusCode);
+    options.EnrichWithException = (activity, exception) =>
+        activity.SetTag("exception.type", exception.GetType().FullName);
+});
+
+// ---- Enrich the vendored HttpClient (outbound dependency) instrumentation ----
+// Makes the API -> Données Québec CKAN edge richer in the Application Map.
+builder.Services.Configure<HttpClientTraceInstrumentationOptions>(options =>
+{
+    options.RecordException = true;
+    options.EnrichWithHttpRequestMessage = (activity, request) =>
+    {
+        if (request.RequestUri is not null)
+        {
+            activity.SetTag("peer.service", request.RequestUri.Host);
+            activity.SetTag("http.request.uri", request.RequestUri.AbsoluteUri);
+        }
+    };
+    options.EnrichWithHttpResponseMessage = (activity, response) =>
+        activity.SetTag("http.response.status_code", (int)response.StatusCode);
+});
+
+builder.Services.ConfigureOpenTelemetryTracerProvider((sp, b) => b
+    .AddSource("Mapaq.Api")
+    .AddProcessor(new TelemetryEnrichmentProcessor(environmentName, serviceVersion)));
+
+// Explicit histogram buckets make the endpoint-latency distribution readable
+// in Metrics Explorer instead of defaulting to a single bucket.
+builder.Services.ConfigureOpenTelemetryMeterProvider((sp, b) => b
+    .AddMeter("Mapaq.Api")
+    .AddView("mapaq.api.endpoint_duration_ms", new ExplicitBucketHistogramConfiguration
+    {
+        Boundaries = new double[] { 5, 10, 25, 50, 100, 250, 500, 1000, 2500, 5000 }
+    }));
 
 // EF Core; SQL spans flow automatically via the Distro-vendored
 // SqlClient instrumentation (see Mapaq.Infrastructure / DD-02).
@@ -116,6 +183,16 @@ app.UseCors("default");
 
 // Health check endpoint — responds instantly for App Service warmup/health probes.
 app.MapGet("/healthz", () => Results.Ok("ok")).ExcludeFromDescription();
+
+// Version endpoint — exposes the SemVer stamped by GitVersion (same value that
+// surfaces as application_Version in Application Insights). Lets the web tier
+// and operators read the running build over HTTP.
+app.MapGet("/api/version", () => Results.Ok(new
+{
+    version     = serviceVersion,
+    environment = environmentName,
+    service     = "Mapaq.Api"
+}));
 
 app.MapOpenApi();
 

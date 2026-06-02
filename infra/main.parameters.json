@@ -6,6 +6,9 @@
     "location":              { "value": "${AZURE_LOCATION=canadacentral}" },
     "sqlAdminLogin":         { "value": "${SQL_ADMIN_LOGIN}" },
     "sqlAdminPrincipalId":   { "value": "${SQL_ADMIN_OBJECT_ID}" },
-    "sqlAdminPrincipalType": { "value": "${SQL_ADMIN_PRINCIPAL_TYPE=Group}" }
+    "sqlAdminPrincipalType": { "value": "${SQL_ADMIN_PRINCIPAL_TYPE=Group}" },
+    "apiImageTag":           { "value": "${API_IMAGE_TAG=latest}" },
+    "webImageTag":           { "value": "${WEB_IMAGE_TAG=latest}" },
+    "acrSku":                { "value": "${ACR_SKU=Basic}" }
   }
 }

@@ -21,22 +21,44 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v5
+        with:
+          # GitVersion needs full history (and tags) to compute the SemVer.
+          fetch-depth: 0
 
       - name: Setup .NET 10
         uses: actions/setup-dotnet@v4
         with:
           dotnet-version: "10.0.x"
 
+      # Compute the semantic version from git history (GitVersion.yml at repo
+      # root → 1.0.0, then patch+1 per commit on main).
+      - name: Install GitVersion
+        uses: gittools/actions/gitversion/setup@v3
+        with:
+          versionSpec: "6.x"
+
+      - name: Determine version
+        id: gitversion
+        uses: gittools/actions/gitversion/execute@v3
+
+      - name: Publish version to job summary
+        run: echo "### Semantic version \`${{ steps.gitversion.outputs.semVer }}\`" >> "$GITHUB_STEP_SUMMARY"
+
       - name: Restore
-        run: dotnet restore
+        run: dotnet restore Mapaq.sln
 
       - name: Build (warnings as errors)
-        run: dotnet build --configuration Release --no-restore /warnaserror
+        run: >-
+          dotnet build Mapaq.sln --configuration Release --no-restore /warnaserror
+          -p:Version=${{ steps.gitversion.outputs.semVer }}
+          -p:InformationalVersion=${{ steps.gitversion.outputs.fullSemVer }}
 
       - name: Test
         run: >-
-          dotnet test --configuration Release --no-build
+          dotnet test Mapaq.sln --configuration Release --no-build
           --logger "trx;LogFileName=test-results.trx"
+          --collect "XPlat Code Coverage"
+          --results-directory ${{ github.workspace }}/coverage
 
       - name: Upload test results
         if: always()
@@ -45,6 +67,32 @@ jobs:
           name: test-results
           path: "**/test-results.trx"
 
+      # Merge per-project Cobertura outputs into a single HTML/MD report and a
+      # combined Cobertura. The MarkdownSummaryGithub format is emitted as the
+      # PR / run job summary so coverage is visible without downloading.
+      - name: Install ReportGenerator
+        if: always()
+        run: dotnet tool install --global dotnet-reportgenerator-globaltool
+
+      - name: Generate coverage report
+        if: always()
+        run: >-
+          reportgenerator
+          -reports:${{ github.workspace }}/coverage/**/coverage.cobertura.xml
+          -targetdir:${{ github.workspace }}/coverage/report
+          "-reporttypes:Cobertura;HtmlInline;MarkdownSummaryGithub"
+
+      - name: Publish coverage summary to job summary
+        if: always()
+        run: cat ${{ github.workspace }}/coverage/report/SummaryGithub.md >> $GITHUB_STEP_SUMMARY
+
+      - name: Upload coverage report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: code-coverage-report
+          path: ${{ github.workspace }}/coverage/report
+
   bicep:
     name: bicep build + what-if
     runs-on: ubuntu-latest
@@ -52,11 +100,6 @@ jobs:
     environment: workshop-dev
     env:
       AZURE_LOCATION: canadacentral
-      # Placeholder GUID used only for what-if template validation in CI.
-      # Real values are supplied by azd at provision time via main.parameters.json.
-      WHATIF_SQL_ADMIN_OBJECT_ID: "00000000-0000-0000-0000-000000000000"
-      WHATIF_SQL_ADMIN_LOGIN: "ci-validation@example.com"
-      WHATIF_SQL_ADMIN_PRINCIPAL_TYPE: "Group"
     steps:
       - name: Checkout
         uses: actions/checkout@v5
@@ -78,19 +121,17 @@ jobs:
         with:
           azcliversion: latest
           inlineScript: |
-            # NOTE: We intentionally do NOT pass infra/main.parameters.json here.
-            # That file uses azd-style ${VAR=default} substitution which Azure CLI
-            # does not expand, causing template validation to fail. Inline
-            # parameters below are sufficient for what-if validation; azd uses
-            # the parameters file at provision time.
             az deployment sub what-if \
               --location "${AZURE_LOCATION}" \
               --template-file infra/main.bicep \
-              --parameters \
-                  environmentName="${AZURE_ENV_NAME:-ci-whatif}" \
-                  location="${AZURE_LOCATION}" \
-                  sqlAdminPrincipalId="${WHATIF_SQL_ADMIN_OBJECT_ID}" \
-                  sqlAdminLogin="${WHATIF_SQL_ADMIN_LOGIN}" \
-                  sqlAdminPrincipalType="${WHATIF_SQL_ADMIN_PRINCIPAL_TYPE}"
+              --parameters infra/main.parameters.json \
+              --parameters environmentName="${AZURE_ENV_NAME:-ci-whatif}" \
+              --parameters location="${AZURE_LOCATION}" \
+              --parameters sqlAdminLogin=azureSqlDBAdmins \
+              --parameters sqlAdminPrincipalId=b817fa2d-6c4b-473b-b82c-1f405f5ef2d8 \
+              --parameters sqlAdminPrincipalType=Group \
+              --parameters apiImageTag=latest \
+              --parameters webImageTag=latest \
+              --parameters acrSku=Basic
         env:
           AZURE_ENV_NAME: ${{ vars.AZURE_ENV_NAME }}

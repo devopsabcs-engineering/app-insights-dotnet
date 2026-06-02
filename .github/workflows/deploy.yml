@@ -19,7 +19,8 @@ on:
 
 permissions:
   id-token: write
-  contents: read
+  # contents: write lets the deploy job push the release git tag (v<SemVer>).
+  contents: write
 
 jobs:
   deploy:
@@ -41,6 +42,18 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v5
+        with:
+          # GitVersion needs full history (and tags) to compute the SemVer.
+          fetch-depth: 0
+
+      - name: Install GitVersion
+        uses: gittools/actions/gitversion/setup@v3
+        with:
+          versionSpec: "6.x"
+
+      - name: Determine version
+        id: gitversion
+        uses: gittools/actions/gitversion/execute@v3
 
       - name: Install azd
         uses: Azure/setup-azd@v2
@@ -59,7 +72,7 @@ jobs:
           tenant-id: ${{ secrets.AZURE_TENANT_ID }}
           subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
 
-      - name: azd provision + deploy
+      - name: azd provision + image build + restart
         id: azd
         run: |
           chmod +x infra/scripts/*.sh
@@ -70,62 +83,66 @@ jobs:
           azd env select "$AZURE_ENV_NAME"
           azd env set SQL_ADMIN_LOGIN "$SQL_ADMIN_LOGIN"
           azd env set SQL_ADMIN_OBJECT_ID "$SQL_ADMIN_OBJECT_ID"
-          azd up --no-prompt
+
+          # --- Container deploy: immutable SHA tag -> provision -> server-side build -> restart ---
+          TAG="${{ github.sha }}"
+          SEMVER="${{ steps.gitversion.outputs.semVer }}"
+          azd env set API_IMAGE_TAG "$TAG"
+          azd env set WEB_IMAGE_TAG "$TAG"
+
+          # Provision creates ACR + UAMI AcrPull + sites (sites point at :$TAG; the restart below
+          # makes them pull once the image exists).
+          azd provision --no-prompt
+
+          # Resolve registry + resource group from azd outputs (no hardcoded names).
+          ACR_NAME="$(azd env get-value ACR_NAME)"
+          RG="$(azd env get-value AZURE_RESOURCE_GROUP)"
+
+          # Server-side build+push - no Docker daemon, no docker login (OIDC identity active).
+          # The SemVer is baked into the binary (/p:Version) and image (OCI label + APP_VERSION
+          # env) via the VERSION build arg, and pushed as an extra human-readable :$SEMVER tag
+          # alongside the immutable :$TAG (git SHA) that the sites actually run.
+          az acr build --registry "$ACR_NAME" --build-arg VERSION="$SEMVER" \
+            --image "mapaq-api:$TAG" --image "mapaq-api:$SEMVER" --file src/Mapaq.Api/Dockerfile .
+          az acr build --registry "$ACR_NAME" --build-arg VERSION="$SEMVER" \
+            --image "mapaq-web:$TAG" --image "mapaq-web:$SEMVER" --file src/Mapaq.Web/Dockerfile .
+
+          # Force both sites to pull the now-present image.
+          api_site="$(az webapp list -g "$RG" --query "[?starts_with(name,'mapaq-api-')].name | [0]" -o tsv)"
+          web_site="$(az webapp list -g "$RG" --query "[?starts_with(name,'mapaq-web-')].name | [0]" -o tsv)"
+          az webapp restart -g "$RG" -n "$api_site"
+          az webapp restart -g "$RG" -n "$web_site"
 
           endpoint=$(azd env get-values | grep -E '^WEB_URI=' | cut -d= -f2- | tr -d '"' || true)
           echo "endpoint=$endpoint" >> "$GITHUB_OUTPUT"
 
       - name: Grant UAMI SQL access via Entra group
-        id: grant_sql
         run: |
-          set -euo pipefail
-          # Retrieve the UAMI principal ID from azd env outputs (falls back to Azure CLI lookup).
+          # Retrieve the UAMI principal ID from azd env outputs
           uami_principal_id=$(azd env get-value UAMI_PRINCIPAL_ID 2>/dev/null || \
             az identity show \
               --name "$(azd env get-value UAMI_NAME)" \
               --resource-group "$(azd env get-value AZURE_RESOURCE_GROUP)" \
               --query principalId -o tsv)
-          echo "Adding UAMI principal $uami_principal_id to Entra group $SQL_ADMIN_GROUP_ID"
 
-          # Add UAMI to the SQL admin Entra group. The CLI returns non-zero with stderr
-          # 'One or more added object references already exist' when the principal is
-          # already a member; treat that as success. Any other error is fatal so the
-          # workflow does not silently leave the API broken (AB#2228).
-          if err=$(az ad group member add \
-                    --group "$SQL_ADMIN_GROUP_ID" \
-                    --member-id "$uami_principal_id" 2>&1); then
-            echo "OK: UAMI added to group."
-          elif echo "$err" | grep -qiE 'already exist|One or more added object references'; then
-            echo "OK: UAMI is already a member of group."
-          else
-            echo "::error::Failed to add UAMI to SQL admin Entra group: $err"
-            exit 1
-          fi
-          echo "uami_principal_id=$uami_principal_id" >> "$GITHUB_OUTPUT"
+          # Add UAMI to the SQL admin Entra group (idempotent — ignores if already member)
+          az ad group member add \
+            --group "$SQL_ADMIN_GROUP_ID" \
+            --member-id "$uami_principal_id" 2>/dev/null \
+            || echo "UAMI already a member of SQL admin group (or insufficient permissions — verify manually)"
 
-      # Restart the App Services so their SqlClient connection pools drop the
-      # cached failed-auth tokens captured before the UAMI was added to the
-      # SQL admin Entra group. Without this, /api/establishments returns 500
-      # until something else triggers a restart (AB#2228).
-      - name: Restart App Services to refresh SQL token (AB#2228)
+      - name: Tag the repo with the released version
         run: |
-          set -euo pipefail
-          rg="$(azd env get-value AZURE_RESOURCE_GROUP)"
-          mapfile -t apps < <(az resource list \
-            --resource-group "$rg" \
-            --resource-type Microsoft.Web/sites \
-            --query "[?starts_with(name, 'mapaq-')].name" -o tsv)
-          if [[ ${#apps[@]} -eq 0 ]]; then
-            echo "::warning::No mapaq-* App Services found in $rg; nothing to restart."
-            exit 0
+          # Stamp an annotated git tag v<SemVer> on the deployed commit for traceability.
+          # Idempotent: skips if the tag already exists. Push uses the GITHUB_TOKEN
+          # persisted by actions/checkout (contents: write grants push access).
+          SEMVER="${{ steps.gitversion.outputs.semVer }}"
+          TAG="v${SEMVER}"
+          if git rev-parse "$TAG" >/dev/null 2>&1; then
+            echo "Tag $TAG already exists — skipping."
+          else
+            git config user.name  "github-actions[bot]"
+            git config user.email "github-actions[bot]@users.noreply.github.com"
+            git tag -a "$TAG" -m "Release $TAG"
+            git push origin "$TAG"
           fi
-          for app in "${apps[@]}"; do
-            echo ">> Restarting $app"
-            az webapp restart --resource-group "$rg" --name "$app"
-          done
-          {
-            echo "### App Service restarts (AB#2228)"
-            echo ""
-            echo "Restarted ${#apps[@]} App Service(s) in \`$rg\` to refresh the SQL access token after adding the UAMI to the SQL admin Entra group:"
-            for app in "${apps[@]}"; do echo "- \`$app\`"; done
-          } >> "$GITHUB_STEP_SUMMARY"

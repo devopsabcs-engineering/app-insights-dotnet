@@ -10,4 +10,16 @@
     -->
     <NuGetAudit>false</NuGetAudit>
   </PropertyGroup>
+
+  <!--
+    Semantic version fallback. Local builds use 1.0.0; CI/CD overrides every
+    version property via GitVersion (GitTools) by passing /p:Version=<SemVer>
+    (and InformationalVersion) to `dotnet build` / `dotnet publish`. The running
+    app reads AssemblyInformationalVersion and reports it to Application Insights
+    as application_Version (service.version). See GitVersion.yml.
+  -->
+  <PropertyGroup>
+    <Version Condition="'$(Version)' == ''">1.0.0</Version>
+    <InformationalVersion Condition="'$(InformationalVersion)' == ''">$(Version)</InformationalVersion>
+  </PropertyGroup>
 </Project>

@@ -26,6 +26,16 @@ param sqlAdminLogin string
 @description('Entra principal type for the SQL admin (User or Group).')
 param sqlAdminPrincipalType string = 'Group'
 
+@description('Container image tag for the mapaq-api site (azd substitutes API_IMAGE_TAG).')
+param apiImageTag string = 'latest'
+
+@description('Container image tag for the mapaq-web site (azd substitutes WEB_IMAGE_TAG).')
+param webImageTag string = 'latest'
+
+@allowed(['Basic', 'Standard', 'Premium'])
+@description('SKU for the Azure Container Registry.')
+param acrSku string = 'Basic'
+
 // Stable token unique per (subscription, env, region) - avoids name collisions across attendees.
 var resourceToken = toLower(uniqueString(subscription().id, environmentName, location))
 
@@ -101,9 +111,6 @@ module sql 'modules/sql.bicep' = {
     sqlAdminLogin: sqlAdminLogin
     sqlAdminPrincipalId: sqlAdminPrincipalId
     sqlAdminPrincipalType: sqlAdminPrincipalType
-    // UAMI clientId is baked into the SQL connection string so the App Service
-    // authenticates as the UAMI (not its SystemAssigned MI) when calling SQL.
-    uamiClientId: id.outputs.clientId
   }
 }
 
@@ -120,6 +127,26 @@ module pe 'modules/privateEndpoints.bicep' = {
   }
 }
 
+module acr 'modules/acr.bicep' = {
+  name: 'acr-${resourceToken}'
+  scope: rg
+  params: {
+    location: location
+    resourceToken: resourceToken
+    tags: tags
+    sku: acrSku
+  }
+}
+
+module acrRoleAssignment 'modules/acrRoleAssignment.bicep' = {
+  name: 'acrra-${resourceToken}'
+  scope: rg
+  params: {
+    acrName: acr.outputs.name
+    uamiPrincipalId: id.outputs.principalId
+  }
+}
+
 module app 'modules/appservice.bicep' = {
   name: 'app-${resourceToken}'
   scope: rg
@@ -133,6 +160,9 @@ module app 'modules/appservice.bicep' = {
     sqlConnectionString: sql.outputs.connectionString
     workspaceId: law.outputs.workspaceId
     appIntegrationSubnetId: vnet.outputs.appIntegrationSubnetId
+    acrLoginServer: acr.outputs.loginServer
+    apiImageTag: apiImageTag
+    webImageTag: webImageTag
   }
 }
 
@@ -167,3 +197,7 @@ output RESOURCE_TOKEN string = resourceToken
 output SQL_DATABASE_NAME string = sql.outputs.dbName
 output UAMI_NAME string = id.outputs.name
 output UAMI_PRINCIPAL_ID string = id.outputs.principalId
+
+// Container registry (consumed by CI: az acr build + azd env get-value)
+output ACR_NAME string = acr.outputs.name
+output ACR_LOGIN_SERVER string = acr.outputs.loginServer

@@ -1,0 +1,15 @@
+**/bin/
+**/obj/
+**/.vs/
+.git/
+.github/
+.azuredevops/
+tests/
+slides/
+docs/
+labs/
+fr/
+.venv-loadtest/
+**/node_modules/
+**/*.user
+.copilot-tracking/

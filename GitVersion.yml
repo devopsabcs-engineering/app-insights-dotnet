@@ -1,0 +1,44 @@
+# GitVersion (GitTools) configuration — automatic Semantic Versioning for the
+# MAPAQ App Insights workshop application.
+#
+# Goal:
+#   * Start at 1.0.0.
+#   * Bump the PATCH by 1 on every commit to main (mainline / trunk-based dev),
+#     so main produces 1.0.0, 1.0.1, 1.0.2, ... with no pre-release suffix.
+#   * Feature branches / pull requests inherit the standard GitHubFlow labels
+#     (e.g. 1.0.1-myfeature.3) so non-main builds never collide with releases.
+#
+# The computed SemVer flows into the .NET assembly version (/p:Version) during
+# `dotnet publish`, is baked into the container images (build arg + OCI label),
+# and surfaces in Application Insights as application_Version via the existing
+# service.version resource attribute (see src/*/Program.cs).
+#
+# To bump the MINOR or MAJOR explicitly add
+#   +semver: minor   /   +semver: major
+# to a commit message. `+semver: skip` skips the patch bump for a commit.
+#
+# The 1.0.0 baseline is anchored by an annotated git tag `v1.0.0` on main (NOT by
+# `next-version`). GitVersion's own docs warn that `next-version` is not a base
+# version: combined with the ConfiguredNextVersion strategy it pins the result to
+# the configured value with VersionSourceIncrement=None, so the patch never
+# advances. Mainline instead walks commits forward from the most recent tag, so
+# the tagged commit is 1.0.0 and every subsequent commit on main becomes 1.0.1,
+# 1.0.2, ... The deploy pipeline pushes a fresh `v<SemVer>` tag after each
+# release, which keeps the version source current and the calculation fast.
+
+workflow: GitHubFlow/v1
+
+# Enable Mainline so each commit on main increments the patch deterministically
+# from the latest tag (ContinuousDelivery alone would not advance the patch).
+strategies:
+  - Fallback
+  - ConfiguredNextVersion
+  - Mainline
+
+branches:
+  main:
+    mode: ContinuousDeployment
+    label: ''
+    increment: Patch
+    regex: ^master$|^main$
+    is-main-branch: true

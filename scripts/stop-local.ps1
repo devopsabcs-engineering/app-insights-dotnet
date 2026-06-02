@@ -4,12 +4,20 @@
 
 .DESCRIPTION
     Finds dotnet processes whose command line references the Mapaq.Api or
-    Mapaq.Web project and terminates them. Safe to re-run.
+    Mapaq.Web project and terminates them, and also tears down the docker compose
+    stack (the default start-local.ps1 flow). Safe to re-run.
 #>
 [CmdletBinding()]
 param()
 
 $ErrorActionPreference = 'Continue'
+
+# Tear down the docker compose stack started by the default start-local.ps1 flow.
+$composeFile = Join-Path (Split-Path -Parent $PSScriptRoot) 'compose.yaml'
+if ((Get-Command docker -ErrorAction SilentlyContinue) -and (Test-Path $composeFile)) {
+    Write-Host "Stopping docker compose stack..." -ForegroundColor Yellow
+    & docker compose -f $composeFile down 2>$null
+}
 
 $targets = @('Mapaq.Api', 'Mapaq.Web')
 $killed = 0

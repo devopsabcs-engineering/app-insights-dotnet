@@ -15,8 +15,9 @@
         tests/ui/test-results/raw/              — traces / videos for failures
 
 .PARAMETER WebUrl
-    Base URL the Razor pages are served from. Defaults to https://localhost:7010.
-    Pass an https://*.azurewebsites.net URL to test the deployed app.
+    Base URL the Razor pages are served from. Defaults to http://localhost:5010
+    (Mapaq.Web running as a container). Pass an https://*.azurewebsites.net URL
+    to test the deployed app.
 
 .PARAMETER Headed
     Run Chromium in headed mode so you can watch the browser drive the page.
@@ -34,10 +35,18 @@
 
 .PARAMETER SkipAutoStart
     Do not auto-start Mapaq.Web when the target is localhost and unreachable.
+    By default the auto-start launches the apps as containers via
+    scripts/start-local.ps1, which resolves the Application Insights connection
+    string from the azd environment so the app under test emits telemetry to
+    the real Azure App Insights resource.
+
+.PARAMETER NoReport
+    Skip auto-opening the Playwright HTML report (with screenshots) after the
+    run. By default the report opens in your browser when the run finishes.
 
 .EXAMPLE
     pwsh ./scripts/run-ui-tests.ps1
-    # Default: https://localhost:7010, headless, all tests
+    # Default: http://localhost:5010 (containers), headless, all tests
 
 .EXAMPLE
     pwsh ./scripts/run-ui-tests.ps1 -Headed -Grep Rollup
@@ -49,12 +58,13 @@
 #>
 [CmdletBinding()]
 param(
-    [string]$WebUrl = 'https://localhost:7010',
+    [string]$WebUrl = 'http://localhost:5010',
     [switch]$Headed,
     [switch]$UI,
     [string]$Grep,
     [switch]$Reinstall,
-    [switch]$SkipAutoStart
+    [switch]$SkipAutoStart,
+    [switch]$NoReport
 )
 
 $ErrorActionPreference = 'Stop'
@@ -109,9 +119,9 @@ try {
     if ($isLocalhost -and -not $SkipAutoStart -and -not (Test-WebUp -Url $WebUrl)) {
         $startScript = Join-Path $RepoRoot 'scripts/start-local.ps1'
         if (Test-Path $startScript) {
-            Write-Host "Mapaq.Web not detected on $WebUrl. Starting local apps..." -ForegroundColor Yellow
+            Write-Host "Mapaq.Web not detected on $WebUrl. Starting local apps as containers..." -ForegroundColor Yellow
             & $startScript -NoBrowser
-            $deadline = (Get-Date).AddSeconds(60)
+            $deadline = (Get-Date).AddSeconds(120)
             while ((Get-Date) -lt $deadline -and -not (Test-WebUp -Url $WebUrl)) {
                 Start-Sleep -Seconds 2
             }
@@ -147,14 +157,30 @@ try {
     $reportPath = Join-Path $UiDir 'playwright-report/index.html'
     if (Test-Path $reportPath) {
         Write-Host "HTML report: $reportPath" -ForegroundColor Cyan
-        if ($exit -ne 0 -and -not $UI) {
-            Write-Host "Open the HTML report:    npx playwright show-report" -ForegroundColor Yellow
-        }
     }
     $screenshotDir = Join-Path $UiDir 'screenshots'
     if (Test-Path $screenshotDir) {
         $count = (Get-ChildItem -Path $screenshotDir -Filter '*.png' -ErrorAction SilentlyContinue).Count
         Write-Host "Screenshots ($count): $screenshotDir" -ForegroundColor Cyan
+    }
+
+    # Auto-open the HTML report (includes screenshots / traces) unless suppressed
+    # or running in interactive UI mode (which already opens its own window).
+    # `playwright show-report` serves the report and opens the browser; it runs
+    # a blocking server, so launch it detached so this script can still exit.
+    if (-not $NoReport -and -not $UI -and (Test-Path $reportPath)) {
+        Write-Host "Opening the Playwright HTML report (Ctrl+C in its window to stop the server)..." -ForegroundColor Green
+        try {
+            # On Windows, 'npx' resolves to 'npx.ps1' and Start-Process opens it
+            # in Notepad via file association instead of executing it. Launch the
+            # platform-appropriate executable shim so the report server actually runs.
+            $npxExe = if ($IsWindows) { 'npx.cmd' } else { 'npx' }
+            Start-Process -FilePath $npxExe `
+                -ArgumentList @('--no-install', 'playwright', 'show-report') `
+                -WorkingDirectory $UiDir
+        } catch {
+            Write-Warning "Could not auto-open the report. Run manually: npx playwright show-report"
+        }
     }
 
     exit $exit

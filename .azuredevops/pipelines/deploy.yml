@@ -13,12 +13,14 @@ pr: none
 
 # Pipeline-completion trigger: deploy starts only when the `ci` pipeline
 # finishes successfully on `main`. The `source:` value MUST match the
-# pipeline definition name registered in Azure DevOps for ci.yml. Update
-# it here if the ADO pipeline is registered under a different name.
+# pipeline definition name registered in Azure DevOps for ci.yml (confirmed
+# via `az pipelines list` on 2026-06-01: `app-insights-dotnet-ci`).
+# The `pipeline:` alias (`ci`) is local to this file and used for any
+# downstream `pipeline.<alias>.*` references.
 resources:
   pipelines:
     - pipeline: ci
-      source: ci
+      source: app-insights-dotnet-ci
       trigger:
         branches:
           include:
@@ -50,6 +52,15 @@ variables:
 stages:
   - stage: Deploy
     displayName: Deploy to workshop-dev
+    # Serialize deploys: only one run of this stage may execute at a time, and
+    # if multiple commits land on main while a deploy is in flight, queued runs
+    # collapse to just the latest. This prevents the DeploymentActive race we
+    # hit when back-to-back CI completions (e.g. PR merges close together)
+    # both started `azd provision` and clashed on the same ARM deployment
+    # names (pe-<token>, etc.) inside rg-dev-001.
+    # Requires the `workshop-dev` ADO environment to have the "Exclusive lock"
+    # check enabled (Environments > workshop-dev > Approvals and checks).
+    lockBehavior: runLatest
     jobs:
       - deployment: deploy_workshop_dev
         displayName: azd up (workshop-dev)
@@ -59,9 +70,34 @@ stages:
             deploy:
               steps:
                 - checkout: self
+                  # GitVersion needs full git history (and tags) to compute the SemVer.
+                  fetchDepth: 0
+                  # Keep the System.AccessToken-backed git credential so the tag
+                  # step below can push v<SemVer> back to the repo.
+                  persistCredentials: true
+
+                - task: gitversion/setup@3
+                  displayName: Install GitVersion
+                  inputs:
+                    versionSpec: '6.x'
+
+                # Invoke the dotnet-gitversion CLI directly rather than
+                # gitversion/execute@3: that task double-writes each output
+                # variable, which the Azure Pipelines agent rejects as
+                # "Overwriting readonly variable" (GitTools/actions#1400).
+                - script: |
+                    set -euo pipefail
+                    gv="$(dotnet-gitversion /output json)"
+                    echo "$gv"
+                    semVer="$(echo "$gv" | jq -r '.SemVer')"
+                    fullSemVer="$(echo "$gv" | jq -r '.FullSemVer')"
+                    echo "##vso[task.setvariable variable=GitVersion.SemVer]$semVer"
+                    echo "##vso[task.setvariable variable=GitVersion.FullSemVer]$fullSemVer"
+                    echo "##vso[build.updatebuildnumber]$fullSemVer"
+                  displayName: Determine version
 
                 - task: AzureCLI@2
-                  displayName: azd auth login + azd up (WIF)
+                  displayName: azd auth login + provision + image build (WIF)
                   env:
                     # azd's azure-pipelines federated provider exchanges this token for an Entra access token.
                     SYSTEM_ACCESSTOKEN: $(System.AccessToken)
@@ -107,7 +143,34 @@ stages:
                       azd env set SQL_ADMIN_OBJECT_ID "$SQL_ADMIN_OBJECT_ID"
                       azd env set SQL_ADMIN_PRINCIPAL_TYPE "$SQL_ADMIN_PRINCIPAL_TYPE"
 
-                      azd up --no-prompt
+                      # --- Container deploy: immutable SHA tag -> provision -> server-side image build -> restart ---
+                      TAG="$(Build.SourceVersion)"           # immutable git SHA
+                      SEMVER="$(GitVersion.SemVer)"          # semantic version (GitVersion.yml)
+                      azd env set API_IMAGE_TAG "$TAG"
+                      azd env set WEB_IMAGE_TAG "$TAG"
+
+                      # Provision creates ACR + UAMI AcrPull + sites (sites point at :$TAG; the first
+                      # start fails until the image exists - the restart below resolves it).
+                      azd provision --no-prompt
+
+                      # Resolve registry + resource group from azd outputs (no hardcoded names).
+                      ACR_NAME="$(azd env get-value ACR_NAME --environment "$AZD_ENV_NAME")"
+                      RG="$(azd env get-value AZURE_RESOURCE_GROUP --environment "$AZD_ENV_NAME")"
+
+                      # Server-side build+push - no Docker daemon, no docker login (WIF identity active).
+                      # The SemVer is baked into the binary (/p:Version) and image (OCI label +
+                      # APP_VERSION env) via the VERSION build arg, and pushed as an extra
+                      # human-readable :$SEMVER tag alongside the immutable :$TAG (git SHA).
+                      az acr build --registry "$ACR_NAME" --build-arg VERSION="$SEMVER" \
+                        --image "mapaq-api:$TAG" --image "mapaq-api:$SEMVER" --file src/Mapaq.Api/Dockerfile .
+                      az acr build --registry "$ACR_NAME" --build-arg VERSION="$SEMVER" \
+                        --image "mapaq-web:$TAG" --image "mapaq-web:$SEMVER" --file src/Mapaq.Web/Dockerfile .
+
+                      # Force both sites to pull the now-present image.
+                      API_SITE="$(az webapp list -g "$RG" --query "[?starts_with(name,'mapaq-api-')].name | [0]" -o tsv)"
+                      WEB_SITE="$(az webapp list -g "$RG" --query "[?starts_with(name,'mapaq-web-')].name | [0]" -o tsv)"
+                      az webapp restart -g "$RG" -n "$API_SITE"
+                      az webapp restart -g "$RG" -n "$WEB_SITE"
 
                 - task: AzureCLI@2
                   displayName: Grant UAMI dbo via Entra group (idempotent)
@@ -148,3 +211,23 @@ stages:
                         echo ">> Restarting $WEB_API"
                         az webapp restart -g "$(azd env get-value AZURE_RESOURCE_GROUP --environment "$AZD_ENV_NAME")" -n "$WEB_API"
                       fi
+
+                - script: |
+                    set -euo pipefail
+                    # Stamp an annotated git tag v<SemVer> on the deployed commit for
+                    # traceability. Idempotent: skips if the tag already exists. Push uses
+                    # the System.AccessToken credential persisted by checkout above (the
+                    # build service identity needs Contribute on the repo).
+                    SEMVER="$(GitVersion.SemVer)"
+                    TAG="v${SEMVER}"
+                    if git rev-parse "$TAG" >/dev/null 2>&1; then
+                      echo "Tag $TAG already exists — skipping."
+                    else
+                      git config user.name  "Azure DevOps Pipeline"
+                      git config user.email "pipeline@dev.azure.com"
+                      git tag -a "$TAG" -m "Release $TAG"
+                      git push origin "$TAG"
+                    fi
+                  displayName: Tag the repo with the released version
+                  env:
+                    SYSTEM_ACCESSTOKEN: $(System.AccessToken)

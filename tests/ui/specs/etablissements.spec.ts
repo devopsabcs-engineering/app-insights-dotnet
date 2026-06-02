@@ -1,8 +1,9 @@
 import { expect, test } from '@playwright/test';
-import { captureScreenshot, setCulture } from './helpers';
+import { blockTelemetry, captureScreenshot, setCulture } from './helpers';
 
 test.describe('Establishments search', () => {
   test.beforeEach(async ({ page }) => {
+    await blockTelemetry(page);
     await setCulture(page, 'en-CA', '/');
   });
 

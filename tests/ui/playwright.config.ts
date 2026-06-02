@@ -4,7 +4,9 @@ import { defineConfig, devices } from '@playwright/test';
  * Playwright configuration for the Mapaq.Web Razor pages.
  *
  * Targets `https://localhost:7010` by default so `npx playwright test`
- * just works once `pwsh ./scripts/start-local.ps1` is running. Override the
+ * just works once `pwsh ./scripts/start-local.ps1 -NoContainer` is running
+ * (the default container flow serves the web app on `http://localhost:5010` —
+ * set `MAPAQ_WEB_URL=http://localhost:5010` to target it). Override the
  * base URL via the MAPAQ_WEB_URL environment variable when pointing at a
  * deployed App Service:
  *

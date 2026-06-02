@@ -5,7 +5,7 @@
     "_generator": {
       "name": "bicep",
       "version": "0.42.1.51946",
-      "templateHash": "7313226855405287471"
+      "templateHash": "14166073093141293916"
     }
   },
   "parameters": {
@@ -45,6 +45,32 @@
       ],
       "metadata": {
         "description": "Entra principal type for the SQL admin (User or Group)."
+      }
+    },
+    "apiImageTag": {
+      "type": "string",
+      "defaultValue": "latest",
+      "metadata": {
+        "description": "Container image tag for the mapaq-api site (azd substitutes API_IMAGE_TAG)."
+      }
+    },
+    "webImageTag": {
+      "type": "string",
+      "defaultValue": "latest",
+      "metadata": {
+        "description": "Container image tag for the mapaq-web site (azd substitutes WEB_IMAGE_TAG)."
+      }
+    },
+    "acrSku": {
+      "type": "string",
+      "defaultValue": "Basic",
+      "allowedValues": [
+        "Basic",
+        "Standard",
+        "Premium"
+      ],
+      "metadata": {
+        "description": "SKU for the Azure Container Registry."
       }
     }
   },
@@ -334,7 +360,7 @@
             "_generator": {
               "name": "bicep",
               "version": "0.42.1.51946",
-              "templateHash": "3376876714248135532"
+              "templateHash": "2510861096037824054"
             }
           },
           "parameters": {
@@ -352,7 +378,7 @@
             {
               "type": "Microsoft.KeyVault/vaults",
               "apiVersion": "2024-04-01-preview",
-              "name": "[format('kvw{0}', parameters('resourceToken'))]",
+              "name": "[format('kv{0}', parameters('resourceToken'))]",
               "location": "[parameters('location')]",
               "tags": "[parameters('tags')]",
               "properties": {
@@ -363,7 +389,8 @@
                 },
                 "enableRbacAuthorization": true,
                 "enableSoftDelete": true,
-                "softDeleteRetentionInDays": 7,
+                "softDeleteRetentionInDays": 90,
+                "enablePurgeProtection": true,
                 "publicNetworkAccess": "Disabled",
                 "networkAcls": {
                   "bypass": "AzureServices",
@@ -375,15 +402,15 @@
           "outputs": {
             "name": {
               "type": "string",
-              "value": "[format('kvw{0}', parameters('resourceToken'))]"
+              "value": "[format('kv{0}', parameters('resourceToken'))]"
             },
             "id": {
               "type": "string",
-              "value": "[resourceId('Microsoft.KeyVault/vaults', format('kvw{0}', parameters('resourceToken')))]"
+              "value": "[resourceId('Microsoft.KeyVault/vaults', format('kv{0}', parameters('resourceToken')))]"
             },
             "uri": {
               "type": "string",
-              "value": "[reference(resourceId('Microsoft.KeyVault/vaults', format('kvw{0}', parameters('resourceToken'))), '2024-04-01-preview').vaultUri]"
+              "value": "[reference(resourceId('Microsoft.KeyVault/vaults', format('kv{0}', parameters('resourceToken'))), '2024-04-01-preview').vaultUri]"
             }
           }
         }
@@ -551,9 +578,6 @@
           },
           "sqlAdminPrincipalType": {
             "value": "[parameters('sqlAdminPrincipalType')]"
-          },
-          "uamiClientId": {
-            "value": "[reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, format('rg-{0}', parameters('environmentName'))), 'Microsoft.Resources/deployments', format('id-{0}', variables('resourceToken'))), '2025-04-01').outputs.clientId.value]"
           }
         },
         "template": {
@@ -563,7 +587,7 @@
             "_generator": {
               "name": "bicep",
               "version": "0.42.1.51946",
-              "templateHash": "4310111561129253893"
+              "templateHash": "3086284193355670669"
             }
           },
           "parameters": {
@@ -591,12 +615,6 @@
               ],
               "metadata": {
                 "description": "Entra principal type for the SQL admin (User or Group)."
-              }
-            },
-            "uamiClientId": {
-              "type": "string",
-              "metadata": {
-                "description": "Client ID (appId) of the workshop UAMI used by the App Service for passwordless SQL auth."
               }
             }
           },
@@ -679,13 +697,12 @@
             },
             "connectionString": {
               "type": "string",
-              "value": "[format('Server=tcp:{0},1433;Database={1};Authentication=Active Directory Managed Identity;User Id={2};Encrypt=True;TrustServerCertificate=False;', reference(resourceId('Microsoft.Sql/servers', variables('serverName')), '2023-08-01-preview').fullyQualifiedDomainName, variables('dbName'), parameters('uamiClientId'))]"
+              "value": "[format('Server=tcp:{0},1433;Database={1};Authentication=Active Directory Default;Encrypt=True;TrustServerCertificate=False;', reference(resourceId('Microsoft.Sql/servers', variables('serverName')), '2023-08-01-preview').fullyQualifiedDomainName, variables('dbName'))]"
             }
           }
         }
       },
       "dependsOn": [
-        "[extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, format('rg-{0}', parameters('environmentName'))), 'Microsoft.Resources/deployments', format('id-{0}', variables('resourceToken')))]",
         "[subscriptionResourceId('Microsoft.Resources/resourceGroups', format('rg-{0}', parameters('environmentName')))]"
       ]
     },
@@ -826,6 +843,160 @@
     {
       "type": "Microsoft.Resources/deployments",
       "apiVersion": "2025-04-01",
+      "name": "[format('acr-{0}', variables('resourceToken'))]",
+      "resourceGroup": "[format('rg-{0}', parameters('environmentName'))]",
+      "properties": {
+        "expressionEvaluationOptions": {
+          "scope": "inner"
+        },
+        "mode": "Incremental",
+        "parameters": {
+          "location": {
+            "value": "[parameters('location')]"
+          },
+          "resourceToken": {
+            "value": "[variables('resourceToken')]"
+          },
+          "tags": {
+            "value": "[variables('tags')]"
+          },
+          "sku": {
+            "value": "[parameters('acrSku')]"
+          }
+        },
+        "template": {
+          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+          "contentVersion": "1.0.0.0",
+          "metadata": {
+            "_generator": {
+              "name": "bicep",
+              "version": "0.42.1.51946",
+              "templateHash": "3887538796999504881"
+            }
+          },
+          "parameters": {
+            "location": {
+              "type": "string",
+              "metadata": {
+                "description": "Azure Container Registry for MAPAQ workshop images."
+              }
+            },
+            "tags": {
+              "type": "object"
+            },
+            "resourceToken": {
+              "type": "string"
+            },
+            "sku": {
+              "type": "string",
+              "defaultValue": "Basic",
+              "allowedValues": [
+                "Basic",
+                "Standard",
+                "Premium"
+              ]
+            }
+          },
+          "resources": [
+            {
+              "type": "Microsoft.ContainerRegistry/registries",
+              "apiVersion": "2025-04-01",
+              "name": "[format('acr{0}', parameters('resourceToken'))]",
+              "location": "[parameters('location')]",
+              "tags": "[parameters('tags')]",
+              "sku": {
+                "name": "[parameters('sku')]"
+              },
+              "properties": {
+                "adminUserEnabled": false,
+                "anonymousPullEnabled": false,
+                "publicNetworkAccess": "Enabled"
+              }
+            }
+          ],
+          "outputs": {
+            "id": {
+              "type": "string",
+              "value": "[resourceId('Microsoft.ContainerRegistry/registries', format('acr{0}', parameters('resourceToken')))]"
+            },
+            "name": {
+              "type": "string",
+              "value": "[format('acr{0}', parameters('resourceToken'))]"
+            },
+            "loginServer": {
+              "type": "string",
+              "value": "[reference(resourceId('Microsoft.ContainerRegistry/registries', format('acr{0}', parameters('resourceToken'))), '2025-04-01').loginServer]"
+            }
+          }
+        }
+      },
+      "dependsOn": [
+        "[subscriptionResourceId('Microsoft.Resources/resourceGroups', format('rg-{0}', parameters('environmentName')))]"
+      ]
+    },
+    {
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2025-04-01",
+      "name": "[format('acrra-{0}', variables('resourceToken'))]",
+      "resourceGroup": "[format('rg-{0}', parameters('environmentName'))]",
+      "properties": {
+        "expressionEvaluationOptions": {
+          "scope": "inner"
+        },
+        "mode": "Incremental",
+        "parameters": {
+          "acrName": {
+            "value": "[reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, format('rg-{0}', parameters('environmentName'))), 'Microsoft.Resources/deployments', format('acr-{0}', variables('resourceToken'))), '2025-04-01').outputs.name.value]"
+          },
+          "uamiPrincipalId": {
+            "value": "[reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, format('rg-{0}', parameters('environmentName'))), 'Microsoft.Resources/deployments', format('id-{0}', variables('resourceToken'))), '2025-04-01').outputs.principalId.value]"
+          }
+        },
+        "template": {
+          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+          "contentVersion": "1.0.0.0",
+          "metadata": {
+            "_generator": {
+              "name": "bicep",
+              "version": "0.42.1.51946",
+              "templateHash": "10650993268811710143"
+            }
+          },
+          "parameters": {
+            "acrName": {
+              "type": "string"
+            },
+            "uamiPrincipalId": {
+              "type": "string"
+            }
+          },
+          "variables": {
+            "acrPullRoleId": "7f951dda-4ed3-4680-a7ca-43fe172d538d"
+          },
+          "resources": [
+            {
+              "type": "Microsoft.Authorization/roleAssignments",
+              "apiVersion": "2022-04-01",
+              "scope": "[resourceId('Microsoft.ContainerRegistry/registries', parameters('acrName'))]",
+              "name": "[guid(resourceId('Microsoft.ContainerRegistry/registries', parameters('acrName')), parameters('uamiPrincipalId'), variables('acrPullRoleId'))]",
+              "properties": {
+                "principalId": "[parameters('uamiPrincipalId')]",
+                "principalType": "ServicePrincipal",
+                "roleDefinitionId": "[subscriptionResourceId('Microsoft.Authorization/roleDefinitions', variables('acrPullRoleId'))]"
+              }
+            }
+          ]
+        }
+      },
+      "dependsOn": [
+        "[extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, format('rg-{0}', parameters('environmentName'))), 'Microsoft.Resources/deployments', format('acr-{0}', variables('resourceToken')))]",
+        "[extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, format('rg-{0}', parameters('environmentName'))), 'Microsoft.Resources/deployments', format('id-{0}', variables('resourceToken')))]",
+        "[subscriptionResourceId('Microsoft.Resources/resourceGroups', format('rg-{0}', parameters('environmentName')))]"
+      ]
+    },
+    {
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2025-04-01",
       "name": "[format('app-{0}', variables('resourceToken'))]",
       "resourceGroup": "[format('rg-{0}', parameters('environmentName'))]",
       "properties": {
@@ -860,6 +1031,15 @@
           },
           "appIntegrationSubnetId": {
             "value": "[reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, format('rg-{0}', parameters('environmentName'))), 'Microsoft.Resources/deployments', format('vnet-{0}', variables('resourceToken'))), '2025-04-01').outputs.appIntegrationSubnetId.value]"
+          },
+          "acrLoginServer": {
+            "value": "[reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, format('rg-{0}', parameters('environmentName'))), 'Microsoft.Resources/deployments', format('acr-{0}', variables('resourceToken'))), '2025-04-01').outputs.loginServer.value]"
+          },
+          "apiImageTag": {
+            "value": "[parameters('apiImageTag')]"
+          },
+          "webImageTag": {
+            "value": "[parameters('webImageTag')]"
           }
         },
         "template": {
@@ -869,7 +1049,7 @@
             "_generator": {
               "name": "bicep",
               "version": "0.42.1.51946",
-              "templateHash": "7195578690212257731"
+              "templateHash": "9245036524674341500"
             }
           },
           "parameters": {
@@ -898,6 +1078,15 @@
               "type": "string"
             },
             "appIntegrationSubnetId": {
+              "type": "string"
+            },
+            "acrLoginServer": {
+              "type": "string"
+            },
+            "apiImageTag": {
+              "type": "string"
+            },
+            "webImageTag": {
               "type": "string"
             }
           },
@@ -961,7 +1150,9 @@
                 "virtualNetworkSubnetId": "[parameters('appIntegrationSubnetId')]",
                 "vnetRouteAllEnabled": true,
                 "siteConfig": {
-                  "linuxFxVersion": "DOTNETCORE|10.0",
+                  "linuxFxVersion": "[format('DOCKER|{0}/mapaq-web:{1}', parameters('acrLoginServer'), parameters('webImageTag'))]",
+                  "acrUseManagedIdentityCreds": true,
+                  "acrUserManagedIdentityID": "[parameters('uamiClientId')]",
                   "alwaysOn": true,
                   "ftpsState": "Disabled",
                   "minTlsVersion": "1.2",
@@ -971,7 +1162,7 @@
                       "*"
                     ]
                   },
-                  "appSettings": "[union(variables('commonAppSettings'), createArray(createObject('name', 'OTEL_RESOURCE_ATTRIBUTES', 'value', 'service.name=mapaq-web,service.namespace=mapaq,service.version=1.0.0'), createObject('name', 'MapaqApi__BaseAddress', 'value', format('https://mapaq-api-{0}.azurewebsites.net/', parameters('resourceToken'))), createObject('name', 'WEBSITE_DNS_SERVER', 'value', '168.63.129.16')))]"
+                  "appSettings": "[union(variables('commonAppSettings'), createArray(createObject('name', 'OTEL_RESOURCE_ATTRIBUTES', 'value', 'service.name=mapaq-web,service.namespace=mapaq,service.version=1.0.0'), createObject('name', 'MapaqApi__BaseAddress', 'value', format('https://mapaq-api-{0}.azurewebsites.net/', parameters('resourceToken'))), createObject('name', 'WEBSITE_DNS_SERVER', 'value', '168.63.129.16'), createObject('name', 'DOCKER_REGISTRY_SERVER_URL', 'value', format('https://{0}', parameters('acrLoginServer'))), createObject('name', 'WEBSITES_PORT', 'value', '8080')))]"
                 }
               },
               "dependsOn": [
@@ -997,7 +1188,9 @@
                 "virtualNetworkSubnetId": "[parameters('appIntegrationSubnetId')]",
                 "vnetRouteAllEnabled": true,
                 "siteConfig": {
-                  "linuxFxVersion": "DOTNETCORE|10.0",
+                  "linuxFxVersion": "[format('DOCKER|{0}/mapaq-api:{1}', parameters('acrLoginServer'), parameters('apiImageTag'))]",
+                  "acrUseManagedIdentityCreds": true,
+                  "acrUserManagedIdentityID": "[parameters('uamiClientId')]",
                   "alwaysOn": true,
                   "ftpsState": "Disabled",
                   "minTlsVersion": "1.2",
@@ -1007,7 +1200,7 @@
                       "*"
                     ]
                   },
-                  "appSettings": "[union(variables('commonAppSettings'), createArray(createObject('name', 'OTEL_RESOURCE_ATTRIBUTES', 'value', 'service.name=mapaq-api,service.namespace=mapaq,service.version=1.0.0'), createObject('name', 'WebOrigin', 'value', format('https://mapaq-web-{0}.azurewebsites.net', parameters('resourceToken'))), createObject('name', 'WEBSITE_DNS_SERVER', 'value', '168.63.129.16')))]"
+                  "appSettings": "[union(variables('commonAppSettings'), createArray(createObject('name', 'OTEL_RESOURCE_ATTRIBUTES', 'value', 'service.name=mapaq-api,service.namespace=mapaq,service.version=1.0.0'), createObject('name', 'WebOrigin', 'value', format('https://mapaq-web-{0}.azurewebsites.net', parameters('resourceToken'))), createObject('name', 'WEBSITE_DNS_SERVER', 'value', '168.63.129.16'), createObject('name', 'DOCKER_REGISTRY_SERVER_URL', 'value', format('https://{0}', parameters('acrLoginServer'))), createObject('name', 'WEBSITES_PORT', 'value', '8080')))]"
                 }
               },
               "dependsOn": [
@@ -1084,6 +1277,7 @@
         }
       },
       "dependsOn": [
+        "[extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, format('rg-{0}', parameters('environmentName'))), 'Microsoft.Resources/deployments', format('acr-{0}', variables('resourceToken')))]",
         "[extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, format('rg-{0}', parameters('environmentName'))), 'Microsoft.Resources/deployments', format('ai-{0}', variables('resourceToken')))]",
         "[extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, format('rg-{0}', parameters('environmentName'))), 'Microsoft.Resources/deployments', format('id-{0}', variables('resourceToken')))]",
         "[extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, format('rg-{0}', parameters('environmentName'))), 'Microsoft.Resources/deployments', format('law-{0}', variables('resourceToken')))]",
@@ -1220,6 +1414,14 @@
     "UAMI_PRINCIPAL_ID": {
       "type": "string",
       "value": "[reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, format('rg-{0}', parameters('environmentName'))), 'Microsoft.Resources/deployments', format('id-{0}', variables('resourceToken'))), '2025-04-01').outputs.principalId.value]"
+    },
+    "ACR_NAME": {
+      "type": "string",
+      "value": "[reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, format('rg-{0}', parameters('environmentName'))), 'Microsoft.Resources/deployments', format('acr-{0}', variables('resourceToken'))), '2025-04-01').outputs.name.value]"
+    },
+    "ACR_LOGIN_SERVER": {
+      "type": "string",
+      "value": "[reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, format('rg-{0}', parameters('environmentName'))), 'Microsoft.Resources/deployments', format('acr-{0}', variables('resourceToken'))), '2025-04-01').outputs.loginServer.value]"
     }
   }
 }
