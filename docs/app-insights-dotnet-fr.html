@@ -3,9 +3,9 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Application Insights pour .NET 10 — Atelier bilingue</title>
-  <meta name="description" content="Corrélation de bout en bout navigateur → web → API → SQL avec Azure Application Insights et OpenTelemetry">
-  <meta name="author" content="Microsoft Canada · Atelier MAPAQ">
+  <title>Moderniser les applications d&#39;entreprise avec les plateformes applicatives</title>
+  <meta name="description" content="Atelier pratique d&#39;une journée — App Service, conteneurs, low-code + IA, agent de modernisation .NET GitHub Copilot et observabilité avec Application Insights">
+  <meta name="author" content="Microsoft Canada · Atelier de modernisation MAPAQ">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -326,427 +326,926 @@ pre code { background: transparent; border: none; padding: 0; color: inherit; }
   </div>
 <div class="hero">
     <div class="hero-badge">Observabilité — .NET 10 sur Azure</div>
-    <h1>Application Insights pour .NET 10 — Atelier bilingue</h1>
-    <p class="subtitle">Corrélation de bout en bout navigateur → web → API → SQL avec Azure Application Insights et OpenTelemetry</p>
+    <h1>Moderniser les applications d&#39;entreprise avec les plateformes applicatives</h1>
+    <p class="subtitle">Atelier pratique d&#39;une journée — App Service, conteneurs, low-code + IA, agent de modernisation .NET GitHub Copilot et observabilité avec Application Insights</p>
     <p class="hero-meta">📅 2026<span> · </span>👤 Microsoft Canada<span> · </span>🏢 Atelier MAPAQ</p>
   </div>
 <nav class="toc" aria-label="Sommaire">
     <details class="toc-details">
       <summary>Sommaire</summary>
       <div class="toc-inner">
-      <a href="#sec1">Application Insights pour .NET 10</a>
-      <a href="#sec2">Ordre du jour — six modules</a>
-      <a href="#sec3">Objectifs d&#39;apprentissage</a>
-      <a href="#sec4">Module 0 — Prérequis</a>
-      <a href="#sec5">Architecture cible</a>
-      <a href="#sec6">Module 1 — Provisionnement (azd up)</a>
-      <a href="#sec7">Modules Bicep de l&#39;atelier</a>
-      <a href="#sec8">Module 2 — Auto-instrumentation Web</a>
-      <a href="#sec9">Ce que vous devriez voir en 60 secondes</a>
-      <a href="#sec10">Module 3 — Instrumentation API + SQL</a>
-      <a href="#sec11">W3C Trace Context — traceparent</a>
-      <a href="#sec12">Trace de bout en bout — la pièce maîtresse</a>
-      <a href="#sec13">Module 4 — Corrélation côté navigateur</a>
-      <a href="#sec14">SDK navigateur — configuration minimale</a>
-      <a href="#sec15">Module 5 — Application Map</a>
-      <a href="#sec16">KQL — une seule requête, un seul operation_Id</a>
-      <a href="#sec17">Requête KQL — copier / coller</a>
-      <a href="#sec18">Live Metrics — l&#39;effet whaouh</a>
-      <a href="#sec19">Workbook — synthèse SLO bilingue</a>
-      <a href="#sec20">Alertes intelligentes — anomalies de panne</a>
-      <a href="#sec21">Maîtrise des coûts — sans surprise</a>
-      <a href="#sec22">Liste de dépannage</a>
-      <a href="#sec23">Module 6 — Démantèlement</a>
-      <a href="#sec24">Références</a>
-      <a href="#sec25">Merci · Thank you</a>
+      <a href="#sec1">Moderniser les applications d&#39;entreprise avec les plateformes applicatives</a>
+      <a href="#sec2">Ordre du jour — une journée, huit blocs</a>
+      <a href="#sec3">Ce que vous saurez faire</a>
+      <a href="#sec4">Qui est dans la salle</a>
+      <a href="#sec5">Les compétences numériques de la transformation</a>
+      <a href="#sec6">Un plan de montée en compétences par persona</a>
+      <a href="#sec7">Habiliter les rôles pour les Défis Cloud</a>
+      <a href="#sec8">De nouvelles façons de travailler</a>
+      <a href="#sec9">Ce que « modernisation » signifie vraiment</a>
+      <a href="#sec10">Pourquoi moderniser maintenant</a>
+      <a href="#sec11">Le paysage des plateformes applicatives Azure</a>
+      <a href="#sec12">La stratégie de modernisation — les 5 R</a>
+      <a href="#sec13">Prendre une décision éclairée</a>
+      <a href="#sec14">MAPAQ — notre architecture de référence</a>
+      <a href="#sec15">Accélérer avec le low-code + l&#39;IA</a>
+      <a href="#sec16">GitHub Copilot dans VS Code</a>
+      <a href="#sec17">Modernisation d&#39;applications .NET avec GitHub Copilot</a>
+      <a href="#sec18">Comment fonctionne l&#39;agent de modernisation</a>
+      <a href="#sec19">Démo — exécuter l&#39;agent de modernisation .NET</a>
+      <a href="#sec20">Module 4 — Provisionnement (azd up)</a>
+      <a href="#sec21">Infrastructure as code — modules Bicep</a>
+      <a href="#sec22">Ce qui est réellement déployé — rg-dev-001</a>
+      <a href="#sec23">Le panneau App Service — une carte</a>
+      <a href="#sec24">App Service — les paramètres qui comptent</a>
+      <a href="#sec25">Configuration et variables d&#39;environnement</a>
+      <a href="#sec26">Environnements et emplacements de déploiement</a>
+      <a href="#sec27">Exécuter .NET en conteneurs sur App Service</a>
+      <a href="#sec28">Flux de journaux — journaux d&#39;application en direct</a>
+      <a href="#sec29">Mise à l&#39;échelle verticale (instances plus grandes)</a>
+      <a href="#sec30">Mise à l&#39;échelle horizontale (plus d&#39;instances)</a>
+      <a href="#sec31">Règles d&#39;auto-scale — augmenter et réduire</a>
+      <a href="#sec32">Démo — tour du panneau App Service</a>
+      <a href="#sec33">Module 5 — auto-instrumentation Web</a>
+      <a href="#sec34">Instrumentation API + SQL</a>
+      <a href="#sec35">W3C Trace Context — traceparent</a>
+      <a href="#sec36">Trace de bout en bout — la pièce maîtresse</a>
+      <a href="#sec37">Corrélation navigateur</a>
+      <a href="#sec38">SDK navigateur — configuration minimale</a>
+      <a href="#sec39">Module 6 — Application Insights, l&#39;heure d&#39;approfondissement</a>
+      <a href="#sec40">Live Metrics — qui plaît à la salle</a>
+      <a href="#sec41">Recherche de transactions et vue de bout en bout</a>
+      <a href="#sec42">Carte d&#39;application</a>
+      <a href="#sec43">Panneaux Échecs et Performance</a>
+      <a href="#sec44">Journaux (KQL) — une requête, un operation_Id</a>
+      <a href="#sec45">Requête KQL — à copier / coller</a>
+      <a href="#sec46">Classeurs — tableaux de bord partageables</a>
+      <a href="#sec47">Créer des éléments de travail depuis Application Insights</a>
+      <a href="#sec48">Journalisation locale vs distante</a>
+      <a href="#sec49">Alertes et détection intelligentes</a>
+      <a href="#sec50">Démo — App Insights, quoi montrer</a>
+      <a href="#sec51">Contrôle des coûts — pas de surprises</a>
+      <a href="#sec52">Liste de dépannage</a>
+      <a href="#sec53">Démantèlement</a>
+      <a href="#sec54">Prochaines étapes et votre plan de compétences</a>
+      <a href="#sec55">Références</a>
+      <a href="#sec56">Thank you · Merci</a>
       </div>
     </details>
   </nav>
 <div class="container">
 
 <!-- ════════════════════════════════════════════════════════════════════════
-     SECTION 01 · cover · Application Insights pour .NET 10
+     SECTION 01 · cover · Moderniser les applications d'entreprise avec les plateformes applicatives
      ════════════════════════════════════════════════════════════════════════ -->
 <section id="sec1" data-key="cover">
-    <h2><span class="section-num">01</span> Application Insights pour .NET 10</h2>
+    <h2><span class="section-num">01</span> Moderniser les applications d&#39;entreprise avec les plateformes applicatives</h2>
     <ul>
-      <li>Atelier pratique bilingue (FR / EN)</li>
-      <li>Navigateur → Web ASP.NET Core → API Web → Azure SQL</li>
-      <li>Un seul operation_Id, une seule cascade, une seule vérité</li>
+      <li>Guide de livraison — atelier pratique d&#39;une journée (FR / EN)</li>
+      <li>Du .NET hérité à une application cloud moderne et observable sur Azure App Service</li>
+      <li>Accélération low-code + IA · GitHub Copilot · Application Insights</li>
     </ul>
-    <p class="notes">Accueillez la salle dans les deux langues. Confirmez les règles bilingues avant de commencer.</p>
+    <p class="notes">Accueillez la salle dans les deux langues. Cette présentation pilote toutes les démonstrations d&#39;aujourd&#39;hui. Vérifiez que les prérequis du Lab 00 sont en place avant le Module 1.</p>
   </section>
 
 <!-- ════════════════════════════════════════════════════════════════════════
-     SECTION 02 · agenda · Ordre du jour — six modules
+     SECTION 02 · agenda · Ordre du jour — une journée, huit blocs
      ════════════════════════════════════════════════════════════════════════ -->
 <section id="sec2" data-key="agenda">
-    <h2><span class="section-num">02</span> Ordre du jour — six modules</h2>
+    <h2><span class="section-num">02</span> Ordre du jour — une journée, huit blocs</h2>
     <ul>
-      <li>Module 0 — Préparation et prérequis (15 min)</li>
-      <li>Module 1 — Provisionnement (azd up) (30 min)</li>
-      <li>Module 2 — Auto-instrumentation Web (30 min)</li>
-      <li>Module 3 — Instrumentation API + SQL (45 min)</li>
-      <li>Module 4 — Corrélation côté navigateur (30 min)</li>
-      <li>Module 5 — Tableaux de bord et KQL (30 min)</li>
-      <li>Module 6 — Démantèlement (azd down --purge --force) (10 min)</li>
+      <li>0 · Accueil, objectifs et personas (30 min)</li>
+      <li>1 · Compréhension commune de la modernisation (45 min)</li>
+      <li>2 · Stratégie et décisions de modernisation (45 min)</li>
+      <li>3 · Accélérer avec le low-code + l&#39;IA · agent .NET Copilot (60 min)</li>
+      <li>4 · Provisionnement et exploration du panneau App Service (75 min)</li>
+      <li>5 · Instrumentation : navigateur → web → API → SQL (60 min)</li>
+      <li>6 · Application Insights — l&#39;heure d&#39;approfondissement (60 min)</li>
+      <li>7 · Coûts, alertes, démantèlement et prochaines étapes (45 min)</li>
     </ul>
-    <p class="notes">~3 h au total avec pauses. Modules à respecter strictement; le cœur est Module 4 + Module 5.</p>
+    <p class="notes">Environ 8 heures avec pauses et dîner. Les modules 4 et 6 sont les pièces maîtresses — protégez leur temps. Chaque module associe des diapositives à une démo ou un atelier.</p>
   </section>
 
 <!-- ════════════════════════════════════════════════════════════════════════
-     SECTION 03 · learning-objectives · Objectifs d'apprentissage
+     SECTION 03 · workshop-objectives · Ce que vous saurez faire
      ════════════════════════════════════════════════════════════════════════ -->
-<section id="sec3" data-key="learning-objectives">
-    <h2><span class="section-num">03</span> Objectifs d&#39;apprentissage</h2>
+<section id="sec3" data-key="workshop-objectives">
+    <h2><span class="section-num">03</span> Ce que vous saurez faire</h2>
     <ul>
-      <li>Provisionner Application Insights avec Bicep + azd en une seule commande</li>
-      <li>Auto-instrumenter une application Web ASP.NET Core 10 sans une ligne de code</li>
-      <li>Corréler pageView navigateur → requête serveur → dépendance SQL sur un même operation_Id</li>
-      <li>Écrire une requête KQL qui joint requests, dependencies et pageViews de bout en bout</li>
-      <li>Démanteler proprement toutes les ressources avec azd down --purge --force</li>
+      <li>Identifier et définir les compétences numériques nécessaires à la transformation</li>
+      <li>Bâtir un plan de montée en compétences par persona client</li>
+      <li>Habiliter les rôles clés à relever les Défis Cloud par de nouvelles façons de travailler</li>
+      <li>Partager un langage commun de la modernisation applicative</li>
+      <li>Prendre une décision de stratégie de modernisation éclairée</li>
+      <li>Accélérer la livraison grâce au low-code et à l&#39;IA</li>
     </ul>
-    <p class="notes">Ancrez les attentes. Chaque objectif est renforcé par un atelier pratique.</p>
+    <p class="notes">Ces six objectifs forment la colonne vertébrale de la journée. Relisez-les à chaque transition de module pour montrer le fil conducteur.</p>
   </section>
 
 <!-- ════════════════════════════════════════════════════════════════════════
-     SECTION 04 · prereqs · Module 0 — Prérequis
+     SECTION 04 · who-is-in-the-room · Qui est dans la salle
      ════════════════════════════════════════════════════════════════════════ -->
-<section id="sec4" data-key="prereqs">
-    <h2><span class="section-num">04</span> Module 0 — Prérequis</h2>
+<section id="sec4" data-key="who-is-in-the-room">
+    <h2><span class="section-num">04</span> Qui est dans la salle</h2>
     <ul>
-      <li>.NET SDK 10.0.100 (préversion ou RTM)</li>
-      <li>Azure Developer CLI (azd) 1.10+</li>
-      <li>Azure CLI (az) 2.65+</li>
-      <li>VS Code avec les extensions C# Dev Kit et Bicep</li>
-      <li>Abonnement Azure actif avec rôle Owner ou Contributor + UAA sur un groupe de ressources</li>
-      <li>Compte GitHub (pour le carnet ensemencé et les flux CI)</li>
+      <li>Décideurs métier et TI — financent et priorisent</li>
+      <li>Architectes d&#39;entreprise et de solutions — choisissent la plateforme cible</li>
+      <li>Développeurs et ingénieurs DevOps — construisent et livrent</li>
+      <li>Exploitation et SRE — opèrent et observent</li>
+      <li>Responsables du changement — développent les compétences</li>
     </ul>
-    <p class="notes">Si quelqu&#39;un n&#39;a pas le SDK, dirigez-le vers le devcontainer (lab-00).</p>
+    <p class="notes">Demandez un vote à main levée par persona. Adaptez l&#39;accent : les architectes aiment la stratégie, les développeurs Copilot et l&#39;instrumentation, l&#39;exploitation la mise à l&#39;échelle et Application Insights.</p>
   </section>
 
 <!-- ════════════════════════════════════════════════════════════════════════
-     SECTION 05 · architecture · Architecture cible
+     SECTION 05 · digital-skills · Les compétences numériques de la transformation
      ════════════════════════════════════════════════════════════════════════ -->
-<section id="sec5" data-key="architecture">
-    <h2><span class="section-num">05</span> Architecture cible</h2>
+<section id="sec5" data-key="digital-skills">
+    <h2><span class="section-num">05</span> Les compétences numériques de la transformation</h2>
+    <ul>
+      <li>Maîtrise du cloud — IaaS vs PaaS vs conteneurs vs serverless</li>
+      <li>.NET moderne — ASP.NET Core, EF Core, API minimales</li>
+      <li>Observabilité — télémétrie, traçage, KQL, tableaux de bord</li>
+      <li>Automatisation — IaC (Bicep), CI/CD, azd</li>
+      <li>Ingénierie assistée par IA — Copilot, agents de modernisation</li>
+    </ul>
+    <p class="notes">Présentez les compétences comme des capacités, pas des certifications. Chaque capacité correspond à une activité pratique de la journée.</p>
+  </section>
+
+<!-- ════════════════════════════════════════════════════════════════════════
+     SECTION 06 · skilling-plan-personas · Un plan de montée en compétences par persona
+     ════════════════════════════════════════════════════════════════════════ -->
+<section id="sec6" data-key="skilling-plan-personas">
+    <h2><span class="section-num">06</span> Un plan de montée en compétences par persona</h2>
+    <ul>
+      <li>Décideurs → valeur, TCO, risque et conformité</li>
+      <li>Architectes → choix de plateforme, les 5 R, architectures de référence</li>
+      <li>Développeurs → .NET moderne, agent Copilot, instrumentation</li>
+      <li>Exploitation / SRE → opérations App Service, mise à l&#39;échelle, App Insights, alertes</li>
+      <li>Habilitation → ateliers, présentations, communauté de pratique interne</li>
+    </ul>
+    <p class="notes">C&#39;est le livrable que beaucoup de commanditaires attendent. Invitez les participants à repartir avec un brouillon pour leur propre organisation.</p>
+  </section>
+
+<!-- ════════════════════════════════════════════════════════════════════════
+     SECTION 07 · enable-roles-cloud-challenges · Habiliter les rôles pour les Défis Cloud
+     ════════════════════════════════════════════════════════════════════════ -->
+<section id="sec7" data-key="enable-roles-cloud-challenges">
+    <h2><span class="section-num">07</span> Habiliter les rôles pour les Défis Cloud</h2>
+    <ul>
+      <li>Défi Cloud = sprint de compétences chronométré sur une charge réelle</li>
+      <li>Associez chaque rôle à un livrable concret de l&#39;application du jour</li>
+      <li>Les architectes possèdent la cible; les développeurs un module migré</li>
+      <li>L&#39;exploitation possède un tableau de bord et une alerte; on apprend en faisant</li>
+      <li>Célébrez l&#39;achèvement — l&#39;élan se cumule</li>
+    </ul>
+    <p class="notes">Positionnez l&#39;atelier lui-même comme un Défi Cloud : en fin de journée, chaque persona repart avec quelque chose qu&#39;il a construit.</p>
+  </section>
+
+<!-- ════════════════════════════════════════════════════════════════════════
+     SECTION 08 · ways-of-working · De nouvelles façons de travailler
+     ════════════════════════════════════════════════════════════════════════ -->
+<section id="sec8" data-key="ways-of-working">
+    <h2><span class="section-num">08</span> De nouvelles façons de travailler</h2>
+    <ul>
+      <li>Infrastructure as code — environnements reproductibles (azd up / azd down)</li>
+      <li>Trunk-based, petites PR, vérifications automatisées</li>
+      <li>Développement piloté par l&#39;observabilité — instrumenter d&#39;abord, optimiser avec les données</li>
+      <li>L&#39;IA dans la boucle — Copilot pour le code, l&#39;agent pour les mises à niveau</li>
+      <li>You build it, you run it — dev et exploitation partagent le tableau de bord</li>
+    </ul>
+    <p class="notes">Contrastez avec le modèle hérité de tickets et de transferts. Tout ce que nous faisons aujourd&#39;hui est reproductible et observable.</p>
+  </section>
+
+<!-- ════════════════════════════════════════════════════════════════════════
+     SECTION 09 · what-is-modernization · Ce que « modernisation » signifie vraiment
+     ════════════════════════════════════════════════════════════════════════ -->
+<section id="sec9" data-key="what-is-modernization">
+    <h2><span class="section-num">09</span> Ce que « modernisation » signifie vraiment</h2>
+    <ul>
+      <li>Pas une réécriture par défaut — un éventail d&#39;options</li>
+      <li>Déplacer la charge vers une plateforme qui élimine le travail sans valeur ajoutée</li>
+      <li>Adopter des services gérés pour l&#39;identité, les données et l&#39;observabilité</li>
+      <li>Améliorer la vélocité, la fiabilité, la sécurité et le coût</li>
+      <li>Le résultat avant le livrable — mesurer l&#39;impact métier</li>
+    </ul>
+    <p class="notes">Désamorcez la peur que modernisation = réécriture complète. L&#39;essentiel de la valeur vient du rehost/replatform plus des refactorisations ciblées.</p>
+  </section>
+
+<!-- ════════════════════════════════════════════════════════════════════════
+     SECTION 10 · modernization-drivers · Pourquoi moderniser maintenant
+     ════════════════════════════════════════════════════════════════════════ -->
+<section id="sec10" data-key="modernization-drivers">
+    <h2><span class="section-num">10</span> Pourquoi moderniser maintenant</h2>
+    <ul>
+      <li>Runtimes et OS en fin de support — risque de sécurité et de conformité</li>
+      <li>Livraisons lentes et manuelles — long délai au changement</li>
+      <li>Difficultés de mise à l&#39;échelle — verticale seulement, capacité fixe</li>
+      <li>Observabilité limitée — délai de détection en heures, pas en secondes</li>
+      <li>Coût — payer pour des VM surdimensionnées et inactives</li>
+    </ul>
+    <p class="notes">Faites nommer par la salle le facteur le plus criant. Vous le relierez à une capacité App Service ou App Insights.</p>
+  </section>
+
+<!-- ════════════════════════════════════════════════════════════════════════
+     SECTION 11 · app-platforms-landscape · Le paysage des plateformes applicatives Azure
+     ════════════════════════════════════════════════════════════════════════ -->
+<section id="sec11" data-key="app-platforms-landscape">
+    <h2><span class="section-num">11</span> Le paysage des plateformes applicatives Azure</h2>
+    <ul>
+      <li>App Service — applications web et API gérées, voie la plus rapide pour .NET</li>
+      <li>Azure Container Apps — conteneurs serverless, mise à l&#39;échelle à zéro, microservices</li>
+      <li>AKS — Kubernetes complet pour un contrôle maximal</li>
+      <li>Azure Functions — serverless événementiel à la consommation</li>
+      <li>Cible du jour : App Service exécutant des conteneurs .NET depuis ACR</li>
+    </ul>
+    <p class="notes">Dimensionnez la plateforme selon l&#39;équipe. Nous avons choisi App Service pour MAPAQ : simplicité PaaS, souplesse des conteneurs, mise à l&#39;échelle et diagnostics intégrés.</p>
+  </section>
+
+<!-- ════════════════════════════════════════════════════════════════════════
+     SECTION 12 · modernization-strategy-5rs · La stratégie de modernisation — les 5 R
+     ════════════════════════════════════════════════════════════════════════ -->
+<section id="sec12" data-key="modernization-strategy-5rs">
+    <h2><span class="section-num">12</span> La stratégie de modernisation — les 5 R</h2>
+    <div class="mermaid-wrapper">
+      <pre class="mermaid">
+graph TD
+  Start["Application .NET héritée"] --> Rehost["Rehost<br/>lift &amp; shift vers App Service"]
+  Start --> Replatform["Replatform<br/>conteneuriser + SQL géré"]
+  Start --> Refactor["Refactor<br/>ASP.NET Core, EF Core, DI"]
+  Start --> Rearchitect["Rearchitect<br/>découper, asynchrone"]
+  Start --> Rebuild["Rebuild / Replace<br/>cloud-native ou SaaS"]
+      </pre>
+    </div>
+    <p class="notes">MAPAQ aujourd&#39;hui = Replatform + Refactor ciblé : .NET 10 conteneurisé sur App Service, SQL Entra-only, instrumentation moderne. De gauche à droite : l&#39;effort et la valeur augmentent.</p>
+  </section>
+
+<!-- ════════════════════════════════════════════════════════════════════════
+     SECTION 13 · informed-strategy-decisions · Prendre une décision éclairée
+     ════════════════════════════════════════════════════════════════════════ -->
+<section id="sec13" data-key="informed-strategy-decisions">
+    <h2><span class="section-num">13</span> Prendre une décision éclairée</h2>
+    <ul>
+      <li>Évaluer : version du runtime, dépendances, état, gravité des données</li>
+      <li>Noter chaque app : valeur métier × risque technique</li>
+      <li>Choisir le R le moins coûteux qui débloque le résultat métier</li>
+      <li>Le prouver de bout en bout sur une app avant de généraliser</li>
+      <li>Outils : .NET Upgrade Assistant + agent de modernisation GitHub Copilot</li>
+    </ul>
+    <p class="notes">La décision est itérative et non linéaire : on peut rehoster d&#39;abord, refactoriser ensuite. Aujourd&#39;hui MAPAQ est notre application de preuve.</p>
+  </section>
+
+<!-- ════════════════════════════════════════════════════════════════════════
+     SECTION 14 · reference-architecture · MAPAQ — notre architecture de référence
+     ════════════════════════════════════════════════════════════════════════ -->
+<section id="sec14" data-key="reference-architecture">
+    <h2><span class="section-num">14</span> MAPAQ — notre architecture de référence</h2>
     <div class="mermaid-wrapper">
       <pre class="mermaid">
 graph LR
-  Browser["🌐 Navigateur<br/>SDK JS pageView"] --> Web["🛠️ Mapaq.Web<br/>ASP.NET Core 10"]
-  Web --> Api["📡 Mapaq.Api<br/>API Web"]
-  Api --> Sql["🗄️ Azure SQL<br/>EF Core"]
-  Web -.-> AI["📊 Application Insights<br/>basé sur l'espace de travail"]
+  Browser["Navigateur<br/>pageView SDK JS"] --> Web["Mapaq.Web<br/>ASP.NET Core 10 · conteneur"]
+  Web --> Api["Mapaq.Api<br/>Web API · conteneur"]
+  Api --> Sql["Azure SQL<br/>EF Core · point de terminaison privé"]
+  Web -.-> AI["Application Insights<br/>basé sur espace de travail"]
   Api -.-> AI
   Browser -.-> AI
       </pre>
     </div>
-    <p class="notes">Quatre nœuds, une seule ressource AI basée sur un workspace, un seul Log Analytics derrière.</p>
+    <p class="notes">C&#39;est exactement ce qui est déployé dans rg-dev-001 : deux conteneurs .NET sur App Service (P1v3), Azure SQL Entra-only derrière un point de terminaison privé, une ressource Application Insights basée sur un espace de travail.</p>
   </section>
 
 <!-- ════════════════════════════════════════════════════════════════════════
-     SECTION 06 · provision-azd-up · Module 1 — Provisionnement (azd up)
+     SECTION 15 · low-code-and-ai · Accélérer avec le low-code + l'IA
      ════════════════════════════════════════════════════════════════════════ -->
-<section id="sec6" data-key="provision-azd-up">
-    <h2><span class="section-num">06</span> Module 1 — Provisionnement (azd up)</h2>
+<section id="sec15" data-key="low-code-and-ai">
+    <h2><span class="section-num">15</span> Accélérer avec le low-code + l&#39;IA</h2>
     <ul>
-      <li>azd init -t . (utilisez le modèle de l&#39;atelier)</li>
+      <li>Low-code (Power Platform) pour les apps périphériques, portails et flux</li>
+      <li>Le codage assisté par IA déplace l&#39;effort de la frappe vers la revue</li>
+      <li>Copilot pour le code, les tests et la documentation au quotidien</li>
+      <li>Agents spécialisés pour les mises à niveau et migrations complètes</li>
+      <li>L&#39;humain garde le contrôle — réviser chaque changement</li>
+    </ul>
+    <p class="notes">Positionnez l&#39;IA comme un multiplicateur de force, pas un remplacement. L&#39;agent de modernisation montré ensuite fait le travail lourd et répétitif.</p>
+  </section>
+
+<!-- ════════════════════════════════════════════════════════════════════════
+     SECTION 16 · github-copilot-overview · GitHub Copilot dans VS Code
+     ════════════════════════════════════════════════════════════════════════ -->
+<section id="sec16" data-key="github-copilot-overview">
+    <h2><span class="section-num">16</span> GitHub Copilot dans VS Code</h2>
+    <ul>
+      <li>Complétions en ligne et chat ancrés dans votre code</li>
+      <li>Mode agent — tâches multi-étapes avec utilisation d&#39;outils</li>
+      <li>Compétences et outils MCP étendent les capacités de Copilot</li>
+      <li>Fonctionne avec votre dépôt, le terminal, les tests et l&#39;outillage Azure</li>
+      <li>Déjà installé dans l&#39;environnement de cet atelier</li>
+    </ul>
+    <p class="notes">Ouvrez VS Code et montrez le panneau de chat Copilot. Confirmez la présence de C# Dev Kit et de l&#39;extension de modernisation.</p>
+  </section>
+
+<!-- ════════════════════════════════════════════════════════════════════════
+     SECTION 17 · copilot-dotnet-modernization-agent · Modernisation d'applications .NET avec GitHub Copilot
+     ════════════════════════════════════════════════════════════════════════ -->
+<section id="sec17" data-key="copilot-dotnet-modernization-agent">
+    <h2><span class="section-num">17</span> Modernisation d&#39;applications .NET avec GitHub Copilot</h2>
+    <ul>
+      <li>Installée comme extension VS Code dans cet atelier</li>
+      <li>Évalue la solution et propose un plan de mise à niveau</li>
+      <li>Automatise les mises à niveau de framework cible et de paquets</li>
+      <li>Corrige les changements cassants et explique chaque modification</li>
+      <li>Suit la progression via un tableau de bord avec tâches</li>
+    </ul>
+    <p class="notes">C&#39;est l&#39;outillage GitHub Copilot app modernization - upgrade pour .NET. Il pilote la mise à niveau de bout en bout pendant que vous révisez. Il travaille tâche par tâche, pas d&#39;un seul bloc risqué.</p>
+  </section>
+
+<!-- ════════════════════════════════════════════════════════════════════════
+     SECTION 18 · copilot-agent-workflow · Comment fonctionne l'agent de modernisation
+     ════════════════════════════════════════════════════════════════════════ -->
+<section id="sec18" data-key="copilot-agent-workflow">
+    <h2><span class="section-num">18</span> Comment fonctionne l&#39;agent de modernisation</h2>
+    <div class="mermaid-wrapper">
+      <pre class="mermaid">
+graph LR
+  A["Évaluer la solution"] --> B["Générer le plan"]
+  B --> C["Découper en tâches"]
+  C --> D["Appliquer code &amp; paquets"]
+  D --> E["Compiler &amp; tester"]
+  E --> F{"Au vert?"}
+  F -->|Non| D
+  F -->|Oui| G["Tâche suivante / fini"]
+      </pre>
+    </div>
+    <p class="notes">Insistez sur la boucle : appliquer → compiler → tester → corriger. L&#39;agent itère jusqu&#39;à ce que le projet compile et que les tests passent, puis passe au projet suivant dans l&#39;ordre topologique.</p>
+  </section>
+
+<!-- ════════════════════════════════════════════════════════════════════════
+     SECTION 19 · copilot-agent-demo-walkthrough · Démo — exécuter l'agent de modernisation .NET
+     ════════════════════════════════════════════════════════════════════════ -->
+<section id="sec19" data-key="copilot-agent-demo-walkthrough">
+    <h2><span class="section-num">19</span> Démo — exécuter l&#39;agent de modernisation .NET</h2>
+    <ul>
+      <li>1 · Ouvrir la solution; démarrer l&#39;agent de modernisation</li>
+      <li>2 · Réviser l&#39;évaluation et les options de mise à niveau</li>
+      <li>3 · Confirmer les options; laisser l&#39;agent créer les tâches</li>
+      <li>4 · Observer la mise à niveau d&#39;un projet, la compilation et les tests</li>
+      <li>5 · Réviser le diff, accepter et committer</li>
+    </ul>
+    <p class="notes">DÉMO. Exécutez l&#39;agent sur un projet hérité. Narrez chaque tâche. Arrêtez-vous sur une correction de changement cassant et son explication. Gardez le tableau de bord visible.</p>
+  </section>
+
+<!-- ════════════════════════════════════════════════════════════════════════
+     SECTION 20 · provision-azd-up · Module 4 — Provisionnement (azd up)
+     ════════════════════════════════════════════════════════════════════════ -->
+<section id="sec20" data-key="provision-azd-up">
+    <h2><span class="section-num">20</span> Module 4 — Provisionnement (azd up)</h2>
+    <ul>
       <li>azd env new mapaq-dev</li>
-      <li>azd up (Bicep déploie RG, AI, Log Analytics, App Service, SQL)</li>
-      <li>Vérifiez les sorties : APPLICATIONINSIGHTS_CONNECTION_STRING est câblé sur les deux apps</li>
+      <li>azd up — Bicep déploie RG, Log Analytics, App Insights, App Service, SQL, ACR, VNet</li>
+      <li>Deux conteneurs .NET sont construits, poussés vers ACR et déployés</li>
+      <li>Chaînes de connexion et identité câblées en App Settings — jamais dans le code</li>
     </ul>
-    <p class="notes">Comptez ~6 min pour le premier déploiement. La chaîne de connexion est un App Setting, jamais en dur dans le code.</p>
+    <p class="notes">L&#39;environnement rg-dev-001 a été déployé ainsi depuis le pipeline. Premier run ~6–8 min. Les sorties incluent la chaîne de connexion App Insights.</p>
   </section>
 
 <!-- ════════════════════════════════════════════════════════════════════════
-     SECTION 07 · bicep-modules · Modules Bicep de l'atelier
+     SECTION 21 · bicep-modules · Infrastructure as code — modules Bicep
      ════════════════════════════════════════════════════════════════════════ -->
-<section id="sec7" data-key="bicep-modules">
-    <h2><span class="section-num">07</span> Modules Bicep de l&#39;atelier</h2>
+<section id="sec21" data-key="bicep-modules">
+    <h2><span class="section-num">21</span> Infrastructure as code — modules Bicep</h2>
     <ul>
-      <li>infra/main.bicep — compose les modules</li>
-      <li>infra/modules/log-analytics.bicep — fondation workspace</li>
-      <li>infra/modules/app-insights.bicep — composant basé sur le workspace</li>
-      <li>infra/modules/app-service.bicep — Web + Api avec identité managée système</li>
-      <li>infra/modules/sql.bicep — Azure SQL avec authentification Entra uniquement</li>
-      <li>Passez la chaîne de connexion via un App Setting, jamais en dur</li>
+      <li>infra/main.bicep — compose le tout</li>
+      <li>modules/loganalytics.bicep · appinsights.bicep — fondation d&#39;observabilité</li>
+      <li>modules/appservice.bicep — Web + API avec identité gérée, conteneurs</li>
+      <li>modules/sql.bicep — Azure SQL, auth Entra-only, point de terminaison privé</li>
+      <li>modules/vnet.bicep · privateEndpoints.bicep · keyvault.bicep · identity.bicep</li>
     </ul>
-    <p class="notes">Insistez : AI est désormais basé sur un workspace par défaut; AI classique est déprécié.</p>
+    <p class="notes">Ouvrez infra/ dans VS Code. Rappelez : chaque ressource de rg-dev-001 vient de ces fichiers — reproductible et révisable.</p>
   </section>
 
 <!-- ════════════════════════════════════════════════════════════════════════
-     SECTION 08 · web-instrumentation · Module 2 — Auto-instrumentation Web
+     SECTION 22 · live-architecture · Ce qui est réellement déployé — rg-dev-001
      ════════════════════════════════════════════════════════════════════════ -->
-<section id="sec8" data-key="web-instrumentation">
-    <h2><span class="section-num">08</span> Module 2 — Auto-instrumentation Web</h2>
+<section id="sec22" data-key="live-architecture">
+    <h2><span class="section-num">22</span> Ce qui est réellement déployé — rg-dev-001</h2>
+    <ul>
+      <li>Plan App Service : P1v3 (PremiumV3, Linux) — compatible mise à l&#39;échelle auto</li>
+      <li>mapaq-web et mapaq-api — conteneurs Linux tirés depuis Azure Container Registry</li>
+      <li>Azure SQL — point de terminaison privé, authentification Entra-only</li>
+      <li>Application Insights — basé sur espace de travail, adossé à Log Analytics</li>
+      <li>Identité gérée, Key Vault, VNet avec sous-réseaux app et point de terminaison privé</li>
+    </ul>
+    <p class="notes">Ce sont les vraies ressources. Utilisez le script PowerShell paramétré (scripts/open-monitoring-dashboard.ps1) pour sauter directement au tableau de bord en direct.</p>
+  </section>
+
+<!-- ════════════════════════════════════════════════════════════════════════
+     SECTION 23 · app-service-blade-overview · Le panneau App Service — une carte
+     ════════════════════════════════════════════════════════════════════════ -->
+<section id="sec23" data-key="app-service-blade-overview">
+    <h2><span class="section-num">23</span> Le panneau App Service — une carte</h2>
+    <ul>
+      <li>Vue d&#39;ensemble — URL, état, plan, région, contrôle d&#39;intégrité</li>
+      <li>Déploiement — Centre de déploiement, emplacements, paramètres de conteneur</li>
+      <li>Paramètres — Configuration, variables d&#39;environnement, Identité, Réseau</li>
+      <li>Surveillance — Flux de journaux, Métriques, App Insights, Diagnostiquer</li>
+      <li>Mise à l&#39;échelle — verticale (plan) et horizontale (instances / auto)</li>
+    </ul>
+    <p class="notes">Ouvrez l&#39;app mapaq-web dans le portail. Donnez une orientation de 60 secondes avant de plonger dans chaque section.</p>
+  </section>
+
+<!-- ════════════════════════════════════════════════════════════════════════
+     SECTION 24 · app-service-settings · App Service — les paramètres qui comptent
+     ════════════════════════════════════════════════════════════════════════ -->
+<section id="sec24" data-key="app-service-settings">
+    <h2><span class="section-num">24</span> App Service — les paramètres qui comptent</h2>
+    <ul>
+      <li>Always On = activé — garde l&#39;app au chaud (réglé sur MAPAQ)</li>
+      <li>Chemin de contrôle d&#39;intégrité = /healthz — les instances malsaines sont retirées</li>
+      <li>HTTPS uniquement, TLS minimum = 1.2, FTP = désactivé</li>
+      <li>Pile/runtime — ici un conteneur personnalisé, pas une pile intégrée</li>
+      <li>Identité gérée — l&#39;app s&#39;authentifie auprès de SQL, ACR et App Insights</li>
+    </ul>
+    <p class="notes">Ce sont les vrais paramètres de production de mapaq-web. Expliquez chaque choix de durcissement.</p>
+  </section>
+
+<!-- ════════════════════════════════════════════════════════════════════════
+     SECTION 25 · app-service-configuration · Configuration et variables d'environnement
+     ════════════════════════════════════════════════════════════════════════ -->
+<section id="sec25" data-key="app-service-configuration">
+    <h2><span class="section-num">25</span> Configuration et variables d&#39;environnement</h2>
+    <ul>
+      <li>Les App Settings injectent la configuration comme variables d&#39;environnement</li>
+      <li>Clés réelles : APPLICATIONINSIGHTS_CONNECTION_STRING, ApplicationInsights__ConnectionString</li>
+      <li>Ingestion par identité : APPLICATIONINSIGHTS_AUTHENTICATION_STRING + AZURE_CLIENT_ID</li>
+      <li>ConnectionStrings__MapaqSql, MapaqApi__BaseAddress, WebOrigin</li>
+      <li>Conteneur : DOCKER_REGISTRY_SERVER_URL, WEBSITES_PORT, OTEL_RESOURCE_ATTRIBUTES</li>
+    </ul>
+    <p class="notes">POINT DE RÉCONCILIATION IMPORTANT : l&#39;app en direct utilise l&#39;IDENTITÉ GÉRÉE pour l&#39;ingestion App Insights (la paire AUTHENTICATION_STRING + AZURE_CLIENT_ID), et les clés à double souligné mappent vers les sections de config .NET. Les espaces réservés du appsettings.json du dépôt sont vides à dessein — les vraies valeurs sont injectées ici par le pipeline. Montrez l&#39;onglet Variables d&#39;environnement en direct.</p>
+  </section>
+
+<!-- ════════════════════════════════════════════════════════════════════════
+     SECTION 26 · app-service-environments-slots · Environnements et emplacements de déploiement
+     ════════════════════════════════════════════════════════════════════════ -->
+<section id="sec26" data-key="app-service-environments-slots">
+    <h2><span class="section-num">26</span> Environnements et emplacements de déploiement</h2>
+    <ul>
+      <li>Environnements App Service séparés par étape : dev / test / prod</li>
+      <li>Emplacements de déploiement = copies de préproduction sur le même plan</li>
+      <li>Préchauffer un emplacement puis le permuter avec quasi-zéro interruption</li>
+      <li>Les paramètres collants à l&#39;emplacement restent en place lors d&#39;une permutation</li>
+      <li>Modèle : déployer en préproduction → test de fumée → permuter en production</li>
+    </ul>
+    <p class="notes">rg-dev-001 est l&#39;environnement dev. Expliquez comment les mêmes Bicep + azd promeuvent vers test/prod en changeant l&#39;environnement. Mentionnez la permutation d&#39;emplacement pour des livraisons sûres.</p>
+  </section>
+
+<!-- ════════════════════════════════════════════════════════════════════════
+     SECTION 27 · app-service-containers · Exécuter .NET en conteneurs sur App Service
+     ════════════════════════════════════════════════════════════════════════ -->
+<section id="sec27" data-key="app-service-containers">
+    <h2><span class="section-num">27</span> Exécuter .NET en conteneurs sur App Service</h2>
+    <ul>
+      <li>Source de l&#39;image : Azure Container Registry (acr…azurecr.io/mapaq-web:&lt;sha&gt;)</li>
+      <li>Déploiement continu depuis ACR à chaque nouvelle image</li>
+      <li>WEBSITES_PORT indique à App Service le port du conteneur</li>
+      <li>Tirage authentifié via l&#39;identité gérée de l&#39;app (aucun identifiant admin)</li>
+      <li>La même image tourne en local, en CI et dans Azure — parité</li>
+    </ul>
+    <p class="notes">Ouvrez Centre de déploiement → paramètres de conteneur. Montrez que l&#39;étiquette d&#39;image est un SHA git. Voilà l&#39;histoire « avec conteneurs » : construire une fois, promouvoir l&#39;artefact.</p>
+  </section>
+
+<!-- ════════════════════════════════════════════════════════════════════════
+     SECTION 28 · app-service-log-stream · Flux de journaux — journaux d'application en direct
+     ════════════════════════════════════════════════════════════════════════ -->
+<section id="sec28" data-key="app-service-log-stream">
+    <h2><span class="section-num">28</span> Flux de journaux — journaux d&#39;application en direct</h2>
+    <ul>
+      <li>Surveillance → Flux de journaux affiche stdout/stderr en temps réel</li>
+      <li>Activer les journaux App Service (système de fichiers) pour déboguer vite</li>
+      <li>Les journaux de conteneur montrent démarrage, contrôle d&#39;intégrité et requêtes</li>
+      <li>Idéal pour les moments « est-ce que ça démarre seulement ? » lors d&#39;un déploiement</li>
+      <li>Pour une analyse durable, envoyez vers Log Analytics / App Insights</li>
+    </ul>
+    <p class="notes">DÉMO. Ouvrez le Flux de journaux, puis frappez l&#39;URL de l&#39;app et regardez défiler les requêtes. Contrastez le flux éphémère avec la télémétrie durable dans App Insights.</p>
+  </section>
+
+<!-- ════════════════════════════════════════════════════════════════════════
+     SECTION 29 · app-service-scale-up · Mise à l'échelle verticale (instances plus grandes)
+     ════════════════════════════════════════════════════════════════════════ -->
+<section id="sec29" data-key="app-service-scale-up">
+    <h2><span class="section-num">29</span> Mise à l&#39;échelle verticale (instances plus grandes)</h2>
+    <ul>
+      <li>Scale up = changer le niveau/la taille du plan App Service</li>
+      <li>Plus de CPU, de mémoire et de fonctionnalités par instance</li>
+      <li>Plan actuel : P1v3 — possibilité de passer à P2v3 / P3v3</li>
+      <li>Les niveaux Premium débloquent l&#39;intégration VNet, plus d&#39;emplacements, l&#39;auto-scale</li>
+      <li>Montez en gamme quand une requête est gourmande en ressources</li>
+    </ul>
+    <p class="notes">Ouvrez Scale up (plan App Service). Montrez la grille de niveaux. Insistez : monter en gamme change la taille de chaque instance — c&#39;est au niveau du plan et affecte toutes les apps du plan.</p>
+  </section>
+
+<!-- ════════════════════════════════════════════════════════════════════════
+     SECTION 30 · app-service-scale-out · Mise à l'échelle horizontale (plus d'instances)
+     ════════════════════════════════════════════════════════════════════════ -->
+<section id="sec30" data-key="app-service-scale-out">
+    <h2><span class="section-num">30</span> Mise à l&#39;échelle horizontale (plus d&#39;instances)</h2>
+    <ul>
+      <li>Scale out = exécuter plus de copies de l&#39;app derrière l&#39;équilibreur</li>
+      <li>Manuel : fixer un nombre d&#39;instances</li>
+      <li>Automatique : auto-scale basé sur des règles (plans Premium)</li>
+      <li>Montez en nombre pour le débit et la résilience</li>
+      <li>Les apps sans état montent proprement — gardez l&#39;état de session externe</li>
+    </ul>
+    <p class="notes">Ouvrez Scale out. Montrez d&#39;abord le nombre manuel, puis basculez vers Auto-scale personnalisé pour la diapositive suivante. Les apps MAPAQ sont sans état, donc elles montent en toute sécurité.</p>
+  </section>
+
+<!-- ════════════════════════════════════════════════════════════════════════
+     SECTION 31 · app-service-autoscale-rules · Règles d'auto-scale — augmenter et réduire
+     ════════════════════════════════════════════════════════════════════════ -->
+<section id="sec31" data-key="app-service-autoscale-rules">
+    <h2><span class="section-num">31</span> Règles d&#39;auto-scale — augmenter et réduire</h2>
+    <div class="mermaid-wrapper">
+      <pre class="mermaid">
+graph LR
+  M["Métrique<br/>CPU% / requêtes / mémoire"] --> R{"Seuil?"}
+  R -->|"&gt; 70% sur 10 min"| Out["Augmenter<br/>+1 instance"]
+  R -->|"&lt; 30% sur 10 min"| In["Réduire<br/>-1 instance"]
+  Out --> L["Min 1 · Max 5<br/>refroidissement 5 min"]
+  In --> L
+      </pre>
+    </div>
+    <p class="notes">DÉMO. Créez une règle d&#39;augmentation (CPU &gt; 70 % → +1) et une règle de réduction (CPU &lt; 30 % → -1). Fixez min/max d&#39;instances et un délai de refroidissement. Les limites par défaut protègent le coût et la stabilité. Optionnel : lancez le script de test de charge pour déclencher la règle.</p>
+  </section>
+
+<!-- ════════════════════════════════════════════════════════════════════════
+     SECTION 32 · app-service-demo-walkthrough · Démo — tour du panneau App Service
+     ════════════════════════════════════════════════════════════════════════ -->
+<section id="sec32" data-key="app-service-demo-walkthrough">
+    <h2><span class="section-num">32</span> Démo — tour du panneau App Service</h2>
+    <ul>
+      <li>1 · Vue d&#39;ensemble et URL — confirmer que l&#39;app tourne</li>
+      <li>2 · Variables d&#39;environnement — montrer les vrais paramètres injectés</li>
+      <li>3 · Centre de déploiement — image conteneur depuis ACR</li>
+      <li>4 · Flux de journaux — regarder les requêtes en direct</li>
+      <li>5 · Verticale vs horizontale — puis ajouter une règle d&#39;auto-scale</li>
+    </ul>
+    <p class="notes">Liste de contrôle DÉMO. Exécutez scripts/start-local.ps1 au préalable si vous voulez comparer en local. Puis parcourez le portail de haut en bas dans cet ordre.</p>
+  </section>
+
+<!-- ════════════════════════════════════════════════════════════════════════
+     SECTION 33 · web-instrumentation · Module 5 — auto-instrumentation Web
+     ════════════════════════════════════════════════════════════════════════ -->
+<section id="sec33" data-key="web-instrumentation">
+    <h2><span class="section-num">33</span> Module 5 — auto-instrumentation Web</h2>
     <ul>
       <li>dotnet add package Microsoft.ApplicationInsights.AspNetCore</li>
       <li>builder.Services.AddApplicationInsightsTelemetry();</li>
-      <li>Lit APPLICATIONINSIGHTS_CONNECTION_STRING depuis la configuration automatiquement</li>
-      <li>Génère requests, dependencies, exceptions et traces sans code supplémentaire</li>
+      <li>Lit APPLICATIONINSIGHTS_CONNECTION_STRING depuis la configuration</li>
+      <li>Requêtes, dépendances, exceptions et traces — sans code additionnel</li>
     </ul>
-    <p class="notes">C&#39;est volontairement ennuyeux. La magie arrive au prochain module — la propagation.</p>
+    <p class="notes">Montrez Program.cs dans Mapaq.Web. La magie est la propagation, deux diapositives plus loin.</p>
   </section>
 
 <!-- ════════════════════════════════════════════════════════════════════════
-     SECTION 09 · web-snapshot · Ce que vous devriez voir en 60 secondes
+     SECTION 34 · api-sql-instrumentation · Instrumentation API + SQL
      ════════════════════════════════════════════════════════════════════════ -->
-<section id="sec9" data-key="web-snapshot">
-    <h2><span class="section-num">09</span> Ce que vous devriez voir en 60 secondes</h2>
+<section id="sec34" data-key="api-sql-instrumentation">
+    <h2><span class="section-num">34</span> Instrumentation API + SQL</h2>
     <ul>
-      <li>Live Metrics affiche les requêtes entrantes en temps réel</li>
-      <li>Transaction Search liste chaque requête avec son operation_Id</li>
-      <li>La vue transaction de bout en bout regroupe les dépendances sous leur requête parente</li>
-      <li>Le tableau Failures s&#39;allume dès qu&#39;un 5xx remonte de l&#39;API</li>
+      <li>Le même SDK AI sur Mapaq.Api</li>
+      <li>Les appels SQL EF Core 10 sont suivis comme dépendances SqlClient</li>
+      <li>HttpClientFactory propage traceparent vers les appels en aval</li>
+      <li>Événements personnalisés : TelemetryClient.TrackEvent avec dimensions personnalisées</li>
     </ul>
-    <p class="notes">Gardez Live Metrics ouvert pendant la démo; rien ne convainc plus vite que les points qui apparaissent.</p>
+    <p class="notes">L&#39;instrumentation EF Core → SqlClient est livrée avec le SDK; aucun paquet additionnel. Voilà comment le span SQL apparaît dans la cascade.</p>
   </section>
 
 <!-- ════════════════════════════════════════════════════════════════════════
-     SECTION 10 · api-instrumentation · Module 3 — Instrumentation API + SQL
+     SECTION 35 · traceparent · W3C Trace Context — traceparent
      ════════════════════════════════════════════════════════════════════════ -->
-<section id="sec10" data-key="api-instrumentation">
-    <h2><span class="section-num">10</span> Module 3 — Instrumentation API + SQL</h2>
+<section id="sec35" data-key="traceparent">
+    <h2><span class="section-num">35</span> W3C Trace Context — traceparent</h2>
     <ul>
-      <li>Même paquet Microsoft.ApplicationInsights.AspNetCore sur l&#39;API</li>
-      <li>Les appels SQL EF Core 10 sont suivis automatiquement comme dépendances SqlClient</li>
-      <li>HttpClientFactory propage le traceparent vers les appels en aval automatiquement</li>
-      <li>Dimensions personnalisées : TelemetryClient.TrackEvent(&quot;OrderPlaced&quot;, new { OrderId, CustomerId })</li>
-    </ul>
-    <p class="notes">L&#39;instrumentation EF Core ⇒ SqlClient ne demande aucun paquet supplémentaire — elle est livrée avec le SDK AI.</p>
-  </section>
-
-<!-- ════════════════════════════════════════════════════════════════════════
-     SECTION 11 · traceparent · W3C Trace Context — traceparent
-     ════════════════════════════════════════════════════════════════════════ -->
-<section id="sec11" data-key="traceparent">
-    <h2><span class="section-num">11</span> W3C Trace Context — traceparent</h2>
-    <ul>
-      <li>00-{trace-id}-{parent-id}-{trace-flags}</li>
+      <li>Format : 00-{trace-id}-{parent-id}-{flags}</li>
       <li>Le SDK navigateur démarre la trace et émet l&#39;en-tête sur chaque fetch/XHR</li>
-      <li>ASP.NET Core l&#39;honore et le transmet sans configuration</li>
-      <li>Résultat : un seul operation_Id relie les 4 spans ensemble</li>
+      <li>ASP.NET Core l&#39;honore et le transmet automatiquement</li>
+      <li>Résultat : un seul operation_Id relie les quatre spans</li>
     </ul>
-    <p class="notes">Montrez l&#39;en-tête réel dans l&#39;onglet Réseau des DevTools du navigateur pendant la démo.</p>
+    <p class="notes">Ouvrez les outils de dev → Réseau → une requête → En-têtes, et montrez le vrai traceparent. C&#39;est le fil qui relie toute l&#39;histoire.</p>
   </section>
 
 <!-- ════════════════════════════════════════════════════════════════════════
-     SECTION 12 · e2e-trace · Trace de bout en bout — la pièce maîtresse
+     SECTION 36 · e2e-trace · Trace de bout en bout — la pièce maîtresse
      ════════════════════════════════════════════════════════════════════════ -->
-<section id="sec12" data-key="e2e-trace">
-    <h2><span class="section-num">12</span> Trace de bout en bout — la pièce maîtresse</h2>
+<section id="sec36" data-key="e2e-trace">
+    <h2><span class="section-num">36</span> Trace de bout en bout — la pièce maîtresse</h2>
     <div class="mermaid-wrapper">
       <pre class="mermaid">
 sequenceDiagram
   autonumber
-  participant Browser as "Browser"
+  participant Browser as "Navigateur"
   participant Web as "Mapaq.Web"
   participant Api as "Mapaq.Api"
   participant Sql as "Azure SQL"
-  Browser->>Web: GET /orders<br/>traceparent: 00-abc-01-01
-  Web->>Api: GET /api/orders<br/>traceparent: 00-abc-02-01
-  Api->>Sql: SELECT * FROM Orders<br/>traceparent: 00-abc-03-01
+  Browser->>Web: GET /establishments<br/>traceparent 00-abc-01
+  Web->>Api: GET /api/establishments<br/>traceparent 00-abc-02
+  Api->>Sql: SELECT ... EF Core<br/>traceparent 00-abc-03
   Sql-->>Api: lignes
   Api-->>Web: 200 OK
   Web-->>Browser: 200 OK
   Note over Browser,Sql: Un seul operation_Id = abc<br/>Une seule cascade dans Application Insights
       </pre>
     </div>
-    <p class="notes">DR-10 — livrable obligatoire. Ce diagramme à lui seul est le pivot visuel de tout l&#39;atelier.</p>
+    <p class="notes">L&#39;ancre visuelle de l&#39;atelier. Un operation_Id à travers quatre niveaux devient une seule transaction dans App Insights.</p>
   </section>
 
 <!-- ════════════════════════════════════════════════════════════════════════
-     SECTION 13 · browser-snippet · Module 4 — Corrélation côté navigateur
+     SECTION 37 · browser-correlation · Corrélation navigateur
      ════════════════════════════════════════════════════════════════════════ -->
-<section id="sec13" data-key="browser-snippet">
-    <h2><span class="section-num">13</span> Module 4 — Corrélation côté navigateur</h2>
+<section id="sec37" data-key="browser-correlation">
+    <h2><span class="section-num">37</span> Corrélation navigateur</h2>
     <ul>
-      <li>Ajoutez le snippet du SDK JavaScript Application Insights à _Layout.cshtml</li>
-      <li>Passez la chaîne de connexion via un ViewData côté serveur (jamais en dur)</li>
-      <li>Activez enableCorsCorrelation: true et enableRequestHeaderTracking: true</li>
-      <li>Passez distributedTracingMode: AI_AND_W3C pour émettre traceparent</li>
+      <li>Ajouter le SDK JavaScript Application Insights à _Layout.cshtml</li>
+      <li>Passer la chaîne de connexion via ViewData côté serveur — jamais en dur</li>
+      <li>enableCorsCorrelation: true et enableRequestHeaderTracking: true</li>
+      <li>distributedTracingMode: AI_AND_W3C pour émettre traceparent</li>
     </ul>
-    <p class="notes">Le snippet doit venir avant tout autre script qui émet fetch/XHR.</p>
+    <p class="notes">Le snippet doit se charger avant tout script qui émet fetch/XHR, sinon les premières pages vues sont perdues.</p>
   </section>
 
 <!-- ════════════════════════════════════════════════════════════════════════
-     SECTION 14 · browser-config · SDK navigateur — configuration minimale
+     SECTION 38 · browser-config · SDK navigateur — configuration minimale
      ════════════════════════════════════════════════════════════════════════ -->
-<section id="sec14" data-key="browser-config">
-    <h2><span class="section-num">14</span> SDK navigateur — configuration minimale</h2>
+<section id="sec38" data-key="browser-config">
+    <h2><span class="section-num">38</span> SDK navigateur — configuration minimale</h2>
     <ul>
-      <li>instrumentationKey est obsolète — utilisez connectionString</li>
-      <li>enableAutoRouteTracking: true (pour les changements de page SPA)</li>
-      <li>correlationHeaderExcludedDomains: [&#39;*.googleapis.com&#39;, &#39;*.bing.com&#39;]</li>
+      <li>Utiliser connectionString (instrumentationKey est déprécié)</li>
+      <li>enableAutoRouteTracking: true pour la navigation type SPA</li>
+      <li>correlationHeaderExcludedDomains pour les hôtes tiers</li>
       <li>samplingPercentage: 100 en dev, plus bas en prod</li>
     </ul>
-    <p class="notes">L&#39;échantillonnage est par app, fixé sur l&#39;objet d&#39;options du SDK — pas dans le portail.</p>
+    <p class="notes">L&#39;échantillonnage se règle sur l&#39;objet d&#39;options du SDK, par app — pas dans le portail.</p>
   </section>
 
 <!-- ════════════════════════════════════════════════════════════════════════
-     SECTION 15 · app-map · Module 5 — Application Map
+     SECTION 39 · app-insights-deep-dive-agenda · Module 6 — Application Insights, l'heure d'approfondissement
      ════════════════════════════════════════════════════════════════════════ -->
-<section id="sec15" data-key="app-map">
-    <h2><span class="section-num">15</span> Module 5 — Application Map</h2>
+<section id="sec39" data-key="app-insights-deep-dive-agenda">
+    <h2><span class="section-num">39</span> Module 6 — Application Insights, l&#39;heure d&#39;approfondissement</h2>
+    <ul>
+      <li>Live Metrics — le pouls en temps réel</li>
+      <li>Recherche de transactions et vue de transaction de bout en bout</li>
+      <li>Carte d&#39;application — topologie auto-découverte</li>
+      <li>Échecs et Performance — triage par symptôme</li>
+      <li>Journaux (KQL) · Classeurs · Éléments de travail · Journalisation locale + distante · Alertes</li>
+    </ul>
+    <p class="notes">C&#39;est une heure complète. Gardez l&#39;app en direct générant du trafic pour que chaque panneau ait des données. Utilisez le script d&#39;ouverture du tableau de bord pour naviguer vite.</p>
+  </section>
+
+<!-- ════════════════════════════════════════════════════════════════════════
+     SECTION 40 · live-metrics · Live Metrics — qui plaît à la salle
+     ════════════════════════════════════════════════════════════════════════ -->
+<section id="sec40" data-key="live-metrics">
+    <h2><span class="section-num">40</span> Live Metrics — qui plaît à la salle</h2>
+    <ul>
+      <li>Latence sous la seconde de l&#39;app au portail</li>
+      <li>Le flux n&#39;est pas persisté — l&#39;échantillonnage ne s&#39;applique pas</li>
+      <li>Filtrer par cloud_RoleName pour isoler Mapaq.Api</li>
+      <li>Idéal pour les démos et le suivi de déploiement; ne remplace pas les alertes</li>
+    </ul>
+    <p class="notes">DÉMO. Ouvrez Live Metrics et demandez à la salle de charger la page. Regardez les taux de requêtes et dépendances bondir. Filtrez sur le rôle API.</p>
+  </section>
+
+<!-- ════════════════════════════════════════════════════════════════════════
+     SECTION 41 · transaction-search · Recherche de transactions et vue de bout en bout
+     ════════════════════════════════════════════════════════════════════════ -->
+<section id="sec41" data-key="transaction-search">
+    <h2><span class="section-num">41</span> Recherche de transactions et vue de bout en bout</h2>
+    <ul>
+      <li>Rechercher chaque requête, dépendance, exception, trace et pageView</li>
+      <li>Cliquer une requête pour ouvrir la transaction de bout en bout</li>
+      <li>Voir la cascade : navigateur → web → API → SQL sous un seul operation_Id</li>
+      <li>Plonger dans une dépendance SQL pour voir la commande et la durée</li>
+    </ul>
+    <p class="notes">DÉMO. Trouvez une requête récente, ouvrez la transaction et parcourez la cascade de haut en bas. C&#39;est ici que l&#39;histoire de traceparent paie visuellement.</p>
+  </section>
+
+<!-- ════════════════════════════════════════════════════════════════════════
+     SECTION 42 · application-map · Carte d'application
+     ════════════════════════════════════════════════════════════════════════ -->
+<section id="sec42" data-key="application-map">
+    <h2><span class="section-num">42</span> Carte d&#39;application</h2>
     <div class="mermaid-wrapper">
       <pre class="mermaid">
 graph LR
-  B["🌐 Navigateur"] --> W["Mapaq.Web<br/>p95 110ms · 0.0% éch"]
-  W --> A["Mapaq.Api<br/>p95 80ms · 0.1% éch"]
-  A --> S["Azure SQL<br/>p95 45ms · 0.0% éch"]
-  style B fill:#3B82F6,stroke:#1F2A37,color:#fff
-  style W fill:#16A34A,stroke:#1F2A37,color:#fff
-  style A fill:#16A34A,stroke:#1F2A37,color:#fff
-  style S fill:#F97316,stroke:#1F2A37,color:#fff
+  B["Navigateur"] --> W["Mapaq.Web<br/>p95 110ms · 0.0% échec"]
+  W --> A["Mapaq.Api<br/>p95 80ms · 0.1% échec"]
+  A --> S["Azure SQL<br/>p95 45ms · 0.0% échec"]
       </pre>
     </div>
-    <p class="notes">L&#39;Application Map découvre automatiquement la topologie depuis la télémétrie — aucune configuration manuelle.</p>
+    <p class="notes">DÉMO. La carte d&#39;application découvre la topologie depuis la télémétrie — sans config. Cliquez un nœud pour voir performance et échecs de ce composant.</p>
   </section>
 
 <!-- ════════════════════════════════════════════════════════════════════════
-     SECTION 16 · kql-end-to-end · KQL — une seule requête, un seul operation_Id
+     SECTION 43 · failures-performance · Panneaux Échecs et Performance
      ════════════════════════════════════════════════════════════════════════ -->
-<section id="sec16" data-key="kql-end-to-end">
-    <h2><span class="section-num">16</span> KQL — une seule requête, un seul operation_Id</h2>
+<section id="sec43" data-key="failures-performance">
+    <h2><span class="section-num">43</span> Panneaux Échecs et Performance</h2>
     <ul>
-      <li>Ouvrez le panneau Logs sur la ressource AI</li>
-      <li>Exécutez la requête union ci-dessous</li>
-      <li>Triez par timestamp asc pour voir la cascade dans l&#39;ordre temporel</li>
+      <li>Échecs — opérations en échec, codes de réponse, types d&#39;exception</li>
+      <li>Performance — opérations les plus lentes, durée des dépendances, p50/p95/p99</li>
+      <li>Passer d&#39;un agrégat directement aux transactions échantillons</li>
+      <li>Trier par impact utilisateur d&#39;abord, puis par cause</li>
     </ul>
-    <div class="mermaid-wrapper">
-      <pre class="mermaid">
-flowchart LR
-  Q["union requests, dependencies, pageViews<br/>| where operation_Id == 'abc'<br/>| project timestamp, itemType, name, duration, success<br/>| order by timestamp asc"]
-  Q --> R["📊 Résultat cascade<br/>4 lignes · 1 operation_Id"]
-      </pre>
-    </div>
-    <p class="notes">Décortiquez chaque ligne. L&#39;union sur 3 tables est l&#39;astuce que la plupart des nouveaux ratent.</p>
+    <p class="notes">DÉMO. Si possible, forcez un 5xx (arrêtez l&#39;API ou frappez une mauvaise route) et regardez Échecs s&#39;allumer, puis plongez dans l&#39;exception.</p>
   </section>
 
 <!-- ════════════════════════════════════════════════════════════════════════
-     SECTION 17 · kql-query-text · Requête KQL — copier / coller
+     SECTION 44 · kql-end-to-end · Journaux (KQL) — une requête, un operation_Id
      ════════════════════════════════════════════════════════════════════════ -->
-<section id="sec17" data-key="kql-query-text">
-    <h2><span class="section-num">17</span> Requête KQL — copier / coller</h2>
+<section id="sec44" data-key="kql-end-to-end">
+    <h2><span class="section-num">44</span> Journaux (KQL) — une requête, un operation_Id</h2>
+    <ul>
+      <li>Ouvrir le panneau Journaux sur la ressource App Insights</li>
+      <li>union requests, dependencies, pageViews</li>
+      <li>Filtrer par operation_Id, projeter les colonnes clés, trier par temps</li>
+      <li>Le résultat est la même cascade, en données qu&#39;on peut grapher et exporter</li>
+    </ul>
+    <p class="notes">DÉMO. Exécutez la requête de la diapositive suivante. L&#39;union entre tables est l&#39;astuce que les débutants manquent.</p>
+  </section>
+
+<!-- ════════════════════════════════════════════════════════════════════════
+     SECTION 45 · kql-query-text · Requête KQL — à copier / coller
+     ════════════════════════════════════════════════════════════════════════ -->
+<section id="sec45" data-key="kql-query-text">
+    <h2><span class="section-num">45</span> Requête KQL — à copier / coller</h2>
     <ul>
       <li>union requests, dependencies, pageViews</li>
-      <li>| where operation_Id == &#39;abc-trace-id-ici&#39;</li>
+      <li>| where operation_Id == &#39;COLLER-OPERATION-ID&#39;</li>
       <li>| project timestamp, itemType, name, duration, success, target</li>
       <li>| order by timestamp asc</li>
     </ul>
-    <p class="notes">Remplacez &#39;abc-trace-id-ici&#39; par l&#39;operation_Id récupéré dans l&#39;en-tête traceparent des DevTools.</p>
+    <p class="notes">Récupérez l&#39;operation_Id depuis le traceparent dans les outils de dev ou la Recherche de transactions, collez-le et exécutez. Sauvegardez la requête dans le classeur.</p>
   </section>
 
 <!-- ════════════════════════════════════════════════════════════════════════
-     SECTION 18 · live-metrics · Live Metrics — l'effet whaouh
+     SECTION 46 · workbooks · Classeurs — tableaux de bord partageables
      ════════════════════════════════════════════════════════════════════════ -->
-<section id="sec18" data-key="live-metrics">
-    <h2><span class="section-num">18</span> Live Metrics — l&#39;effet whaouh</h2>
+<section id="sec46" data-key="workbooks">
+    <h2><span class="section-num">46</span> Classeurs — tableaux de bord partageables</h2>
     <ul>
-      <li>Latence inférieure à la seconde entre l&#39;app et le portail</li>
-      <li>Aucune donnée n&#39;est persistée dans le flux du portail — l&#39;échantillonnage ne s&#39;applique pas</li>
-      <li>Filtrez par nom de rôle (cloud_RoleName) pour isoler Mapaq.Api</li>
-      <li>Génial pour la démo; ne remplace pas de vraies alertes</li>
-    </ul>
-    <p class="notes">Ouvrez Live Metrics, puis demandez à la salle de charger la page — dopamine garantie.</p>
-  </section>
-
-<!-- ════════════════════════════════════════════════════════════════════════
-     SECTION 19 · workbook · Workbook — synthèse SLO bilingue
-     ════════════════════════════════════════════════════════════════════════ -->
-<section id="sec19" data-key="workbook">
-    <h2><span class="section-num">19</span> Workbook — synthèse SLO bilingue</h2>
-    <ul>
-      <li>Workbook prêt à l&#39;emploi dans workshop-content/workbooks/</li>
-      <li>Affiche le volume de requêtes 24h, p95 de latence, % d&#39;échec, top-5 dépendances</li>
+      <li>Classeur pré-construit : volume 24 h, latence p95, % d&#39;échec, top dépendances</li>
       <li>Paramétré par nom de rôle et plage de temps</li>
-      <li>Importable via JSON, sans Power BI</li>
+      <li>Mélange KQL, métriques, texte et paramètres dans un document</li>
+      <li>Importable en JSON — pas besoin de Power BI</li>
     </ul>
-    <p class="notes">Le JSON du workbook vit dans le dépôt; importez via la galerie de la ressource AI.</p>
+    <p class="notes">DÉMO. Ouvrez le classeur, changez la plage de temps et le paramètre de rôle, et montrez la mise à jour des visuels. Mentionnez qu&#39;ils sont versionnables en JSON.</p>
   </section>
 
 <!-- ════════════════════════════════════════════════════════════════════════
-     SECTION 20 · alerts · Alertes intelligentes — anomalies de panne
+     SECTION 47 · work-item-creation · Créer des éléments de travail depuis Application Insights
      ════════════════════════════════════════════════════════════════════════ -->
-<section id="sec20" data-key="alerts">
-    <h2><span class="section-num">20</span> Alertes intelligentes — anomalies de panne</h2>
+<section id="sec47" data-key="work-item-creation">
+    <h2><span class="section-num">47</span> Créer des éléments de travail depuis Application Insights</h2>
     <ul>
-      <li>Smart Detection s&#39;exécute en continu sur le workspace</li>
-      <li>Détecte automatiquement les anomalies de taux d&#39;échec, de chargement de page lent et de dégradation de trace</li>
-      <li>Configurez l&#39;e-mail + un Action Group pour un webhook Teams</li>
+      <li>Configurer une intégration d&#39;éléments de travail (Azure DevOps / GitHub)</li>
+      <li>Depuis un échec ou une transaction, cliquer « Créer un élément de travail »</li>
+      <li>Le contexte de télémétrie (operation_Id, pile, version) est joint</li>
+      <li>Boucle complète : détecter → déclarer → corriger → vérifier</li>
+      <li>Notre flux ADO : Epic → Feature → User Story/Bug, étiquette « Agentic AI »</li>
     </ul>
-    <p class="notes">Smart Detection est actif par défaut — montrez comment ajouter des destinataires.</p>
+    <p class="notes">DÉMO. Montrez l&#39;intégration d&#39;éléments de travail sur la ressource App Insights, puis créez un bug depuis un vrai échec. Soulignez comment le contexte de télémétrie arrive sur l&#39;élément pour qu&#39;un développeur le reproduise.</p>
   </section>
 
 <!-- ════════════════════════════════════════════════════════════════════════
-     SECTION 21 · cost-controls · Maîtrise des coûts — sans surprise
+     SECTION 48 · local-remote-logging · Journalisation locale vs distante
      ════════════════════════════════════════════════════════════════════════ -->
-<section id="sec21" data-key="cost-controls">
-    <h2><span class="section-num">21</span> Maîtrise des coûts — sans surprise</h2>
+<section id="sec48" data-key="local-remote-logging">
+    <h2><span class="section-num">48</span> Journalisation locale vs distante</h2>
     <ul>
-      <li>Plafond quotidien sur la ressource AI (50 Mo/jour pour l&#39;atelier)</li>
+      <li>Locale : console ILogger + Flux de journaux App Service pour un retour rapide</li>
+      <li>Distante : ILogger → Application Insights en traces (durable, interrogeable)</li>
+      <li>Journalisation structurée — les propriétés deviennent des dimensions en KQL</li>
+      <li>Corrélation : les journaux portent le même operation_Id que la requête</li>
+      <li>Régler les niveaux via appsettings + le LoggerProvider ApplicationInsights</li>
+    </ul>
+    <p class="notes">DÉMO. Émettez un journal structuré en local et observez-le dans la console, puis retrouvez la même entrée dans les traces App Insights filtrées par operation_Id. Voilà l&#39;histoire de la journalisation locale et distante.</p>
+  </section>
+
+<!-- ════════════════════════════════════════════════════════════════════════
+     SECTION 49 · smart-alerts · Alertes et détection intelligentes
+     ════════════════════════════════════════════════════════════════════════ -->
+<section id="sec49" data-key="smart-alerts">
+    <h2><span class="section-num">49</span> Alertes et détection intelligentes</h2>
+    <ul>
+      <li>Smart Detection trouve automatiquement les anomalies de taux d&#39;échec et de latence</li>
+      <li>Alertes de métrique sur disponibilité, temps de réponse, requêtes en échec</li>
+      <li>Groupes d&#39;actions → courriel, SMS, Teams/webhook ou automatisation</li>
+      <li>Alerter sur les symptômes (impact utilisateur), pas seulement les causes</li>
+    </ul>
+    <p class="notes">DÉMO. Montrez les paramètres de Smart Detection et créez une alerte de métrique (ex. requêtes en échec &gt; N sur 5 min) reliée à un groupe d&#39;actions.</p>
+  </section>
+
+<!-- ════════════════════════════════════════════════════════════════════════
+     SECTION 50 · app-insights-demo-walkthrough · Démo — App Insights, quoi montrer
+     ════════════════════════════════════════════════════════════════════════ -->
+<section id="sec50" data-key="app-insights-demo-walkthrough">
+    <h2><span class="section-num">50</span> Démo — App Insights, quoi montrer</h2>
+    <ul>
+      <li>1 · Live Metrics pendant que la salle charge l&#39;app</li>
+      <li>2 · Recherche de transactions → cascade de bout en bout</li>
+      <li>3 · Carte d&#39;application → cliquer le nœud SQL</li>
+      <li>4 · Échecs → plonger dans une exception → créer un élément de travail</li>
+      <li>5 · Journaux (KQL) → classeur → une alerte</li>
+    </ul>
+    <p class="notes">Liste de contrôle maîtresse pour l&#39;heure. Gardez le trafic actif tout du long. Utilisez scripts/open-monitoring-dashboard.ps1 pour sauter à la ressource.</p>
+  </section>
+
+<!-- ════════════════════════════════════════════════════════════════════════
+     SECTION 51 · cost-controls · Contrôle des coûts — pas de surprises
+     ════════════════════════════════════════════════════════════════════════ -->
+<section id="sec51" data-key="cost-controls">
+    <h2><span class="section-num">51</span> Contrôle des coûts — pas de surprises</h2>
+    <ul>
+      <li>Plafond quotidien sur la ressource App Insights pour l&#39;atelier</li>
       <li>Échantillonnage : 100 % en dev, 10–25 % typique en prod</li>
-      <li>AI basé sur le workspace utilise les paliers d&#39;engagement Log Analytics</li>
-      <li>Étiquetez tout avec Workshop=Mapaq pour la facturation</li>
+      <li>L&#39;AI basé sur espace de travail utilise les niveaux d&#39;engagement Log Analytics</li>
+      <li>Bien dimensionner le plan App Service; réduire quand inactif</li>
+      <li>Étiqueter tout pour découper la facturation</li>
     </ul>
-    <p class="notes">Le plafond quotidien protège l&#39;abonnement de l&#39;atelier d&#39;un débordement de logs.</p>
+    <p class="notes">Reliez le coût aux leviers de mise à l&#39;échelle et d&#39;échantillonnage vus plus tôt. Le plafond quotidien protège l&#39;abonnement.</p>
   </section>
 
 <!-- ════════════════════════════════════════════════════════════════════════
-     SECTION 22 · troubleshooting · Liste de dépannage
+     SECTION 52 · troubleshooting · Liste de dépannage
      ════════════════════════════════════════════════════════════════════════ -->
-<section id="sec22" data-key="troubleshooting">
-    <h2><span class="section-num">22</span> Liste de dépannage</h2>
+<section id="sec52" data-key="troubleshooting">
+    <h2><span class="section-num">52</span> Liste de dépannage</h2>
     <ul>
-      <li>Pas de télémétrie ? Vérifiez APPLICATIONINSIGHTS_CONNECTION_STRING dans les App Settings</li>
-      <li>PageViews manquants ? Confirmez que le snippet est avant les autres scripts</li>
-      <li>operation_Id différent ? Vérifiez enableCorsCorrelation sur le SDK JS</li>
-      <li>Dépendances SQL absentes ? EF Core a besoin du SDK AI — le paquet seul ne suffit pas</li>
+      <li>Pas de télémétrie ? Vérifier APPLICATIONINSIGHTS_CONNECTION_STRING dans App settings</li>
+      <li>Ingestion par identité en échec ? Vérifier AZURE_CLIENT_ID + AUTHENTICATION_STRING + attribution de rôle</li>
+      <li>Conteneur ne démarre pas ? Confirmer WEBSITES_PORT et l&#39;étiquette d&#39;image dans le Centre de déploiement</li>
+      <li>PageViews manquantes ? Le snippet doit se charger avant les autres scripts</li>
+      <li>Dépendances SQL manquantes ? EF Core a besoin du SDK AI — le paquet seul ne suffit pas</li>
     </ul>
-    <p class="notes">Gardez cette diapo visible pendant le lab; la plupart des questions tombent dans une de ces 4 lignes.</p>
+    <p class="notes">Gardez cette diapositive visible pendant les ateliers. La plupart des questions correspondent à une de ces lignes. La ligne identité est spécifique à la configuration de rg-dev-001.</p>
   </section>
 
 <!-- ════════════════════════════════════════════════════════════════════════
-     SECTION 23 · teardown · Module 6 — Démantèlement
+     SECTION 53 · teardown · Démantèlement
      ════════════════════════════════════════════════════════════════════════ -->
-<section id="sec23" data-key="teardown">
-    <h2><span class="section-num">23</span> Module 6 — Démantèlement</h2>
+<section id="sec53" data-key="teardown">
+    <h2><span class="section-num">53</span> Démantèlement</h2>
     <ul>
       <li>azd down --purge --force</li>
-      <li>--purge supprime les Key Vaults et ressources AI en suppression douce</li>
+      <li>--purge retire les Key Vault et ressources AI supprimés en douceur</li>
       <li>--force saute la confirmation interactive</li>
-      <li>Vérifiez dans le portail Azure que le groupe de ressources est bien parti</li>
+      <li>Vérifier que le groupe de ressources a disparu dans le portail</li>
     </ul>
-    <p class="notes">Démontrez toujours le démantèlement en direct. Un atelier sans démantèlement est une bombe à retardement de facturation.</p>
+    <p class="notes">Démontrez toujours le démantèlement en direct. Un atelier sans démantèlement est une bombe de facturation. (À sauter sur rg-dev-001 partagé s&#39;il doit persister.)</p>
   </section>
 
 <!-- ════════════════════════════════════════════════════════════════════════
-     SECTION 24 · references · Références
+     SECTION 54 · next-steps · Prochaines étapes et votre plan de compétences
      ════════════════════════════════════════════════════════════════════════ -->
-<section id="sec24" data-key="references">
-    <h2><span class="section-num">24</span> Références</h2>
+<section id="sec54" data-key="next-steps">
+    <h2><span class="section-num">54</span> Prochaines étapes et votre plan de compétences</h2>
     <ul>
-      <li>learn.microsoft.com/fr-ca/azure/azure-monitor/app/app-insights-overview</li>
-      <li>learn.microsoft.com/fr-ca/azure/azure-monitor/app/asp-net-core</li>
-      <li>learn.microsoft.com/fr-ca/azure/azure-monitor/app/javascript</li>
-      <li>github.com/Azure/azure-dev (modèles azd)</li>
-      <li>github.com/microsoft/ApplicationInsights-dotnet</li>
+      <li>Choisir une vraie app et exécuter l&#39;agent de modernisation .NET Copilot</li>
+      <li>Monter App Service + App Insights avec azd dans votre propre abonnement</li>
+      <li>Rédiger votre plan de compétences par persona du Module 0</li>
+      <li>Lancer un sprint Défi Cloud avec votre équipe</li>
+      <li>Adopter le développement piloté par l&#39;observabilité par défaut</li>
     </ul>
-    <p class="notes">Les quatre pages MS Learn ont le sélecteur EN/FR en haut à droite.</p>
+    <p class="notes">Renvoyez la salle avec un engagement concret chacun. Offrez les ateliers et le wiki comme chemin de suite.</p>
   </section>
 
 <!-- ════════════════════════════════════════════════════════════════════════
-     SECTION 25 · closing · Merci · Thank you
+     SECTION 55 · references · Références
      ════════════════════════════════════════════════════════════════════════ -->
-<section id="sec25" data-key="closing">
-    <h2><span class="section-num">25</span> Merci · Thank you</h2>
+<section id="sec55" data-key="references">
+    <h2><span class="section-num">55</span> Références</h2>
     <ul>
-      <li>Diapos + labs : github.com/devopsabcs-engineering/app-insights-dotnet</li>
-      <li>Bilingue publié sur GitHub Pages : /app-insights-dotnet/ et /app-insights-dotnet/fr/</li>
-      <li>Issues + carte ADO ensemencées — ouvrez-en une avec vos retours</li>
-      <li>Bonne observabilité! · Happy observing!</li>
+      <li>learn.microsoft.com/azure/app-service/</li>
+      <li>learn.microsoft.com/azure/azure-monitor/app/app-insights-overview</li>
+      <li>learn.microsoft.com/dotnet/core/porting/ (mise à niveau et modernisation)</li>
+      <li>github.com/Azure/azure-dev (azd)</li>
+      <li>GitHub Copilot app modernization pour .NET — Marketplace VS Code</li>
     </ul>
-    <p class="notes">Concluez dans les deux langues. Cédez la parole aux questions.</p>
+    <p class="notes">Toutes les pages MS Learn ont le sélecteur de langue FR/EN en haut à droite.</p>
+  </section>
+
+<!-- ════════════════════════════════════════════════════════════════════════
+     SECTION 56 · closing · Thank you · Merci
+     ════════════════════════════════════════════════════════════════════════ -->
+<section id="sec56" data-key="closing">
+    <h2><span class="section-num">56</span> Thank you · Merci</h2>
+    <ul>
+      <li>Diapositives, ateliers et wiki : ce dépôt</li>
+      <li>Présentations bilingues : docs/decks/ (FR et EN)</li>
+      <li>Raccourci de surveillance : scripts/open-monitoring-dashboard.ps1</li>
+      <li>Happy modernizing! · Bonne modernisation!</li>
+    </ul>
+    <p class="notes">Clôturez dans les deux langues. Renvoyez la salle aux questions et au wiki pour le guide de livraison complet.</p>
   </section>
 </div>
 <div class="footer"><p>Application Insights pour .NET 10 — atelier bilingue · Microsoft Canada</p></div>
