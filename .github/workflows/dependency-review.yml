@@ -1,0 +1,34 @@
+# Dependency review on PRs — equivalent of the ADO AdvancedSecurity-Dependency-
+# Scanning task in .azuredevops/pipelines/adv-sec.yml.
+#
+# CodeQL parity with ADO's AdvancedSecurity-Codeql tasks is provided by GitHub's
+# repository-level **default code scanning** (see Settings → Code security and
+# analysis → Code scanning). The default setup runs CodeQL across every detected
+# language and is mutually exclusive with an "advanced" workflow file — adding a
+# custom codeql.yml here causes uploads to be rejected with:
+#   "CodeQL analyses from advanced configurations cannot be processed when the
+#    default setup is enabled"
+# Keep CodeQL under the default setup and only layer dependency review on top.
+name: dependency-review
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  review:
+    name: Dependency review (PR diff)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Dependency review
+        uses: actions/dependency-review-action@v4
+        with:
+          fail-on-severity: high
+          comment-summary-in-pr: on-failure
