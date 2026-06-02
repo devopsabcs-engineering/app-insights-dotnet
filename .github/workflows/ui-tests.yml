@@ -105,16 +105,13 @@ jobs:
         working-directory: tests/ui
         env:
           CI: "true"
-        # Explicit bash flags: GH Actions defaults to `bash -eo pipefail` which would
-        # abort this step the moment `npx playwright test` returns non-zero, skipping
-        # the report-bundle copy and the downstream JUnit publish that decides the
-        # build outcome. We capture Playwright's exit code, always assemble the
-        # bundle, and let EnricoMi/publish-unit-test-result-action be the source of
-        # truth for pass/fail (controlled by inputs.failOnTestErrors).
-        shell: bash
+        # Use a fully-specified shell command to override GitHub's default
+        # `bash -eo pipefail` — `shell: bash` alone keeps `-e`, which aborts
+        # this step the moment `npx playwright test` returns non-zero,
+        # skipping the report-bundle copy and the downstream JUnit publish
+        # that should decide pass/fail (controlled by inputs.failOnTestErrors).
+        shell: bash --noprofile --norc -uo pipefail {0}
         run: |
-          set -uo pipefail
-
           # Pre-flight: warn if the home page does not respond, but let Playwright drive pass/fail.
           if curl -fsS --max-time 10 "$MAPAQ_WEB_URL/" -o /dev/null; then
             echo "Web tier reachable at $MAPAQ_WEB_URL"

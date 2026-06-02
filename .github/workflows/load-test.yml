@@ -143,14 +143,13 @@ jobs:
       - name: Run Locust headless
         env:
           LOCUST_VERIFY_SSL: "1"
-        # Explicit bash flags: GH Actions defaults to `bash -eo pipefail` which would
-        # abort this step the moment `locust` returns non-zero (any HTTP failure or
-        # over-budget endpoint exits non-zero), skipping the JUnit conversion and
-        # publish step that should decide the build outcome.
-        shell: bash
-        run: |
-          set -uo pipefail
-          mkdir -p "$REPORT_DIR"
+        # Use a fully-specified shell command to override GitHub's default
+        # `bash -eo pipefail` — `shell: bash` alone keeps `-e`, which would
+        # abort this step the moment `locust` returns non-zero (any HTTP
+        # failure or over-budget endpoint exits non-zero), skipping the
+        # JUnit conversion and publish that should decide build outcome.
+        shell: bash --noprofile --norc -uo pipefail {0}
+        run: |          mkdir -p "$REPORT_DIR"
 
           echo "Targets:"
           echo "  api -> $MAPAQ_API_HOST"
