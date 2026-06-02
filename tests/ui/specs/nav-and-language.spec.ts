@@ -44,7 +44,7 @@ test.describe('Site chrome and language', () => {
     await setCulture(page, 'en-CA', '/');
     for (const path of ['/', '/Etablissements', '/Inspections/Rollup']) {
       await page.goto(path);
-      await expect(page.locator('footer.site-footer small')).toContainText(/Demo application/i);
+      await expect(page.locator('footer.site-footer small').first()).toContainText(/Demo application/i);
     }
     await captureScreenshot(page, 'footer-disclaimer');
   });
