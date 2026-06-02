@@ -149,7 +149,8 @@ jobs:
         # failure or over-budget endpoint exits non-zero), skipping the
         # JUnit conversion and publish that should decide build outcome.
         shell: bash --noprofile --norc -uo pipefail {0}
-        run: |          mkdir -p "$REPORT_DIR"
+        run: |
+          mkdir -p "$REPORT_DIR"
 
           echo "Targets:"
           echo "  api -> $MAPAQ_API_HOST"
