@@ -22,6 +22,16 @@ permissions:
   # contents: write lets the deploy job push the release git tag (v<SemVer>).
   contents: write
 
+# Serialize deploys per target environment, mirroring the ADO pipeline's
+# `lockBehavior: runLatest` on the workshop-dev environment. With
+# cancel-in-progress: false, an in-flight deploy finishes and any newer queued
+# run replaces older pending runs in the queue — preventing the DeploymentActive
+# race when back-to-back CI completions both start `azd provision` and clash on
+# the same ARM deployment names (pe-<token>, etc.) inside rg-<env>.
+concurrency:
+  group: deploy-${{ inputs.azureEnvName || vars.AZURE_ENV_NAME || 'dev-001' }}
+  cancel-in-progress: false
+
 jobs:
   deploy:
     name: azd up
@@ -98,14 +108,57 @@ jobs:
           ACR_NAME="$(azd env get-value ACR_NAME)"
           RG="$(azd env get-value AZURE_RESOURCE_GROUP)"
 
+          # Pin az CLI to the same subscription azd just provisioned into. Without
+          # this, az may default to a different active subscription (or none) for
+          # the SP, and az acr build returns ParentResourceNotFound even though
+          # the registry exists.
+          az account set --subscription "$AZURE_SUBSCRIPTION_ID"
+
+          # Wait for ACR ARM propagation. Right after `azd provision` completes,
+          # the registry resource exists but the ContainerRegistry RP can return
+          # ParentResourceNotFound from data-plane actions like
+          # listBuildSourceUploadUrl for up to ~60s while the resource graph
+          # propagates. Poll `az acr show` until it succeeds (or 5 min cap).
+          echo "Waiting for ACR '$ACR_NAME' in '$RG' to become queryable..."
+          for attempt in $(seq 1 30); do
+            if az acr show --name "$ACR_NAME" --resource-group "$RG" --query id -o tsv >/dev/null 2>&1; then
+              echo "  ACR queryable after ${attempt} attempt(s)."
+              break
+            fi
+            if [[ "$attempt" == "30" ]]; then
+              echo "::error::ACR '$ACR_NAME' still not queryable after 5 minutes."
+              exit 1
+            fi
+            sleep 10
+          done
+
           # Server-side build+push - no Docker daemon, no docker login (OIDC identity active).
           # The SemVer is baked into the binary (/p:Version) and image (OCI label + APP_VERSION
           # env) via the VERSION build arg, and pushed as an extra human-readable :$SEMVER tag
           # alongside the immutable :$TAG (git SHA) that the sites actually run.
-          az acr build --registry "$ACR_NAME" --build-arg VERSION="$SEMVER" \
-            --image "mapaq-api:$TAG" --image "mapaq-api:$SEMVER" --file src/Mapaq.Api/Dockerfile .
-          az acr build --registry "$ACR_NAME" --build-arg VERSION="$SEMVER" \
-            --image "mapaq-web:$TAG" --image "mapaq-web:$SEMVER" --file src/Mapaq.Web/Dockerfile .
+          # Wrap acr build in a small retry to absorb the residual RP propagation window
+          # (ParentResourceNotFound on listBuildSourceUploadUrl) immediately after provision.
+          acr_build() {
+            local image_base="$1" dockerfile="$2"
+            for attempt in 1 2 3 4 5; do
+              if az acr build \
+                  --registry "$ACR_NAME" \
+                  --resource-group "$RG" \
+                  --build-arg VERSION="$SEMVER" \
+                  --image "${image_base}:$TAG" \
+                  --image "${image_base}:$SEMVER" \
+                  --file "$dockerfile" .; then
+                return 0
+              fi
+              echo "::warning::az acr build (${image_base}) attempt ${attempt} failed; retrying in 20s..."
+              sleep 20
+            done
+            echo "::error::az acr build (${image_base}) failed after 5 attempts."
+            return 1
+          }
+
+          acr_build mapaq-api src/Mapaq.Api/Dockerfile
+          acr_build mapaq-web src/Mapaq.Web/Dockerfile
 
           # Force both sites to pull the now-present image.
           api_site="$(az webapp list -g "$RG" --query "[?starts_with(name,'mapaq-api-')].name | [0]" -o tsv)"

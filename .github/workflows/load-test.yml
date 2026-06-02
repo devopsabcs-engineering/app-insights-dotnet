@@ -1,0 +1,202 @@
+# Locust load test against the deployed Mapaq.Api / Mapaq.Web App Services.
+# Mirrors .azuredevops/pipelines/load-test.yml.
+#
+# Defaults to the workshop-dev environment (rg-dev-001) and discovers the public
+# URLs from the resource group at run time, so attendees do not have to memorize
+# the resourceToken-suffixed hostnames. Override apiUrl / webUrl (or the
+# azureEnvName input) at dispatch time to point at a different environment.
+#
+# Outputs:
+#   * GitHub Checks tab — one testcase per endpoint via JUnit XML (EnricoMi publish).
+#   * Workflow artifact `load-test-report` — full Locust HTML + CSV bundle.
+# A run is marked failed when any endpoint had HTTP failures or its p95 latency
+# exceeded p95ThresholdMs (when failOnLoadErrors=true).
+name: load-test
+
+on:
+  workflow_dispatch:
+    inputs:
+      azureEnvName:
+        description: "azd environment name (resource group rg-<name>)"
+        required: false
+        type: string
+        default: "dev-001"
+      apiUrl:
+        description: 'API base URL (use "auto" to discover from rg-<azureEnvName>)'
+        required: false
+        type: string
+        default: "auto"
+      webUrl:
+        description: 'Web base URL (use "auto" to discover from rg-<azureEnvName>)'
+        required: false
+        type: string
+        default: "auto"
+      users:
+        description: "Peak concurrent users"
+        required: false
+        type: number
+        default: 25
+      spawnRate:
+        description: "Users to spawn per second"
+        required: false
+        type: number
+        default: 5
+      duration:
+        description: "Run duration (Locust syntax, e.g. 30s, 2m, 5m)"
+        required: false
+        type: string
+        default: "2m"
+      p95ThresholdMs:
+        description: "p95 latency budget per endpoint (ms). 0 disables the latency gate."
+        required: false
+        type: number
+        default: 1500
+      failOnLoadErrors:
+        description: "Fail the pipeline when any endpoint exceeds the budget or has HTTP errors"
+        required: false
+        type: boolean
+        default: true
+
+permissions:
+  id-token: write
+  contents: read
+  checks: write
+  pull-requests: write
+
+jobs:
+  load_test:
+    name: Run Locust against deployed App Services
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    environment:
+      name: workshop-dev
+    env:
+      PYTHON_VERSION: "3.12"
+      REPORT_DIR: ${{ github.workspace }}/load-test-report
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: pip install -r tests/load/requirements.txt
+        run: |
+          set -euo pipefail
+          python -m pip install --upgrade pip
+          python -m pip install -r tests/load/requirements.txt
+
+      - name: Azure login (OIDC)
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Resolve API / Web URLs from rg-${{ inputs.azureEnvName }}
+        id: resolve
+        env:
+          AZ_ENV: ${{ inputs.azureEnvName }}
+          API_URL_PARAM: ${{ inputs.apiUrl }}
+          WEB_URL_PARAM: ${{ inputs.webUrl }}
+        run: |
+          set -euo pipefail
+          RG="rg-${AZ_ENV}"
+
+          resolve_site() {
+            local prefix="$1"
+            local hostname
+            hostname="$(az webapp list \
+                --resource-group "$RG" \
+                --query "[?starts_with(name, '${prefix}-')].defaultHostName | [0]" \
+                -o tsv)"
+            if [[ -z "$hostname" ]]; then
+              echo ""
+            else
+              echo "https://${hostname}"
+            fi
+          }
+
+          if [[ -n "$API_URL_PARAM" && "$API_URL_PARAM" != "auto" ]]; then
+            RESOLVED_API="$API_URL_PARAM"
+          else
+            RESOLVED_API="$(resolve_site mapaq-api)"
+          fi
+          if [[ -n "$WEB_URL_PARAM" && "$WEB_URL_PARAM" != "auto" ]]; then
+            RESOLVED_WEB="$WEB_URL_PARAM"
+          else
+            RESOLVED_WEB="$(resolve_site mapaq-web)"
+          fi
+
+          if [[ -z "$RESOLVED_API" || -z "$RESOLVED_WEB" ]]; then
+            echo "::error::Could not resolve API/Web URLs from $RG. Pass apiUrl/webUrl explicitly. api='$RESOLVED_API' web='$RESOLVED_WEB'"
+            exit 1
+          fi
+
+          echo "Resolved API -> $RESOLVED_API"
+          echo "Resolved Web -> $RESOLVED_WEB"
+          echo "MAPAQ_API_HOST=$RESOLVED_API" >> "$GITHUB_ENV"
+          echo "MAPAQ_WEB_HOST=$RESOLVED_WEB" >> "$GITHUB_ENV"
+
+      - name: Run Locust headless
+        env:
+          LOCUST_VERIFY_SSL: "1"
+        run: |
+          set -uo pipefail
+          mkdir -p "$REPORT_DIR"
+
+          echo "Targets:"
+          echo "  api -> $MAPAQ_API_HOST"
+          echo "  web -> $MAPAQ_WEB_HOST"
+
+          # Pre-flight against the API; do not fail here — Locust surfaces persistent outages.
+          if curl -fsS --max-time 10 "$MAPAQ_API_HOST/healthz" -o /dev/null; then
+            echo "API /healthz reachable."
+          else
+            echo "::warning::API /healthz did not respond before the run started."
+          fi
+
+          # Locust's runner overwrites every user_class.host with --host when
+          # passed, so we omit --host and let MapaqApiUser / MapaqWebUser pin
+          # themselves via MAPAQ_API_HOST / MAPAQ_WEB_HOST (see locustfile.py).
+          # Always exit 0 — the JUnit publish step decides build outcome per-endpoint.
+          python -m locust \
+            -f tests/load/locustfile.py \
+            --headless \
+            --users ${{ inputs.users }} \
+            --spawn-rate ${{ inputs.spawnRate }} \
+            --run-time ${{ inputs.duration }} \
+            --html "$REPORT_DIR/report.html" \
+            --csv  "$REPORT_DIR/stats" \
+            --only-summary
+          LOCUST_EXIT=$?
+          echo "Locust exit code: $LOCUST_EXIT (per-endpoint pass/fail decided by the JUnit publish step)"
+          exit 0
+
+      - name: Convert Locust stats to JUnit
+        if: always()
+        run: |
+          set -euo pipefail
+          python tests/load/locust_stats_to_junit.py \
+            --stats-prefix "$REPORT_DIR/stats" \
+            --output       "$REPORT_DIR/junit.xml" \
+            --suite-name   "Mapaq Load Test (${{ inputs.azureEnvName }})" \
+            --p95-threshold-ms ${{ inputs.p95ThresholdMs }}
+
+      - name: Publish JUnit results to Checks tab
+        if: always()
+        uses: EnricoMi/publish-unit-test-result-action@v2
+        with:
+          files: ${{ env.REPORT_DIR }}/junit.xml
+          check_name: "Mapaq Load Test (${{ inputs.azureEnvName }})"
+          comment_mode: off
+          fail_on: ${{ inputs.failOnLoadErrors && 'test failures' || 'nothing' }}
+
+      - name: Upload HTML + CSV report bundle
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: load-test-report
+          path: ${{ env.REPORT_DIR }}
