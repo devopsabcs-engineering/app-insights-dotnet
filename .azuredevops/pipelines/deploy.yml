@@ -149,6 +149,32 @@ stages:
                       azd env set API_IMAGE_TAG "$TAG"
                       azd env set WEB_IMAGE_TAG "$TAG"
 
+                      # --- Recover soft-deleted Key Vault before provision ---
+                      # infra/modules/keyvault.bicep creates 'kv<resourceToken>' with
+                      # purge protection ON. resourceToken is deterministic
+                      # (uniqueString(subscription().id, environmentName, location)), so a
+                      # re-deploy of the same AZD_ENV_NAME targets the SAME vault name. If a
+                      # prior `azd down` soft-deleted that vault, `azd provision` fails with a
+                      # 409 (VaultAlreadyExists) and purge protection means it can NOT be
+                      # purged - only recovered. Scope recovery to vaults whose ORIGINAL
+                      # resource group is this deployment's RG (rg-<envName>) so we never
+                      # touch unrelated projects' soft-deleted vaults (which may have a
+                      # missing original RG and would fail recover with ResourceGroupNotFound).
+                      EXPECTED_RG="rg-${AZD_ENV_NAME}"
+                      echo "Checking for soft-deleted Key Vaults from '$EXPECTED_RG' in $(AZURE_LOCATION) to recover..."
+                      deleted_vaults="$(az keyvault list-deleted \
+                        --query "[?properties.location=='$(AZURE_LOCATION)' && contains(properties.vaultId, '/resourceGroups/${EXPECTED_RG}/')].name" \
+                        -o tsv 2>/dev/null || true)"
+                      if [[ -n "$deleted_vaults" ]]; then
+                        while IFS= read -r vault_name; do
+                          [[ -z "$vault_name" ]] && continue
+                          echo "  Recovering soft-deleted vault '$vault_name'..."
+                          az keyvault recover --name "$vault_name" --location "$(AZURE_LOCATION)"
+                        done <<< "$deleted_vaults"
+                      else
+                        echo "  No soft-deleted vaults from '$EXPECTED_RG' to recover."
+                      fi
+
                       # Provision creates ACR + UAMI AcrPull + sites (sites point at :$TAG; the first
                       # start fails until the image exists - the restart below resolves it).
                       azd provision --no-prompt

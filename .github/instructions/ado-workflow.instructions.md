@@ -28,6 +28,7 @@ Epic
 * Every User Story or Bug must belong to a Feature.
 * Every Feature must belong to an Epic.
 * Create the parent items first if they do not exist before creating child items.
+* When creating the hierarchy from scratch, create items top-down (Epic → Feature → User Story/Bug) and record each assigned ID before proceeding. Do not create the branch until the User Story or Bug ID is confirmed.
 * Every work item (Epic, Feature, User Story, Bug) must include the tag `Agentic AI`.
 
 ## Branching Strategy
@@ -48,6 +49,7 @@ feature/1235-fix-notification-bug
 Rules:
 
 * One branch per User Story or Bug.
+* If a User Story requires parallel sub-tasks, create child Task work items under the User Story and open one branch per Task, naming them `feature/{task-id}-short-description`. Each Task must still link back to its parent User Story.
 * Use lowercase and hyphens for the description portion.
 * Keep the description concise (three to five words).
 * Branch from `main` unless otherwise specified.
@@ -63,7 +65,9 @@ fix: correct notification email template AB#1235
 
 This links commits to ADO work items automatically through GitHub and Azure DevOps integration.
 
-To auto-close a work item when the PR merges, use `Fixes AB#{id}` in the commit message or PR description:
+Use plain `AB#{id}` (without `Fixes`) when you only want to link the commit. Use `Fixes AB#{id}` only when you want the work item to auto-close on merge. These two forms are mutually exclusive: never combine both in the same message (for example, do not write `AB#1234 Fixes AB#1234`).
+
+To auto-close a work item when the PR merges, add `Fixes AB#{id}` to the PR description (preferred). If squash-merging, you may alternatively include it in the squash commit message. Do not use both simultaneously:
 
 ```text
 feat: add citizen submission form Fixes AB#1234
@@ -104,6 +108,8 @@ After the pull request is merged and closed in GitHub:
    ```bash
    git branch -d feature/{work-item-id}-short-description
    ```
+
+   If `git branch -d` fails because Git reports unmerged changes (which can occur if the local branch was never fully synced), verify the PR is merged in GitHub, then force-delete with `git branch -D feature/{work-item-id}-short-description`.
 
 Always delete both the remote and local feature branch after a successful merge. Do not keep stale branches.
 
